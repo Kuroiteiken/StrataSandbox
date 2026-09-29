@@ -11,6 +11,7 @@
 >   - Workflow önce `npm test`'i Linux'ta (büyük/küçük harfe duyarlı) çalıştırıyor, sonra yalnızca uygulama dosyalarını yayınlıyor: `index.html`, `css/`, `js/`, `assets/`.
 >   - Ayrıntı: DECISIONS.md, ADR-011.
 > - **Git akışı:** Çalışma doğrudan `main` üzerinde yapılıyor. Commit ve push, uygun noktalarda sorulmadan atılıyor (kullanıcı talimatı). Bu nedenle `.claude/settings.json`'daki "git push'ta sor" kuralı kaldırıldı.
+> - **Görsel kimlik (A.5):** Tema sloganı ve ona bağlı ifadeler kullanıcı talebiyle kaldırıldı. Görsel yön aynı kalıyor: koyu toprak tonları, pirinç vurgu ve jeolojik katmanlar.
 > - **LICENSE:** Uzak repodaki MIT lisansı (Copyright (c) 2026 Nihat Tavsan) kullanılıyor.
 > - **`package.json` script'leri:** `bench` script'i, `tools/bench.js` hazır olduğunda (Phase 10) eklenecek. Var olmayan bir dosyaya işaret eden script bırakılmadı.
 
@@ -192,9 +193,9 @@ EMPTY'yi "hava" kabul edip iç referans yoğunluğunu **5** yapıyorum. Böylece
 
 **Kısayol notu:** Glass için listede kısayol yoktu; **G** tuşunu öneriyorum.
 
-### A.5 Görsel kimlik — "Strata: saha gözlem aleti"
+### A.5 Görsel kimlik
 
-Konsept, jeolojik kesit ile pirinç bir bilimsel aletin ve antik bir laboratuvar defterinin buluşması.
+Görsel yön: jeolojik katmanlar, koyu toprak tonları ve pirinç vurgular.
 
 - **Renkler:**
   - Zemin: koyu umber/is tonu.
@@ -203,9 +204,9 @@ Konsept, jeolojik kesit ile pirinç bir bilimsel aletin ve antik bir laboratuvar
   - İkincil vurgu: patina yeşili.
 - **Tipografi:**
   - Başlıklarda sistem serif fontu kullanılır; gravür etiket hissi verir.
-  - Göstergeler `ui-monospace` ile `tabular-nums` kullanır; alet ekranı gibi görünür.
+  - Sayısal göstergeler `ui-monospace` ile `tabular-nums` kullanır.
   - Harici font yoktur.
-- **Canvas:** ince pirinç bir çerçeve ve kenarlarda cetvel çentikleriyle bir "gözlem camı" gibi görünür.
+- **Canvas:** ince pirinç bir çerçeve ve kenarlarda cetvel çentikleri.
 - **Material picker:** "numune kartları" şeklinde. Her kartta şunlar bulunur:
   - Materyalin gerçek paletinden üretilmiş bir doku örneği.
   - Materyalin adı.
