@@ -53,10 +53,13 @@ node tools/check-paths.js  # path büyük/küçük harf + root-absolute kontrol�
 - [x] `.github/workflows/pages.yml` (test → yalnızca uygulama dosyalarının Pages yayını)
 - [x] `README.md`, `CHANGELOG.md`
 - [x] `docs/PLAN.md`, `docs/DEVELOPMENT.md`, `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`
-- [~] **Test:**
-  - [x] `npm test` yeşil
+- [x] **Test:**
+  - [x] `npm test` yeşil (13/13)
   - [x] Playwright MCP ile yerel sayfa: konsol hatası yok, yatay scroll yok
-  - [ ] İlk Pages yayını çalışıyor
+  - [x] İlk Pages yayını çalışıyor:
+    - Actions başarılı.
+    - `index.html`, `js/`, `css/` ve `assets/` 200 dönüyor; module'ler JavaScript MIME tipiyle sunuluyor.
+    - `docs/` ve `tests/` yayında yok (404).
 
 ### Phase 1 — Simulation Core + görünür ilk dilim
 - [ ] `rng.js`: sfc32, cyrb128 seed hash, stream'ler, state kaydet/yükle
@@ -281,6 +284,9 @@ Uygulama sırasında plandan sapan ya da planın cevaplamadığı kararlar. Kal�
   - Karar: proje adı kullanıcı talebiyle **Strata Sandbox** oldu. `APP_NAME`, `<title>` ve README güncellendi.
 - **2026-09-29 · Phase 0 — Git akışı değişti.**
   - Karar: kullanıcı talimatıyla `main`'de çalışılıyor ve sormadan push ediliyor. `.claude/settings.json`'daki push `ask` kuralı kaldırıldı.
+- **2026-09-29 · Phase 0 — Tema sloganı kaldırıldı.**
+  - Karar: kullanıcı talebiyle arayüzden ve dokümanlardan tema sloganı ifadeleri kaldırıldı. Alt başlık artık "materyal fiziği".
+  - Görsel yön (renkler, tipografi, jeolojik katmanlar) değişmedi.
 - **2026-09-29 · Phase 0 — Geçici iskelet `base.css`'te.**
   - Karar: geçici uygulama iskeleti (grid layout) şimdilik `base.css`'te duruyor; Phase 6'da `layout.css`'e taşınacak.
 
