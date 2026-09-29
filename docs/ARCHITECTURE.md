@@ -31,7 +31,7 @@ Renderer.render(view, frameInfo)                                 ← state'i asl
 
 `js/main.js` composition root'tur: tüm parçaları burada oluşturur ve birbirine bağlar.
 
-## 2. Grid temsili (planlandı — Phase 1)
+## 2. Grid temsili (uygulandı — Phase 1)
 
 - **Düzen:** Dünya, her hücre için bir değer tutan paralel typed array'lerdir (SoA).
 - **Kenar çerçevesi:**
@@ -48,11 +48,12 @@ Renderer.render(view, frameInfo)                                 ← state'i asl
 | `stamp` | `Uint16Array` | update stamp; taşmada `fill(0)` yapılır ve saat 1'den başlar |
 
 **Koordinat ve boyut:**
+
 - Koordinat: `x` 0…W−1 soldan sağa, `y` 0…H−1 yukarıdan aşağı.
 - Index hesabı: `index(x, y) = (y + 1) * (W + 2) + (x + 1)`.
 - Grid boyutu açılışta bir kez belirlenir. Viewport resize'ı yalnızca sunum ölçeğini değiştirir (ADR-002).
 
-## 3. Simulation tick (planlandı — Phase 1)
+## 3. Simulation tick (uygulandı — Phase 1; gaz geçişi Phase 2)
 
 - **Geçişler:** Her tick iki taramadan oluşur.
   1. Aşağıdan yukarı: tozlar, sıvılar ve reaktif statikler.
@@ -68,7 +69,7 @@ Renderer.render(view, frameInfo)                                 ← state'i asl
   - Frame başına tick sayısı ve fizik bütçesi sınırlıdır.
   - Sınıra takılınca birikmiş borç silinir (ADR-006).
 
-## 4. Materyal sistemi (planlandı — Phase 1–2)
+## 4. Materyal sistemi (kısmen uygulandı — Phase 1: toz kuralları; sıvı/gaz Phase 2)
 
 - **Tanımlar:** `js/engine/materials.js` her materyali tek bir kayıtta tanımlar: id, ad, tür, yoğunluk, renk ve davranış parametreleri.
 - **Derleme:** Başlangıçta bu kayıtlar hot loop'un kullandığı düz lookup tablolarına dönüştürülür:

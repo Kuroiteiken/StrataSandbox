@@ -70,6 +70,7 @@ Proje üç katmandan oluşur. Katmanlar birbirleriyle yalnızca tanımlı API'le
   - Pointer ve klavye girişi, panel, istatistikler, tercihler.
 
 Ayrıntılar:
+
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - Teknik kararlar: [docs/DECISIONS.md](docs/DECISIONS.md)
 - İlk plan: [docs/PLAN.md](docs/PLAN.md)
@@ -120,6 +121,7 @@ Fazlar ve durumları [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)'de tutulur:
 - Phase 12 — Final QA
 
 **v1 sonrası fikirler:**
+
 - Yeni materyaller: Acid, Salt, Ice, Snow, Metal, Gunpowder, Smoke, Electricity
 - Dünyayı kaydetme/yükleme ve URL ile sahne paylaşımı
 - Özel simülasyon boyutları

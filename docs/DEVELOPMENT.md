@@ -1,6 +1,7 @@
 # Strata Sandbox — Geliştirme Takibi
 
 Bu dosya projenin canlı geliştirme takibidir.
+
 - Planın onaylı ilk hali: [PLAN.md](PLAN.md)
 - Mimari: [ARCHITECTURE.md](ARCHITECTURE.md)
 - Kararlar: [DECISIONS.md](DECISIONS.md)
@@ -34,6 +35,7 @@ node tools/check-paths.js  # path büyük/küçük harf + root-absolute kontrol�
 ## Roadmap
 
 ### Phase 0 — Repository, iskelet ve dokümanlar
+
 - [x] `git init` (`main`), `origin` = `github.com/Kuroiteiken/StrataSandbox`, uzak LICENSE (MIT) korunur
 - [x] `.gitignore` (`.claude/settings.local.json`, `_site/` dahil)
 - [x] `.claude/settings.json`:
@@ -62,42 +64,58 @@ node tools/check-paths.js  # path büyük/küçük harf + root-absolute kontrol�
     - `docs/` ve `tests/` yayında yok (404).
 
 ### Phase 1 — Simulation Core + görünür ilk dilim
-- [ ] `rng.js`: sfc32, cyrb128 seed hash, stream'ler, state kaydet/yükle
-- [ ] `world.js`: SoA array'ler, WALL padding, `index(x,y)` ve koordinat yardımcıları
-- [ ] World primitive'leri: `set`, `swap`, `transform`, `clear` (tek yazma noktası) + materyal sayaçları
-- [ ] Stamp mekanizması (Uint16, taşmada fill ve 1'den başlama)
-- [ ] `materials.js`:
-  - [ ] tanım tablosu ve derleyici (doğrulamalı)
-  - [ ] `DISPLACE` matrisi
-  - [ ] ilk materyaller: EMPTY, WALL, SAND, STONE
-- [ ] `kernels.js`: `stepPowder` (aşağı, köşegen, köşe sızıntısı kuralı)
-- [ ] `simulation.js`:
-  - [ ] iki geçişli `tick()` ve alternating scan
-  - [ ] `step`, `play`/`pause`, `setSpeed`
-  - [ ] `update(dt, budget)`, `resetTiming`, `setCell`/`getCell`, `getStats`
-- [ ] Runtime assertion'lar (DEBUG bayrağıyla: tip aralığı, WALL bütünlüğü)
-- [ ] Minimal vertical slice:
-  - [ ] `main.js`
-  - [ ] minimal `render/renderer.js` + `render/palette.js`
-  - [ ] `app/loop.js`
-  - [ ] sonuç: kum tarayıcıda düşüyor
-- [ ] **Test:**
-  - [ ] RNG determinizmi
-  - [ ] index ve padding
-  - [ ] Sand boş alanda düşer
-  - [ ] Sand doğal yığın oluşturur
-  - [ ] Stamp çift hareketi engeller
-  - [ ] Pause'dayken `update` ilerlemez
-  - [ ] `step` tam 1 tick çalıştırır
-  - [ ] Hız ayarı `dt` başına doğru tick sayısını üretir
-  - [ ] `dt` clamp ve tick cap çalışır
-  - [ ] Kapalı kutuda kütle korunur
-  - [ ] Sol/sağ bias yok (birden çok seed)
-  - [ ] Engine modülleri Node'da DOM'suz import edilir
-  - [ ] `Math.random` stub'ı hiç tetiklenmez
-  - [ ] 1000 tick sonunda grid hash'i tekrarlanabilir
+
+- [x] `rng.js`: sfc32, cyrb128 seed hash, stream'ler, state kaydet/yükle
+- [x] `world.js`: SoA array'ler, WALL padding, `index(x,y)`, `inBounds`
+- [x] World primitive'leri: `set`, `swap`, `transform`, `clear` (tek yazma noktası) + materyal sayaçları (`counts`)
+- [x] Stamp mekanizması (Uint16, taşmada fill ve 1'den başlama)
+- [x] `materials.js`:
+  - [x] tanım tablosu ve doğrulamalı derleyici (id aralığı, tekrar, kind)
+  - [x] `DISPLACE` matrisi (Phase 1: yalnızca toz kuralları)
+  - [x] ilk materyaller: EMPTY, WALL, SAND, STONE
+- [x] `kernels.js`: `stepPowder`:
+  - [x] aşağı ve rastgele sıralı köşegen hareket
+  - [x] köşe sızıntısı kuralı
+  - [x] stamp'li parçacığa girilmez (boş hücreye girmek serbest)
+- [x] `simulation.js`:
+  - [x] tick (geçiş 1 aşağıdan yukarı; geçiş 2 yeri hazır, gazlar Phase 2)
+  - [x] tick XOR satır paritesi
+  - [x] `step`, `play`/`pause`, `setSpeed`
+  - [x] `update(dt, budget)`: tam sayı accumulator birimi, dt clamp, 8 tick sınırı, borç silme
+  - [x] `resetTiming`, `setCell`/`getCell`, `clear`, `getStats`, `view.version`
+- [x] Runtime assertion'lar (`debug: true` → her tick `checkInvariants`: kenar, tanımsız tip, sayaç tutarlılığı)
+- [x] Minimal vertical slice:
+  - [x] `main.js`
+  - [x] `render/renderer.js` (minimal) + `render/palette.js`
+  - [x] `app/loop.js`
+  - [x] geçici `scenes/demo.js`
+  - [x] sonuç: kum tarayıcıda düşüyor
+- [x] **Test** (`npm test` → 86/86; mutasyon kontrolleriyle doğrulandı):
+  - [x] RNG determinizmi, dağılım, state (`rng.test.js`)
+  - [x] index ve padding (`world.test.js`)
+  - [x] Sand boş alanda düşer; sütun birlikte iner; zeminde ve taşta durur (`physics.test.js`)
+  - [x] Sand doğal yığın oluşturur; köşegen kayar; köşeden sızmaz
+  - [x] Stamp: taşma testi; boş hücre istisnası (sütun testi). Parçacık çift hareketi Phase 2'de sıvı/gaz testiyle ele alınacak (bkz. karar notları).
+  - [x] Pause'dayken `update` ilerlemez; `step` tam 1 tick çalıştırır (`simulation.test.js`)
+  - [x] Hız ayarı `dt` başına doğru tick sayısını üretir (0.5×/1×/2×/4×)
+  - [x] `dt` clamp, tick sınırı + borç silme, fizik bütçesi
+  - [x] Kapalı kutuda kütle korunur
+  - [x] Sol/sağ bias yok:
+    - [x] köşegen tercih testi
+    - [x] yarışan tanelerde tarama yönü testi
+    - [x] dökülen yığın simetrisi
+  - [x] Engine modülleri Node'da DOM'suz import edilir; `Math.random` stub'ı hiç tetiklenmez (`engine-purity.test.js`)
+  - [x] 1000 tick sonunda grid hash'i tekrarlanabilir; farklı seed farklı hash üretir
+  - [x] Palet paketleme ve endianness, tam sayı ölçek yerleşimi (`palette.test.js`, `render-layout.test.js`)
+  - [x] Tarayıcı (Playwright MCP):
+    - [x] konsol temiz
+    - [x] 1× hızda 60 FPS / 60 TPS
+    - [x] physics yaklaşık 0,5 ms, render yaklaşık 0,6 ms (240×135)
+    - [x] 360 px'te yatay scroll yok
+    - [x] resize'da grid korunuyor
 
 ### Phase 2 — Temel materyallerin hareket fiziği
+
 - [ ] `stepLiquid`: düşme, köşegen, dispersion taraması, kalıcı yön bit'i, altı boş hücrede durma
 - [ ] Water (5), Oil (2), Lava (1 + düşük yayılma olasılığı, serbest düşüş)
 - [ ] Toz→sıvı olasılıksal batma; sıvı–sıvı katmanlaşma
@@ -115,6 +133,7 @@ node tools/check-paths.js  # path büyük/küçük harf + root-absolute kontrol�
   - [ ] Sağ/sol simetri vardır
 
 ### Phase 3 — Reaction System
+
 - [ ] `reactions.js`: `ignite`, `heat`, `cool`, `transform`, `spawnAbove`, rastgele tek komşu örnekleme
 - [ ] Fire: ömür, sönme, tutuşturma, Water → Steam
 - [ ] BURNING_WOOD:
@@ -140,6 +159,7 @@ node tools/check-paths.js  # path büyük/küçük harf + root-absolute kontrol�
   - [ ] Hiçbir reaksiyon çift sayılmaz (oran testi)
 
 ### Phase 4 — Renderer
+
 - [ ] `palette.js`: renk rampaları → Uint32 LUT (endianness)
 - [ ] `renderer.js`:
   - [ ] DPR (en fazla 2)
@@ -156,6 +176,7 @@ node tools/check-paths.js  # path büyük/küçük harf + root-absolute kontrol�
   - [ ] MCP ekran görüntüsü, DPR 1 ve 2
 
 ### Phase 5 — Input / Brush / Undo
+
 - [ ] `brush.js`: Circle/Square/Spray, `(dx,dy)` cache'i, kırpma, 4-connected interpolasyon
 - [ ] `pointer.js`:
   - [ ] Pointer Events, capture, coalesced
@@ -175,6 +196,7 @@ node tools/check-paths.js  # path büyük/küçük harf + root-absolute kontrol�
 - [ ] **Manuel test:** mouse, touch, stylus
 
 ### Phase 6 — UI ve uygulama katmanı
+
 - [ ] Semantik yapı, `layout.css`, `controls.css` (iskelet `base.css`'ten taşınır)
 - [ ] `controls.js`:
   - [ ] material picker (numune kartları)
@@ -197,6 +219,7 @@ node tools/check-paths.js  # path büyük/küçük harf + root-absolute kontrol�
   - [ ] capture
 
 ### Phase 7 — Procedural Scenes
+
 - [ ] `scenes/tools.js` (aritmetik value noise, şekil doldurma), `scenes/index.js`
 - [ ] Volcano (default)
 - [ ] Hourglass
@@ -211,6 +234,7 @@ node tools/check-paths.js  # path büyük/küçük harf + root-absolute kontrol�
   - [ ] Üretim süresi
 
 ### Phase 8 — Görsel efektler
+
 - [ ] `glow.js`: ışık kaynağı buffer'ı, küçült-büyüt blur, `lighter`
 - [ ] `ctx.filter` blur (geri okumayla doğrulanırsa, yalnızca HIGH)
 - [ ] HIGH/MEDIUM/LOW + auto (histerezis)
@@ -222,6 +246,7 @@ node tools/check-paths.js  # path büyük/küçük harf + root-absolute kontrol�
   - [ ] fizik hash'i kaliteden bağımsız
 
 ### Phase 9 — Mobil / Responsive / Accessibility
+
 - [ ] Mobil layout
 - [ ] `100dvh`, safe-area, `overscroll-behavior`
 - [ ] ResizeObserver, DPR takibi
@@ -240,6 +265,7 @@ node tools/check-paths.js  # path büyük/küçük harf + root-absolute kontrol�
 - [ ] **Manuel test:** gerçek cihaz
 
 ### Phase 10 — Performance
+
 - [ ] `tools/bench.js` + `npm run bench`
 - [ ] Profil:
   - [ ] allocation yok
@@ -253,12 +279,14 @@ node tools/check-paths.js  # path büyük/küçük harf + root-absolute kontrol�
   - [ ] chunk eklenirse fizik suite'i ve korunum
 
 ### Phase 11 — GitHub Pages
+
 - [ ] Root-absolute URL taraması (`tools/check-paths.js`, CI'da)
 - [ ] Favicon, meta, `theme-color`
 - [ ] Yayındaki URL'de MCP smoke testi
 - [ ] README'nin deployment bölümü
 
 ### Phase 12 — Final QA ve v1.0.0
+
 - [ ] Tarayıcı ve cihaz manuel checklist'i
 - [ ] 30 dakikalık uzun koşu
 - [ ] Dokümanlar güncel
@@ -290,6 +318,25 @@ Uygulama sırasında plandan sapan ya da planın cevaplamadığı kararlar. Kal�
 - **2026-09-29 · Phase 0 — Geçici iskelet `base.css`'te.**
   - Karar: geçici uygulama iskeleti (grid layout) şimdilik `base.css`'te duruyor; Phase 6'da `layout.css`'e taşınacak.
 
+- **2026-09-29 · Phase 1 — Minimal renderer ve demo sahnesi.**
+  - Karar: görünür dilimdeki çizim, atılacak kod olarak yazılmadı; doğrudan `render/renderer.js` ve `render/palette.js`'in minimal sürümü olarak yazıldı. Phase 4 bunları genişletecek.
+  - Geçici demo `scenes/demo.js`'te duruyor; Phase 7'de gerçek sahneler gelince kaldırılacak.
+- **2026-09-29 · Phase 1 — Accumulator birimi "ms × TPS".**
+  - Karar: accumulator "ms × TPS" biriminde tutuluyor (1000 birim = 1 tick).
+  - Neden: `1000/60` ile bölmek, 50 ms gibi değerlerde kayan nokta yüzünden 3 yerine 2 tick üretiyordu.
+- **2026-09-29 · Phase 1 — Stamp istisnası: boş hücre.**
+  - Karar: "bu tick'te stamp'lenmiş hücreye girilmez" kuralı boş hücreye uygulanmıyor.
+  - Neden: aksi halde düşen bir sütunda üst taneler takılıyor (sütun testi). Kuralın asıl amacı, zaten hareket etmiş bir parçacığın ikinci kez yerinden edilmesini önlemek.
+- **2026-09-29 · Phase 1 — Parçacık çift hareketi testi Phase 2'ye kaldı.**
+  - Neden: yalnızca tozların olduğu aşağıdan yukarı taramada parçacık, taranmamış bir hücreye taşınamıyor; bu yüzden durum Phase 1'de oluşamıyor.
+  - Test, yukarı itilen sıvı ve gazlarla Phase 2'de yazılacak.
+- **2026-09-29 · Phase 1 — Kozmetik ton.**
+  - Karar: `setCell` kozmetik tonu `hash(index, version)` ile üretiyor ve sim RNG'sini tüketmiyor.
+  - Etkisi: boyama ve palet fizik dizisini değiştirmez.
+- **2026-09-29 · Phase 1 — Değişmez kontrolü her tick'te.**
+  - Karar: `?debug=1` modunda `checkInvariants` her tick çalışıyor. 240×135'te maliyeti düşük.
+  - Grid büyürse örnekleme aralığı eklenebilir.
+
 ---
 
 ## Manuel test checklist
@@ -297,6 +344,7 @@ Uygulama sırasında plandan sapan ya da planın cevaplamadığı kararlar. Kal�
 Her fazın sonunda ilgili maddeler işaretlenir. Tam tur Phase 12'de yapılır.
 
 **Masaüstü (Chrome / Firefox / Safari)**
+
 - [ ] Sayfa açılıyor, konsol temiz
 - [ ] Mouse ile çizim; hızlı çapraz hareketlerde çizgi kopmuyor
 - [ ] Sağ tık geçici silgi; context menu açılmıyor
@@ -308,6 +356,7 @@ Her fazın sonunda ilgili maddeler işaretlenir. Tam tur Phase 12'de yapılır.
 - [ ] Pencere yeniden boyutlanınca dünya korunuyor
 
 **Mobil / tablet (iOS Safari, Android Chrome)**
+
 - [ ] 360px genişlikte yatay scroll yok
 - [ ] Dokunmayla çizim; sayfa kaymıyor, pull-to-refresh tetiklenmiyor
 - [ ] Rotasyonda dünya korunuyor
@@ -315,6 +364,7 @@ Her fazın sonunda ilgili maddeler işaretlenir. Tam tur Phase 12'de yapılır.
 - [ ] 30–60 FPS aralığında akıcı
 
 **Erişilebilirlik**
+
 - [ ] Yalnızca klavyeyle tüm kontrollere erişim
 - [ ] Görünür focus
 - [ ] Seçili materyal renkten bağımsız belli

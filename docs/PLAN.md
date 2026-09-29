@@ -31,6 +31,7 @@
 - **Öncelik sırası:** fizik doğruluğu > stabilite > input > performans > render netliği > UI > dekor.
 
 **Ad nasıl değiştirilecek:**
+
 - Ad yalnızca üç yerde geçer: `js/config.js` (`APP_NAME`), `index.html` (`<title>`/meta) ve README.
 - localStorage anahtarı (`fsbox.prefs.v1`) addan bağımsızdır. Ad değişince kullanıcı ayarları kaybolmaz.
 
@@ -115,11 +116,13 @@ Renderer.render(view, frameInfo)                          ← state'i asla yazma
 ```
 
 **Kurallar:**
+
 - `engine/` altında `window`/`document` kullanılmaz. Bu, Node import testiyle zorlanır.
 - `app/`, world array'lerine doğrudan erişmez.
 - `render/` fizik kuralı içermez.
 
 **Engine API:**
+
 ```js
 const sim = new Simulation({ width, height, seed });
 sim.play(); sim.pause(); sim.isPaused;
@@ -137,6 +140,7 @@ sim.view;                            // { width, height, type, variant, life, fl
 ```
 
 **Render API:**
+
 ```js
 const renderer = new Renderer(canvas, { palette });
 renderer.resize(cssW, cssH, dpr);            // sadece sunum; fizik grid'i değişmez
@@ -151,6 +155,7 @@ renderer.capture();                          // → Promise<Blob> (PNG)
 ### A.3 Temel veri yapıları
 
 **World** (her hücre için bir değer tutan SoA düzeni):
+
 - Boyut `(W+2)×(H+2)`'dir; kenarda 1 hücrelik görünmez **WALL** çerçevesi vardır.
 - Bu çerçeve sayesinde hot loop'ta bounds check gerekmez.
 - Tüm kurallar en fazla 1 hücre uzağa bakar. Bu, assert ile doğrulanır.
@@ -164,11 +169,13 @@ renderer.capture();                          // → Promise<Blob> (PNG)
 | `stamp` | Uint16Array | update stamp; taşmada `fill(0)` yapılır ve sayaç 1'den başlar |
 
 **Derlenmiş lookup tabloları** (`materials.js` bunları başlangıçta tanım tablosundan üretir):
+
 - **Tek boyutlu tablolar:** `DENSITY`, `KIND` (NONE/STATIC/POWDER/LIQUID/GAS), `FLAGS` bitmask (ACTIVE, REACTIVE, FLAMMABLE, HOT, PAINTABLE…), `DISPERSION`, `SPREAD_CHANCE` (u32 eşik).
 - **`DISPLACE` (Uint8Array 256×256):** "mover → target" yer değiştirme olasılığı (0 = asla, 255 = her zaman). Yoğunluk ve faz kurallarının hepsi bu tabloda. Hot loop'ta tek okuma yeter.
 - **Yeni materyal eklemek** tanım tablosuna bir kayıt, gerekirse de bir `react()` fonksiyonu eklemek demek.
 
 **Diğer yapılar:**
+
 - **Palette** (render tarafında): `Uint32Array(256 × 32)`, materyal × ton.
 - **Undo snapshot'ı:** önceden ayrılmış ve tekrar kullanılan buffer'lar; type/variant/life/flags ile RNG state ve tick tutulur. Toplam yaklaşık 0,5 MB.
 - **Brush footprint cache'i:** anahtar `"shape:size"`, değer `(dx, dy)` çiftleri içeren bir `Int16Array`.
@@ -380,6 +387,7 @@ Görsel yön: jeolojik katmanlar, koyu toprak tonları ve pirinç vurgular.
 ## C. Geliştirme Roadmap
 
 **Durum işaretleri:**
+
 - `[ ]` başlanmadı
 - `[~]` devam ediyor
 - `[x]` tamamlandı — yalnızca test edildikten sonra işaretlenir
@@ -387,8 +395,10 @@ Görsel yön: jeolojik katmanlar, koyu toprak tonları ve pirinç vurgular.
 Bu roadmap Phase 0'da `docs/DEVELOPMENT.md`'ye taşınacak.
 
 ### Phase 0 — Repository, iskelet ve dokümanlar
+
 - [ ] `git init`, `.gitignore` (`.claude/settings.local.json` dahil), `.nojekyll`, `LICENSE` (MIT)
 - [ ] `.claude/settings.json`: projeye özel (senin kararın); kişisel UI tercihleri (theme, bildirim, remoteControl, autoUpdates) kopyalanmaz. Planlanan içerik:
+
   ```json
   {
     "$schema": "https://json.schemastore.org/claude-code-settings.json",
@@ -411,6 +421,7 @@ Bu roadmap Phase 0'da `docs/DEVELOPMENT.md`'ye taşınacak.
     }
   }
   ```
+
   - `git push` her zaman onayına sunulur, çünkü yayınlama senin kararın.
   - Global dosyandaki `defaultMode: auto` ve `model` ayarları global kalır; burada tekrarlanmaz.
   - **Doğrulama:** dosya Node ile JSON olarak parse edilir. `/permissions` ekranında kuralların göründüğünü sen kontrol edersin.
@@ -429,6 +440,7 @@ Bu roadmap Phase 0'da `docs/DEVELOPMENT.md`'ye taşınacak.
 - [ ] **Test:** `npm test` geçer; `npm run serve` ile sayfa açılır; Playwright MCP ile konsol hatası kontrol edilir
 
 ### Phase 1 — Simulation Core + görünür ilk dilim
+
 - [ ] `rng.js`: sfc32, cyrb128, stream fork
 - [ ] `world.js`: SoA array'ler, WALL padding, `idx(x,y)` ve koordinat yardımcıları
 - [ ] World primitive'leri: `set`, `swap`, `move`, `transform`, `clear` (tek yazma noktası)
@@ -459,6 +471,7 @@ Bu roadmap Phase 0'da `docs/DEVELOPMENT.md`'ye taşınacak.
   - [ ] 1000 tick sonunda grid hash'i tekrarlanabilir
 
 ### Phase 2 — Temel materyallerin hareket fiziği
+
 - [ ] `stepLiquid`: düşme, köşegen, dispersion taraması, kalıcı yön bit'i, altı boş hücrede durma
 - [ ] Water (5), Oil (2), Lava (1 + düşük yayılma olasılığı, serbest düşüş)
 - [ ] Toz→sıvı olasılıksal batma; sıvı–sıvı katmanlaşma
@@ -476,6 +489,7 @@ Bu roadmap Phase 0'da `docs/DEVELOPMENT.md`'ye taşınacak.
   - [ ] Su için sağ/sol simetri vardır
 
 ### Phase 3 — Reaction System
+
 - [ ] `reactions.js`: `ignite`, `heat`, `cool`, `transform`, `spawnAbove`, rastgele tek komşu örnekleme
 - [ ] Fire:
   - [ ] ömür ve sönme
@@ -508,6 +522,7 @@ Bu roadmap Phase 0'da `docs/DEVELOPMENT.md`'ye taşınacak.
   - [ ] Hiçbir reaksiyon çift sayılmaz (oran testi)
 
 ### Phase 4 — Renderer
+
 - [ ] `palette.js`: renk rampaları → Uint32 LUT (endianness tespiti)
 - [ ] `renderer.js`:
   - [ ] DPR (en fazla 2)
@@ -526,6 +541,7 @@ Bu roadmap Phase 0'da `docs/DEVELOPMENT.md`'ye taşınacak.
   - [ ] DPR 1 ve 2'de görsel kontrol
 
 ### Phase 5 — Input / Brush / Undo
+
 - [ ] `brush.js`:
   - [ ] Circle/Square/Spray footprint'leri
   - [ ] `(dx,dy)` cache'i ve kırpma
@@ -552,6 +568,7 @@ Bu roadmap Phase 0'da `docs/DEVELOPMENT.md`'ye taşınacak.
 - [ ] **Manuel test:** mouse, touch, stylus, hızlı çapraz çizim, basılı tutma
 
 ### Phase 6 — UI ve uygulama katmanı
+
 - [ ] Semantik `index.html` (header, canvas bölgesi, aside panel), `layout.css`, `controls.css`
 - [ ] `controls.js`:
   - [ ] material picker (radiogroup, numune kartları)
@@ -585,6 +602,7 @@ Bu roadmap Phase 0'da `docs/DEVELOPMENT.md`'ye taşınacak.
   - [ ] Capture çıktısının kontrolü
 
 ### Phase 7 — Procedural Scenes
+
 - [ ] `scenes/tools.js`: hash tabanlı value noise, rect/circle/polygon/heightmap doldurma
 - [ ] `scenes/index.js`: `{ id, name, generate(world, rng) }` kayıtları
 - [ ] Volcano (default):
@@ -609,6 +627,7 @@ Bu roadmap Phase 0'da `docs/DEVELOPMENT.md`'ye taşınacak.
   - [ ] Üretim süresi yaklaşık 50 ms'nin altında
 
 ### Phase 8 — Görsel efektler
+
 - [ ] `glow.js`: ışık kaynağı buffer'ı, küçültüp büyüterek blur, `lighter` birleştirme
 - [ ] `ctx.filter` blur (geri okumayla doğrulanırsa, yalnızca HIGH)
 - [ ] HIGH/MEDIUM/LOW + auto: kayan ortalama frame süresi, histerezis; yalnızca dekoru etkiler
@@ -620,6 +639,7 @@ Bu roadmap Phase 0'da `docs/DEVELOPMENT.md`'ye taşınacak.
   - [ ] Fizik hash'i kalite ayarından bağımsızdır
 
 ### Phase 9 — Mobil / Responsive / Accessibility
+
 - [ ] Mobil layout:
   - [ ] canvas üstte
   - [ ] kompakt alt araç çubuğu; materyal şeridi kendi içinde kaydırılır
@@ -649,6 +669,7 @@ Bu roadmap Phase 0'da `docs/DEVELOPMENT.md`'ye taşınacak.
 - [ ] **Manuel test:** gerçek cihazda iOS Safari + Android Chrome
 
 ### Phase 10 — Performance
+
 - [ ] `tools/bench.js`: N tick, median/p95 ms/tick → DEVELOPMENT.md benchmark log
 - [ ] Profil:
   - [ ] hot loop'ta allocation yok
@@ -665,6 +686,7 @@ Bu roadmap Phase 0'da `docs/DEVELOPMENT.md`'ye taşınacak.
   - [ ] Chunk eklenirse: tüm fizik suite'i geçer; uyuyan chunk'ta hareket kaybolmaz; kütle korunur
 
 ### Phase 11 — GitHub Pages
+
 - [ ] Root-absolute URL olmadığını tara (`"/` ve `'/` ile başlayan path yok)
 - [ ] Favicon, meta description, `theme-color`
 - [ ] Opsiyonel: `.github/workflows/test.yml` (push/PR'da `npm test`; deploy için gerekmez)
@@ -676,6 +698,7 @@ Bu roadmap Phase 0'da `docs/DEVELOPMENT.md`'ye taşınacak.
 - [ ] README'nin deployment bölümü
 
 ### Phase 12 — Final QA ve v1.0.0
+
 - [ ] Manuel checklist: Chrome, Firefox, Safari, iOS Safari, Android Chrome
 - [ ] 30 dakikalık uzun koşu: bellek sabit, FPS stabil
 - [ ] Dokümanlar güncel (README ekran görüntüleri, ARCHITECTURE, DECISIONS, CHANGELOG 1.0.0)
@@ -687,12 +710,14 @@ Bu roadmap Phase 0'da `docs/DEVELOPMENT.md`'ye taşınacak.
 ## D. Test Stratejisi
 
 **1. Unit ve deterministik simülasyon testleri**
+
 - Araç: `node --test tests/` (Node 22'ye yerleşik, dependency yok).
 - Engine DOM'suz olduğu için şunlar headless test edilir: fizik, reaksiyonlar, sahneler, brush, undo, storage mantığı.
 - Senaryolar ASCII-art ile kurulur. Örnek: `makeWorld("..S..\n.....\n~~~~~")`.
 - Yardımcılar: `runTicks(n)`, `hashWorld()`, `count(material)`.
 
 **2. Invariant testleri**
+
 - kütle korunumu
 - sol/sağ bias
 - stamp
@@ -700,10 +725,12 @@ Bu roadmap Phase 0'da `docs/DEVELOPMENT.md`'ye taşınacak.
 - golden hash — fizik bilinçli olarak değiştirildiğinde elle güncellenir
 
 **3. Runtime assertion'lar**
+
 - Yalnızca DEBUG modda çalışır: testlerde ve `?debug=1` ile.
 - Production'da tek bir boolean dalı olarak kalır, maliyeti yoktur.
 
 **4. Browser smoke testleri**
+
 - Repoya Playwright/Puppeteer **eklenmiyor**. v1 için dependency ve CI karmaşıklığı getirmeye değmiyor.
 - Geliştirme sırasında bu oturumdaki **Playwright MCP** ile şunları yapacağım:
   - sayfa yükleme ve konsol kontrolü
@@ -714,10 +741,12 @@ Bu roadmap Phase 0'da `docs/DEVELOPMENT.md`'ye taşınacak.
 - `window.__strata` kancası debug modda testleri kolaylaştırır.
 
 **5. Manuel checklist**
+
 - `DEVELOPMENT.md` içinde tutulur.
 - Gerçek cihazda touch ve stylus testleri özellikle burada yer alır.
 
 **6. Performans**
+
 - `tools/bench.js` + tarayıcıdaki debug stats.
 - Sonuçlar benchmark log tablosunda karşılaştırılır.
 
@@ -794,6 +823,7 @@ Bu roadmap Phase 0'da `docs/DEVELOPMENT.md`'ye taşınacak.
 "Başla" dediğinde sırasıyla şunları yapacağım:
 
 **1. Phase 0 — iskelet ve dokümanlar**
+
 - `.claude/settings.json` (projeye özel Claude Code ayarları)
 - `.gitignore`, `.nojekyll`, `LICENSE`, `package.json`
 - `tools/serve.js`
@@ -805,22 +835,26 @@ Bu roadmap Phase 0'da `docs/DEVELOPMENT.md`'ye taşınacak.
 - Ardından `git init`. Commit'i senin onayınla atarım.
 
 **2. Phase 1'in ilk sistemi — veri katmanı (TDD, önce testler)**
+
 - `tests/helpers.js`, `tests/rng.test.js`, `tests/world.test.js`
 - `js/engine/rng.js`: sfc32, cyrb128, stream'ler
 - `js/engine/world.js`: typed array'ler, WALL padding, index yardımcıları, primitive'ler, stamp
 
 **3. Aynı fazın devamı**
+
 - `materials.js` (EMPTY/WALL/SAND/STONE + `DISPLACE`), `kernels.js` (`stepPowder`)
 - `simulation.js` (iki geçişli tick + fixed timestep)
 - "Sand düşer / yığın oluşturur / bias yok" testleri
 - Minimal vertical slice: kum tarayıcıda düşüyor
 
 **Her faz sonunda:**
+
 - `DEVELOPMENT.md` ve `CHANGELOG.md` güncellenir.
 - Sana Türkçe kısa bir rapor veririm: ne yapıldı, testlerin çıktısı, açık konular.
 - Commit'i senin onayınla atarım.
 
 ## Doğrulama (uçtan uca)
+
 - `npm test`: tüm Node testleri geçmeli.
 - `npm run serve`, ardından Playwright MCP ile:
   - sayfa açılıyor ve konsol temiz
