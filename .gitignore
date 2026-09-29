@@ -1,0 +1,22 @@
+# Bağımlılıklar (proje 0 dependency hedefler; yine de güvenlik için)
+node_modules/
+
+# İşletim sistemi / editör
+.DS_Store
+Thumbs.db
+*.swp
+
+# Log ve geçici çıktılar
+*.log
+coverage/
+bench-results/
+
+# Claude Code: kişisel yerel ayarlar ve ajan çalışma alanı
+.claude/settings.local.json
+.superpowers/
+
+# CI yayın klasörü
+_site/
+
+# Playwright MCP çıktıları
+.playwright-mcp/

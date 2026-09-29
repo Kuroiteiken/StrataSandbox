@@ -1,0 +1,178 @@
+/* Strata — tasarım token'ları, reset ve geçici uygulama iskeleti.
+   Konsept: jeolojik kesit + pirinç bilimsel alet + laboratuvar defteri.
+   Not: Uygulama iskeleti Phase 6'da layout.css'e taşınacak. */
+
+:root {
+  color-scheme: dark;
+
+  /* Zemin (is / umber) */
+  --ink-950: #0e0c0a;
+  --ink-900: #14110e;
+  --ink-800: #1c1814;
+  --ink-700: #26201b;
+  --ink-600: #3a3029;
+
+  /* Metin (kemik) */
+  --bone-100: #efe6d4;
+  --bone-300: #cbbfa8;
+  --bone-500: #9a8f7c;
+
+  /* Vurgular */
+  --brass-400: #d3a652;
+  --brass-600: #a47c32;
+  --copper-500: #b8683c;
+  --verdigris-400: #6fa89a;
+  --focus-ring: #f0c46a;
+
+  /* Tipografi — harici font yok */
+  --font-serif: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
+
+  /* Ölçüler */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --radius-s: 3px;
+  --radius-m: 6px;
+  --panel-width: 288px;
+  --touch-target: 44px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--ink-900);
+  color: var(--bone-100);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* ---- Geçici uygulama iskeleti ---- */
+
+.app {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--panel-width);
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas:
+    "header header"
+    "stage panel";
+  height: 100vh;
+  height: 100dvh;
+}
+
+.app-header {
+  grid-area: header;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--ink-600);
+}
+
+.app-title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--brass-400);
+}
+
+.app-subtitle {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bone-500);
+}
+
+.stage {
+  grid-area: stage;
+  min-width: 0;
+  min-height: 0;
+  padding: var(--space-3);
+  background: var(--ink-950);
+}
+
+.viewport {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--brass-600);
+  border-radius: var(--radius-s);
+  overflow: hidden;
+}
+
+.viewport canvas {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.panel {
+  grid-area: panel;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-4);
+  background: var(--ink-800);
+  border-left: 1px solid var(--ink-600);
+}
+
+.panel-note,
+.noscript {
+  margin: 0;
+  color: var(--bone-500);
+  font-size: 13px;
+}
+
+@media (max-width: 720px) {
+  .app {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "header"
+      "stage"
+      "panel";
+  }
+
+  .panel {
+    border-left: 0;
+    border-top: 1px solid var(--ink-600);
+    max-height: 40vh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
