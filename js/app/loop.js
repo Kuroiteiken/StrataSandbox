@@ -9,8 +9,12 @@ export function createLoop({ onFrame, onResume }) {
   const frame = (now) => {
     const dt = last === 0 ? 0 : now - last;
     last = now;
-    onFrame(dt, now);
-    rafId = requestAnimationFrame(frame);
+    try {
+      onFrame(dt, now);
+    } finally {
+      // Tek bir hata döngüyü öldürmesin; onFrame içinde stop() çağrıldıysa yeniden planlama.
+      if (running) rafId = requestAnimationFrame(frame);
+    }
   };
 
   const start = () => {

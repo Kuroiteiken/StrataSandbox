@@ -337,6 +337,51 @@ Uygulama sırasında plandan sapan ya da planın cevaplamadığı kararlar. Kal�
   - Karar: `?debug=1` modunda `checkInvariants` her tick çalışıyor. 240×135'te maliyeti düşük.
   - Grid büyürse örnekleme aralığı eklenebilir.
 
+### Phase 0–1 bağımsız inceleme (2026-09-30)
+
+Taze bağlamlı bir reviewer ajanı `ade40c2..f0956b6` aralığını inceledi. Critical bulgu çıkmadı.
+
+**Düzeltilenler** (her biri önce kırmızı test, sonra yeşil; suite 92/92):
+
+- `update(NaN)` fiziği kalıcı olarak durduruyordu.
+  - Düzeltme: NaN, undefined ve negatif `dt` artık 0 sayılıyor.
+  - Test: `NaN, undefined veya negatif dt fizik zamanlamasını bozmaz`.
+- Kesirli koordinatla yapılan `setCell` materyal sayaçlarını bozuyordu.
+  - Düzeltme: `inBounds` tam sayı koşulu arıyor.
+  - Testler: `setCell ve getCell tam sayı olmayan koordinatları reddeder` ve `inBounds` testi.
+- `onFrame` içindeki tek bir hata rAF döngüsünü öldürüyordu (reviewer: Minor; stabilite önceliği nedeniyle Important'a yükseltildi).
+  - Düzeltme: `try/finally` ile yeniden planlama. `onFrame` içinde `stop()` çağrısı artık kalıcı oluyor.
+  - Testler: `tests/loop.test.js`.
+- Doküman uyumsuzlukları giderildi:
+  - ADR-008'deki ifade `hash(index, version)` oldu.
+  - `?debug=0` artık debug modunu açmıyor (`=== '1'`).
+
+**Sonraki fazlara taşınanlar** (ilgili fazın ilk adımı olarak ele alınacak):
+
+- **Phase 2:**
+  - Sıvının kalıcı yön bit'i spawn ve transform sırasında 0 başlarsa kalıcı bir sol/sağ bias oluşur. Bit spawn anında kozmetik hash ile tohumlanacak (sim RNG'si tüketilmez); transform bit'i korumalı ya da rastgeleleştirmeli. Su musluğu simetri testiyle doğrulanacak.
+- **Phase 2:**
+  - Dispersion taraması girilemeyen ilk hücrede durmalı. Aksi halde 1 hücrelik padding'i aşıp önceki satırın iç hücresine sıçrar.
+  - Test: `x = 0` ve `x = W−1` kenarlarında sıvı.
+- **Phase 2:** Köşegen kuralı şu an yalnızca STATIC yan hücreyi reddediyor, planda ise "geçilebilir" diye tanımlanmıştı. Kural, sıvılar ve gazlar için de bilinçli olarak aynı tutulacak ya da genişletilecek; karar orada yazılacak.
+- **Phase 4:** Renderer değişikliği yalnızca `version` ile takip ediyor. Aynı boyutta yeni bir `Simulation` gelirse eski kare kalabilir. `view` kimliği de takip edilecek; `computeLayout` resize'da cache'lenecek.
+- **Phase 5:** Undo snapshot'ı `counts`'u da içermeli (ya da `World.recount()`). Aksi halde debug değişmezleri bozulur.
+
+**Ertelenen minor'lar:**
+
+- `tools/check-paths.js` kapsamı dar. Phase 11'den önce genişletilecek:
+  - template-literal import, `new URL(…, import.meta.url)`, `fetch(`/`Worker(`
+  - `.css` içindeki `url()`/`@import`, `srcset`, `.webmanifest` taranmıyor
+  - `href="./"` yanlışlıkla eksik sayılıyor; yorumdaki import'lar da raporlanıyor
+  - `serve.js` isteğe bağlı olarak tam harf eşleşmesi zorunlu kılabilir
+- `pages.yml`:
+  - `concurrency` ve Pages izinleri deploy job'una taşınabilir.
+  - Deploy koşuluna `github.ref == 'refs/heads/main'` eklenebilir.
+- Test boşlukları:
+  - `js/engine` için statik kaynak taraması (`Math.random|document|window|localStorage|requestAnimationFrame`)
+  - `serve.test.js`'e `%5c` (ters bölü) traversal vakası
+- `getStats`'ta `tps` alanı yok (plandaki API'de var). Phase 6 stats paneliyle eklenecek.
+
 ---
 
 ## Manuel test checklist

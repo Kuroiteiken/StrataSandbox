@@ -32,8 +32,10 @@ export class World {
     return (y + 1) * this.stride + (x + 1);
   }
 
+  // Kesirli koordinat kabul edilmez: typed array yazımı sessizce yok sayılır ama
+  // sayaçlar güncellenirdi (counts tutarsızlığı).
   inBounds(x, y) {
-    return x >= 0 && y >= 0 && x < this.width && y < this.height;
+    return Number.isInteger(x) && Number.isInteger(y) && x >= 0 && y >= 0 && x < this.width && y < this.height;
   }
 
   // Yeni tick: saati ilerlet; taşarsa stamp'leri sıfırla ki eski değerler çakışmasın.

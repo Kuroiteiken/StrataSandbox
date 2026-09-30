@@ -14,7 +14,7 @@ document.title = APP_NAME;
 for (const el of document.querySelectorAll('[data-app-name]')) el.textContent = APP_NAME;
 
 const params = new URLSearchParams(location.search);
-const debug = params.has('debug');
+const debug = params.get('debug') === '1';
 
 const canvas = document.getElementById('world-canvas');
 const viewport = document.getElementById('viewport');

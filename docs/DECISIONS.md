@@ -95,7 +95,7 @@ Burada yalnızca gerçekten önemli teknik kararlar tutulur. Her kayıt dört ba
 - **Karar:**
   - String seed cyrb128 ile hash'lenir, çıkan değerle sfc32 başlatılır.
   - Sahne, fizik ve input için ayrı stream'ler kullanılır.
-  - Kozmetik ton `hash(index, tick)` ile hesaplanır.
+  - Kozmetik ton `hash(index, version)` ile hesaplanır; sim RNG'si tüketilmez.
   - Engine'de `Math.random` kullanılmaz. Testler bunu, çağrıldığında hata fırlatan bir stub'la doğrular.
 - **Neden:**
   - Debug edilebilirlik ve deterministik sahneler.

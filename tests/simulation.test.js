@@ -72,6 +72,14 @@ test('frame başına tick sınırı aşılınca birikmiş borç silinir', () => 
   assert.equal(sim.update(0), 0, 'borç bir sonraki frame\'e taşınmamalı');
 });
 
+test('NaN, undefined veya negatif dt fizik zamanlamasını bozmaz', () => {
+  for (const bad of [NaN, undefined, -20, -Infinity]) {
+    const sim = new Simulation({ width: 4, height: 4 });
+    assert.equal(sim.update(bad), 0, `dt=${bad}`);
+    assert.equal(sim.update(50), 3, `dt=${bad} sonrası zamanlama çalışmaya devam etmeli`);
+  }
+});
+
 test('fizik bütçesi dolunca update() durur ama en az bir tick çalıştırır', () => {
   const sim = new Simulation({ width: 4, height: 4 });
   assert.equal(sim.update(100, 0), 1);
@@ -100,6 +108,15 @@ test('setCell dünya dışını reddeder ve kenar çerçevesini bozmaz', () => {
   assert.equal(sim.setCell(0, 4, MAT.SAND), false);
   assert.equal(sim.setCell(1, 1, MAT.SAND), true);
   sim.step(); // debug modunda kenar bozulsaydı hata fırlardı
+});
+
+test('setCell ve getCell tam sayı olmayan koordinatları reddeder (sayaçlar bozulmaz)', () => {
+  const sim = new Simulation({ width: 4, height: 4, debug: true });
+  assert.equal(sim.setCell(1.5, 2, MAT.SAND), false);
+  assert.equal(sim.setCell(1, NaN, MAT.SAND), false);
+  assert.equal(sim.getCell(1.5, 0), null);
+  assert.equal(sim.getStats().particles, 0);
+  sim.step(); // debug: sayaç tutarsızlığı olsaydı hata fırlardı
 });
 
 test('setCell iç materyal (WALL) yazmayı reddeder', () => {

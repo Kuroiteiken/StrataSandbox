@@ -32,6 +32,8 @@ test('inBounds yalnızca iç hücreleri kabul eder', () => {
   assert.equal(w.inBounds(-1, 0), false);
   assert.equal(w.inBounds(4, 0), false);
   assert.equal(w.inBounds(0, 3), false);
+  assert.equal(w.inBounds(1.5, 0), false);
+  assert.equal(w.inBounds(0, NaN), false);
 });
 
 test('set hücreyi yazar ve materyal sayaçlarını günceller', () => {

@@ -91,7 +91,8 @@ export class Simulation {
   // Fixed timestep: geçen gerçek süreye göre 0..MAX_TICKS_PER_FRAME tick çalıştırır.
   update(dtMs, budgetMs = Infinity) {
     if (this.paused) return 0;
-    const dt = Math.min(Math.max(dtMs, 0), MAX_FRAME_MS);
+    // NaN/undefined/negatif dt accumulator'ı zehirlemesin (NaN kalıcı olarak fiziği durdururdu).
+    const dt = dtMs > 0 ? Math.min(dtMs, MAX_FRAME_MS) : 0;
     this._acc += dt * BASE_TPS * this.speed;
 
     const start = this._now();
