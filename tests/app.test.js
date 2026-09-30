@@ -95,7 +95,7 @@ test('geçersiz seed reddedilir, geçerli seed sahneyi o seed ile yeniden üreti
 });
 
 test('aynı sahne + seed ile yeniden üretmek aynı başlangıç dünyasını verir', () => {
-  const { app, sim } = setup({ scene: 'demo', seed: 'repeat' });
+  const { app, sim } = setup({ scene: 'volcano', seed: 'repeat' });
   const h = hashView(sim);
   sim.paintAt(10, 10, { material: MAT.STONE, size: 8, shape: 'square' });
   app.actions.regenerate();
@@ -148,7 +148,7 @@ test('klavye eylemleri uygulama eylemlerine dağıtılır', () => {
 test('clear geri alınabilir ve bunu duyurur', () => {
   const { app, sim, doc } = setup();
   const before = sim.getStats().particles;
-  assert.ok(before > 0, 'demo sahnesi boş olmamalı');
+  assert.ok(before > 0, 'varsayılan sahne boş olmamalı');
   app.actions.clear();
   assert.equal(sim.getStats().particles, 0);
   assert.match(doc.announcer.textContent, /Geri al/);

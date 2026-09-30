@@ -5,6 +5,20 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) yaklaşımını 
 
 ## [Unreleased]
 
+### Added — Phase 7 (Procedural Scenes)
+
+- **Volkan** (varsayılan): kesik koni, krater ve magma odası. Sağ yarıktan taşan lav ağaçları tutuşturur. Yamaçlarda kum, solda göl ve kıyı bitkileri.
+- **Kum saati**: cam hazneler, 3 hücrelik boğaz, odun çerçeve. Kum yalnızca fizikle akar.
+- **Vaha**: seed'li kum tepeleri, taşla kaplı gölet, bitki örtüsü, palmiyeler.
+- **Kaos Lab**: seed tabanlı kontrollü rastgele düzen; doluluk en fazla %40.
+- **Benchmark** (yalnızca `?debug=1` seçicide ya da `?scene=benchmark`): seed'den bağımsız sabit yük sahnesi.
+- Sahne yardımcıları: aritmetik value noise, çokgen, disk, kalın çizgi ve yükseklik haritası doldurma.
+- Testler: `tests/scenes.test.js` (toplam 255).
+
+### Removed
+
+- Geçici demo sahnesi.
+
 ### Added — Phase 6 (UI)
 
 - Kontrol paneli:

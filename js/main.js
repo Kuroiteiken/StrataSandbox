@@ -42,7 +42,8 @@ const updatePreview = (visible = cursor !== null) => {
 };
 
 const app = createApp({ sim, renderer, prefs, storage, doc: document, onStateChange: () => updatePreview() });
-app.bindControls(createControls(document, { palette: renderer.palette, scenes: SCENES, actions: app.actions }));
+const pickableScenes = SCENES.filter((s) => debug || !s.hidden);
+app.bindControls(createControls(document, { palette: renderer.palette, scenes: pickableScenes, actions: app.actions }));
 app.load();
 
 attachPointer(canvas, {

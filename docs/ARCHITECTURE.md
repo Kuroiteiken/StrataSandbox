@@ -177,11 +177,30 @@ Renderer.render(view, frameInfo)                                 ← state'i asl
   - Tek pointer çizer.
   - `onCursor` önizlemeyi günceller (touch'ta gizli).
 
-## 8. Sahneler (planlandı — Phase 7)
+## 8. Sahneler (uygulandı — Phase 7)
 
-- **Üretim:** sahneler normalize koordinatta üretilir, böylece her grid boyutunda çalışır.
-- **Determinizm:** aynı (seed, W, H) üçlüsü aynı sahneyi verir.
-- **Aritmetik:** yalnızca aritmetik işlemler kullanılır. `Math.sin`/`exp`/`pow` kullanılmaz, çünkü tarayıcılar arasında bit farkı çıkabilir.
+- **Sahne biçimi:** `{ id, name, generate(sim, rng), hidden? }`. Kayıt `js/scenes/index.js`'te.
+- **Yükleme:** `Simulation.loadScene(scene, seed)`:
+  1. dünyayı temizler;
+  2. `sim`, `input` ve `scene` RNG stream'lerini seed'den yeniden kurar;
+  3. tick, undo ve hold'u sıfırlar;
+  4. sahneyi `scene` stream'iyle üretir.
+  - Engine sahne kaydını bilmez; sahne nesnesi dışarıdan verilir.
+- **Normalize koordinat:** sahneler `frame(sim)` ile çalışır (`X(0..1)`, `Y(0..1)`, `S(kısa kenar oranı)`). Böylece her grid boyutunda çalışır.
+- **Determinizm:**
+  - Aynı (sahne, seed, W, H) aynı başlangıcı verir.
+  - Spawn hash'i `(index, tick, seed)` üzerinden hesaplanır; sonuç çağrı geçmişinden bağımsızdır.
+  - Sahne kodu yalnızca aritmetik kullanır: `Math.sin`/`exp`/`pow` yoktur.
+- **Yardımcılar** (`scenes/tools.js`): `valueNoise`, `rect`, `disk`, `thickLine`, `fillPolygon`, `fillColumns`.
+
+| Sahne | İçerik |
+| --- | --- |
+| Volkan | kesik koni, krater + baca + magma odası, sağ yarık, kum, göl + bitki, ağaçlar |
+| Kum saati | cam hazneler, 3 hücrelik boğaz, odun çerçeve, kum |
+| Vaha | kum tepeleri, taşla kaplı gölet, bitki örtüsü, palmiyeler |
+| Kaos Lab | seed'li platformlar, kaplar, materyal kütleleri (≤ %40 doluluk) |
+| Benchmark | seed'den bağımsız sabit yük (performans karşılaştırması) |
+| Boş | — |
 
 ## 9. Performans yaklaşımı
 

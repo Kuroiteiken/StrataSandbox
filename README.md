@@ -21,7 +21,7 @@ Tarayıcıda çalışan, grid tabanlı bir **materyal ve fizik sandbox'ı**. Kum
   - Lava + Water → Steam ve soğuyan lava → Stone
   - Fire → Wood, Plant ve Oil'i tutuşturur
   - Plant, su yakınında büyür
-- **Sahneler:** Volcano, Hourglass, Oasis, Chaos Lab. Hepsi seed tabanlıdır; aynı seed aynı başlangıç sahnesini üretir.
+- **Sahneler:** Volkan, Kum saati, Vaha, Kaos Lab (ve Boş). Seed tabanlıdır; aynı seed aynı başlangıç sahnesini üretir. URL ile paylaşılabilir: `?scene=oasis&seed=abc`.
 - **Kontroller:**
   - Brush: Circle, Square, Spray
   - Pause / Step

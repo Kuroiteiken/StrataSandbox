@@ -339,18 +339,38 @@ node tools/check-paths.js  # path büyük/küçük harf + root-absolute kontrol�
 
 ### Phase 7 — Procedural Scenes
 
-- [ ] `scenes/tools.js` (aritmetik value noise, şekil doldurma), `scenes/index.js`
-- [ ] Volcano (default)
-- [ ] Hourglass
-- [ ] Oasis
-- [ ] Chaos Lab
-- [ ] Benchmark
-- [ ] **Test:**
-  - [ ] (seed, W, H) → aynı hash
-  - [ ] Farklı seed → farklı hash
-  - [ ] Çoklu grid boyutu
-  - [ ] Hourglass akışı ve kum korunumu
-  - [ ] Üretim süresi
+- [x] `scenes/tools.js`:
+  - [x] aritmetik value noise (`Math.sin`/`exp`/`pow` yok)
+  - [x] `frame` (normalize koordinat)
+  - [x] `rect`, `disk`, `thickLine`, `fillPolygon` (tarama çizgisi), `fillColumns` (yükseklik haritası)
+- [x] `scenes/index.js`: `{ id, name, generate(sim, rng), hidden? }`; varsayılan `volcano`; Benchmark yalnızca debug seçicide
+- [x] Volcano (varsayılan):
+  - [x] kesik taş koni, içine oyulmuş krater çanağı, baca, magma odası
+  - [x] sağ kenarda yarık → lav sağ yamaçtan iner, ağaçları tutuşturur
+  - [x] yamaçlarda kum
+  - [x] solda göl ve kıyı bitkileri
+  - [x] sağda odun + bitki ağaçlar
+- [x] Hourglass:
+  - [x] cam duvarlı iki hazne, 3 hücrelik boğaz
+  - [x] odun çerçeve
+  - [x] üst haznede kum; akış tamamen fizikle
+- [x] Oasis: seed'li kum tepeleri (iki oktav), taşla kaplı gölet, kıyıda bitki örtüsü, kavisli palmiyeler, taş taban
+- [x] Chaos Lab:
+  - [x] seed'li platformlar, cam kaplar (sıvılı)
+  - [x] materyal kütleleri (ilk dördü farklı), kıvılcım
+  - [x] doluluk ≤ %40
+- [x] Benchmark: seed'den bağımsız sabit yerleşim (kum, su deposu, bitki, lav havuzu, odun + ateş, buhar, yağ)
+- [x] Geçici demo sahnesi kaldırıldı
+- [x] **Test** (`tests/scenes.test.js`; suite 255/255):
+  - [x] Her sahne 320×180, 400×225, 120×166, 64×48'de hatasız üretilir; değişmezler temiz
+  - [x] Aynı (seed, W, H) → aynı yerleşim; Volcano, Oasis ve Chaos seed ile değişir; Benchmark seed'den bağımsız
+  - [x] Beklenen materyaller mevcut
+  - [x] Chaos: ≥ 4 materyal, doluluk ≤ %40
+  - [x] Hourglass: alt haznedeki kum 300 tick'te artıyor, toplam kum korunuyor
+  - [x] Sahne üretimi 400×225'te < 60 ms
+  - [x] `valueNoise` (deterministik, pürüzsüz), `fillPolygon`
+  - [x] Tarayıcı (Playwright): dört sahnenin görsel kontrolü
+    - [x] Volcano'da krater kenarı ve yarık düzeltmesi sonrası lav yalnızca sağa akıyor, göl korunuyor
 
 ### Phase 8 — Görsel efektler
 
@@ -525,6 +545,15 @@ Uygulama sırasında plandan sapan ya da planın cevaplamadığı kararlar. Kal�
 - **2026-09-30 · Phase 6 — Mutasyon notu.**
   - "Hızın uçlarda sıkıştırılmaması" eşdeğer bir mutasyon: `setSpeed` geçersiz değeri zaten reddediyor.
   - Tercih kaydının gecikmesi yalnızca "senkron yazılmaz" düzeyinde test ediliyor (minor).
+
+- **2026-09-30 · Phase 7 — Benchmark seed'den bağımsız.**
+  - Karar: Benchmark sahnesi seed'i yok sayıyor.
+  - Neden: performans ölçümlerinin karşılaştırılabilir olması gerekiyor. Seçicide yalnızca `?debug=1` ile görünüyor; `?scene=benchmark` her zaman çalışıyor.
+- **2026-09-30 · Phase 7 — Krater koninin içine oyuluyor.**
+  - İlk sürümde krater lavı koni yüzeyinin üstünde, havada kalıyordu ve iki yana akıp gölü kaynatıyordu (görsel kontrolde yakalandı).
+  - Karar: koni tepesi düzleştiriliyor (plato), çanak platonun altına oyuluyor, lav yalnızca sağ kenardaki yarıktan taşıyor.
+- **2026-09-30 · Phase 7 — Opsiyonel maddeler ertelendi.**
+  - Karar: sınırlı ömürlü EMITTER ve kum saati "Flip" özelliği şimdilik yapılmadı. v1 için gerekli değil; roadmap'te fikir olarak duruyor.
 
 ### Phase 0–1 bağımsız inceleme (2026-09-30)
 
