@@ -77,6 +77,52 @@ test('bare (node:, paket) import\'ları ve sorunsuz relative path\'ler raporlanm
   assert.deepEqual(findPathProblems(dir), []);
 });
 
+test('template literal dynamic import, new URL(import.meta.url), fetch ve Worker kontrol edilir', () => {
+  const dir = makeFixture({
+    'js/a.js': [
+      'const m = await import(`./Mod.js`);',
+      "const u = new URL('./Data.json', import.meta.url);",
+      "fetch('/api/x.json');",
+      "const w = new Worker('./WORKER.js', { type: 'module' });",
+    ].join('\n'),
+    'js/mod.js': '',
+    'js/data.json': '{}',
+    // fetch/Worker path'leri modüle değil belgeye (index.html konumu = kök) göre çözülür.
+    'worker.js': '',
+  });
+  const kinds = findPathProblems(dir).map((p) => [p.specifier, p.kind]);
+  assert.deepEqual(kinds.sort(), [
+    ['./Data.json', 'case-mismatch'],
+    ['./Mod.js', 'case-mismatch'],
+    ['./WORKER.js', 'case-mismatch'],
+    ['/api/x.json', 'root-absolute'],
+  ]);
+});
+
+test('CSS url() ve @import ile HTML srcset kontrol edilir', () => {
+  const dir = makeFixture({
+    'css/a.css': "@import './B.css';\n.x { background: url('../img/Bg.png'); }\n.y { background: url(/abs.png); }\n.z { background: url(data:image/png;base64,AAAA); }",
+    'css/b.css': '',
+    'img/bg.png': '',
+    'index.html': '<img srcset="./img/bg.png 1x, ./IMG/bg.png 2x" src="./img/bg.png">',
+  });
+  const kinds = findPathProblems(dir).map((p) => [p.specifier, p.kind]).sort();
+  assert.deepEqual(kinds, [
+    ['../img/Bg.png', 'case-mismatch'],
+    ['./B.css', 'case-mismatch'],
+    ['./IMG/bg.png', 'case-mismatch'],
+    ['/abs.png', 'root-absolute'],
+  ]);
+});
+
+test('href="./" (site kökü) ve yorum satırındaki import yanlış alarm vermez', () => {
+  const dir = makeFixture({
+    'index.html': '<a href="./">Ana sayfa</a><a href="../">Üst</a>',
+    'js/a.js': "// import { x } from './Missing.js';\n/* import './Gone.js'; */\nexport const ok = 1;\n",
+  });
+  assert.deepEqual(findPathProblems(dir), []);
+});
+
 test('repo içinde hiçbir path problemi yok', () => {
   assert.deepEqual(findPathProblems(repoRoot), []);
 });
