@@ -124,6 +124,8 @@ function reactBurning(world, rng, i, t, state) {
     if (DOUSE[t] === 0 || !roll(rng, DOUSE[t])) return false;
     emitSteam(world, j);
     world.transform(i, EXTINGUISH_TO[t], 0);
+    // Isı buhara geçer: sönen hücre kaynak sıcaklığında kalsaydı ısı geçişi onu yeniden tutuştururdu.
+    if (world.temp[i] > STEAM_TEMP) world.temp[i] = STEAM_TEMP;
     return true;
   }
   ignite(world, rng, j, nt);
@@ -147,8 +149,13 @@ function reactPlant(world, rng, i, state) {
 // materyaller (toz, sıvı, gaz) öğrenilir/yutulur: kap duvarları ve başka kaynaklar etkilenmez.
 // Çoğaltıcı yalnızca bitişik boş hücrelere yazar (taşma yok). Çoğaltıcının öğrendiği materyal
 // variant'ta tutulur; flags bit1 "öğrendi" işaretidir.
+// flags bit2 "aşağı yönlü" (yalnızca sahneler/configureSource verir): kaynak 8 komşu yerine yalnızca
+// yönündeki üç komşudan birini örnekler — çoğaltıcı alttakilere üretir, yutucu üsttekileri yutar.
+// Yön dünya koordinatındadır; dünya çevrilince (F) alttaki kapağın kaynakları üste geçer ve rolleri
+// kendiliğinden yer değiştirir.
 export const SOURCE_INFINITE = 65535;
 export const CLONER_LEARNED = 2;
+export const SOURCE_DOWNWARD = 4;
 const { KIND: KIND_OF } = MATERIALS;
 
 export function isMover(t) {
@@ -160,10 +167,13 @@ function spend(world, i) {
   if (world.life[i] !== SOURCE_INFINITE) world.life[i]--;
 }
 
+// Aşağı yönlü kaynağın örneklediği komşu: dy satırındaki üç hücreden biri (tek RNG çağrısı).
+const sampleRow = (world, rng, i, dy) => i + dy * world.stride + ((rng.nextU32() % 3) - 1);
+
 function reactCloner(world, rng, i, state) {
-  const j = sampleNeighbor(world, rng, i);
-  const nt = world.type[j];
   const flags = world.flags;
+  const j = (flags[i] & SOURCE_DOWNWARD) !== 0 ? sampleRow(world, rng, i, 1) : sampleNeighbor(world, rng, i);
+  const nt = world.type[j];
   if ((flags[i] & CLONER_LEARNED) === 0) {
     if (isMover(nt)) {
       world.variant[i] = nt;
@@ -180,7 +190,7 @@ function reactCloner(world, rng, i, state) {
 }
 
 function reactSink(world, rng, i, state) {
-  const j = sampleNeighbor(world, rng, i);
+  const j = (world.flags[i] & SOURCE_DOWNWARD) !== 0 ? sampleRow(world, rng, i, -1) : sampleNeighbor(world, rng, i);
   if (!isMover(world.type[j]) || world.life[i] === 0 || state.sinkBudget <= 0) return false;
   world.set(j, EMPTY, 0, 0, 0, world.ambient); // yutulan madde ısısıyla birlikte yok olur
   spend(world, i);

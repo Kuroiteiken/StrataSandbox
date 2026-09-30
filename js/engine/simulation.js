@@ -4,7 +4,7 @@ import { World } from './world.js';
 import { Rng, hashSeed } from './rng.js';
 import { MAT, KIND, MATERIALS, spawnTemp } from './materials.js';
 import { stepPowder, stepLiquid, stepGas } from './kernels.js';
-import { react, createReactionState, beginReactionTick, initialLife, isMover, SOURCE_INFINITE, CLONER_LEARNED } from './reactions.js';
+import { react, createReactionState, beginReactionTick, initialLife, isMover, SOURCE_INFINITE, CLONER_LEARNED, SOURCE_DOWNWARD } from './reactions.js';
 import { footprint, lineCells, SPRAY_DENSITY } from './brush.js';
 import { stepHeat, createHeatState } from './heat.js';
 import { DEFAULT_AMBIENT, clampAmbient, TEMP_MIN, TEMP_MAX, ambientAt, dayPhase } from './climate.js';
@@ -63,6 +63,10 @@ export class Simulation {
     this.dayCycle = false; // gün/gece döngüsü (kullanıcı tercihi)
 
     this._hold = null; // basılı tutma: { x, y, brush } — tick başına yeniden uygulanır
+    // Isıt/Soğut mührü: bir hücre aynı nesilde (tick + stroke) yalnızca bir kez değişir; ilk
+    // kullanımda bir kez ayrılır. Nesil her tick'te ve her yeni stroke'ta artar.
+    this._toolMark = null;
+    this._toolGen = 1;
     this._strokeDirty = false;
     // Undo: iki önceden ayrılmış snapshot (ADR-010). Biri undo noktası, diğeri bekleyen stroke.
     this._snapshots = [];
@@ -135,11 +139,13 @@ export class Simulation {
 
   setDayCycle(on) {
     this.dayCycle = Boolean(on);
+    this.world.ambient = this.ambient; // duraklatılmışken boyanan hücre de yeni ortamda doğar
   }
 
   // Ortam sıcaklığı: hava ona yavaşça yaklaşır. Sahneyi yeniden üretmez, undo noktası oluşturmaz.
   setAmbient(c) {
     this.ambientBase = clampAmbient(c);
+    this.world.ambient = this.ambient;
   }
 
   // Tek hücrenin sıcaklığı (sahneler, testler). Sonlu olmayan değer ve dünya dışı reddedilir.
@@ -234,6 +240,7 @@ export class Simulation {
 
     // Basılı tutma tick sonunda uygulanır: kaynak hücre bu tick boşaldıysa hemen yeniden dolar
     // (kesintisiz akış); yeni hücreler bir sonraki tick hareket eder.
+    this._nextToolGen();
     if (this._hold) {
       const h = this._hold;
       this.paintLine(h.x, h.y, h.x, h.y, h.brush);
@@ -272,13 +279,14 @@ export class Simulation {
 
   // Çoğaltıcı/yutucu ayarı (sahneler, testler): öğrenilecek materyal ve bütçe (Infinity = sınırsız).
   // Kaynak olmayan hücre, hareketsiz materyal ya da geçersiz bütçe reddedilir; undo noktası oluşturmaz.
-  configureSource(x, y, { learn, budget } = {}) {
+  configureSource(x, y, { learn, budget, downward } = {}) {
     const w = this.world;
     if (!w.inBounds(x, y)) return false;
     const i = w.index(x, y);
     const t = w.type[i];
     if (t !== MAT.CLONER && t !== MAT.SINK) return false;
     if (learn !== undefined && (t !== MAT.CLONER || !isMover(learn))) return false;
+    if (downward !== undefined && typeof downward !== 'boolean') return false;
     let b;
     if (budget !== undefined) {
       b = budget === Infinity ? SOURCE_INFINITE : budget;
@@ -289,6 +297,8 @@ export class Simulation {
       w.flags[i] |= CLONER_LEARNED;
     }
     if (b !== undefined) w.life[i] = b;
+    if (downward === true) w.flags[i] |= SOURCE_DOWNWARD;
+    if (downward === false) w.flags[i] &= ~SOURCE_DOWNWARD;
     this.version++;
     return true;
   }
@@ -380,12 +390,16 @@ export class Simulation {
   }
 
   // Isıt/Soğut: hücre sıcaklığını delta kadar değiştirir ([TOOL_MIN, TOOL_MAX]); materyale dokunmaz.
-  // Zaten sınırın ötesindeki bir hücre (ör. 5000 °C'lik kaynak) sınıra çekilmez.
+  // Zaten sınırın ötesindeki bir hücre (ör. 5000 °C'lik kaynak) sınıra çekilmez. Hücre tick ve
+  // stroke başına en fazla bir kez değişir: sürükleme ve üst üste binen ayak izleri birikmez.
   _heatCell(x, y, delta, spray) {
     const w = this.world;
     if (!w.inBounds(x, y)) return 0;
-    if (spray && !this.inputRng.chance(SPRAY_DENSITY)) return 0;
     const i = w.index(x, y);
+    const mark = this._toolMark ?? (this._toolMark = new Uint16Array(w.size));
+    if (mark[i] === this._toolGen) return 0;
+    if (spray && !this.inputRng.chance(SPRAY_DENSITY)) return 0;
+    mark[i] = this._toolGen;
     const T = w.temp[i];
     let v = T + delta;
     if (v > TOOL_MAX) v = T > TOOL_MAX ? T : TOOL_MAX;
@@ -428,10 +442,19 @@ export class Simulation {
   }
 
   beginStroke() {
+    this._nextToolGen();
     const snap = this._spareSnapshot();
     this._capture(snap);
     this._pending = snap;
     this._strokeDirty = false;
+  }
+
+  // Araç mührü nesli; Uint16 taşmasında mühür sıfırlanır ve sayaç 1'den başlar (stamp gibi).
+  _nextToolGen() {
+    if (++this._toolGen > 0xffff) {
+      if (this._toolMark) this._toolMark.fill(0);
+      this._toolGen = 1;
+    }
   }
 
   // Yalnızca gerçekten bir şey değiştiren stroke undo noktası olur.
@@ -453,6 +476,7 @@ export class Simulation {
     w.counts.set(snap.counts);
     this.rng.setState(snap.rng);
     this.tick = snap.tick;
+    this.world.ambient = this.ambient; // gün/gece fazı geri alınan tick'e göre
     this._undo = null;
     this.version++;
     return true;

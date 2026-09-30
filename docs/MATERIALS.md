@@ -1,13 +1,12 @@
 # Strata Sandbox — Materyaller ve Etkileşimler
 
-Bu belge, simülasyondaki tüm materyalleri ve aralarındaki etkileşimleri tek yerde toplar. Hem mevcut hem planlanmış olanları içerir.
+Bu belge, simülasyondaki tüm materyalleri ve aralarındaki etkileşimleri tek yerde toplar. Mevcut olanları, 0.9.0'daki eski kuralları (§3, tarihçe) ve planlanmış alt projeleri içerir.
 
 - **Kaynak:** `js/engine/materials.js` (tanımlar), `js/engine/reactions.js` (etkileşimler), `js/engine/kernels.js` (hareket).
-- **Kural:** yeni bir materyal ya da etkileşim ekleyen, var olanı değiştiren her değişiklik bu belgeyi de günceller. `tests/docs-materials.test.js` bu testi 0.10.0 planının 1. görevinde ekliyor. Test, tanımlı her materyal anahtarının bu belgede geçtiğini doğrular.
+- **Kural:** yeni bir materyal ya da etkileşim ekleyen, var olanı değiştiren her değişiklik bu belgeyi de günceller. `tests/docs-materials.test.js`, tanımlı her materyal anahtarının bu belgede geçtiğini doğrular.
 - **Durum etiketleri:**
-  - **Mevcut:** yayında (0.9.0).
-  - **Mevcut (0.10.0):** sıcaklık sistemi ve yeni materyaller (§4). Tasarım: `docs/superpowers/specs/2026-09-30-sicaklik-sistemi-design.md`.
-  - **Değişecek:** mevcut davranışın 0.10.0'da nasıl değişeceği.
+  - **Mevcut:** yayında (0.9.0'dan beri).
+  - **Mevcut (0.10.0):** sıcaklık sistemi ve yeni materyaller (§4). Tasarım: `docs/superpowers/specs/2026-09-30-sicaklik-sistemi-design.md`. 0.10.1 yamasındaki düzeltmeler ilgili bölümlerde belirtilir.
 
 ---
 
@@ -37,14 +36,12 @@ Bu belge, simülasyondaki tüm materyalleri ve aralarındaki etkileşimleri tek 
 | Ateş | ömür |
 | Yanan materyaller | kalan yanma süresi |
 | Bitki | büyüme bütçesi |
-| Buhar | yoğuşma zamanlayıcısı |
-| Lav | soğuma sayacı |
-| Kum | ısı birikimi |
+| Çoğaltıcı, Yutucu | kalan bütçe (`65535` = sınırsız) |
+| Faz geçişi olan materyaller (su, buz, kar, kum, taş, lav, buhar, metal, erimiş metal) | faz dönüşüm ilerlemesi (§4.2) |
 
-**Değişecek (0.10.0):**
-
-- Buhar, lav ve kum sayaçlarının yerini sıcaklık alanı alacak. Faz geçişi olan materyallerde `life` "dönüşüm ilerlemesi" anlamına gelecek (bkz. §5).
-- Her hücrede ayrıca bir sıcaklık (°C) tutulacak. Sıcaklık parçacıkla birlikte taşınacak ve komşu hücrelere iletilecek.
+- 0.9.0'daki buhar zamanlayıcısı, lav soğuma sayacı ve kum ısısı kaldırıldı; yerlerini sıcaklık alanı aldı (§4.6).
+- Her hücrede ayrıca bir sıcaklık (°C) tutulur. Sıcaklık parçacıkla birlikte taşınır ve komşu hücrelere iletilir (§4).
+- **`flags` bitleri:** bit0 sıvının akış yönü; bit1 çoğaltıcının "öğrendi" işareti; bit2 kaynağın "aşağı yönlü" modu (§4.5); bit3 faz ilerlemesinin yönü (aşağı kenara doğru, §4.2).
 
 ---
 
@@ -92,7 +89,7 @@ Olasılıklar tick başına ve sahip hücrenin örneklemesi başına verilmişti
 | Ateş (tek başına) | Ateş | Ömrü bitince söner. |
 | Yanan materyal (tek başına) | Yanan | Her tick üstündeki üç hücreden birine, boşsa, ateş üretir. Dünya genelinde tick başına en fazla 400 ateş üretilir. Ömrü bitince kül olur ya da kaybolur. |
 | Yanan materyal + yanıcı | Yanan | Yangın yayılır (yanıcılık olasılığıyla). |
-| Yanan materyal + su | Yanan | Sönme olasılığıyla söner ve eski materyaline döner; su buhara döner. Yanan yağ sönmez. |
+| Yanan materyal + su | Yanan | Sönme olasılığıyla söner ve eski materyaline döner; su buhara döner. Yanan yağ sönmez. 0.10.1'den beri sönen hücre 105 °C'ye iner (ısı buhara geçer), böylece kendi ısısıyla yeniden tutuşmaz. |
 | Lav + su | Lav | %60 olasılıkla su buhara döner; lavın soğuma sayacı 25 artar. |
 | Lav + hava | Lav | %10 olasılıkla soğuma sayacı 1 artar. Hava görmeyen iç lav soğumaz. |
 | Lav (soğuma sayacı 200) | Lav | Taşa döner. |
@@ -114,7 +111,7 @@ Her hücrenin bir sıcaklığı (°C) olur ve ısı komşu hücrelere iletilir. 
 
 ### 4.1 Termal özellikler (başlangıç değerleri; uygulama sırasında ayarlanabilir)
 
-> Durum: doğuş sıcaklığı, iletkenlik, ısı kapasitesi, kaynaklar, faz geçişleri (gizli ısı), sıcaklıkla tutuşma ve buharlaşma **mevcut** (0.10.0 geliştirme, Görev 5 ve 7). Kaynaklar (çoğaltıcı ve yutucu) K 0,06, C 4 değerini kullanır. Suyun donması ve buz, kar, metal Görev 8'de gelir.
+> Durum: doğuş sıcaklığı, iletkenlik, ısı kapasitesi, ısı kaynakları, faz geçişleri (gizli ısı), sıcaklıkla tutuşma ve buharlaşma **mevcut** (0.10.0). Kaynaklar (çoğaltıcı ve yutucu) K 0,06, C 4 değerini kullanır. Buz, kar ve metal için §4.3.
 >
 > Gizli ısı değerleri (kapasite × °C): su → buhar 1500, buhar → su 600 (%40'ı kaybolur), lav → taş 800, taş → lav 800, kum → cam 300.
 
@@ -123,7 +120,7 @@ Her hücrenin bir sıcaklığı (°C) olur ve ısı komşu hücrelere iletilir. 
 | Hava | ortam | 0,01 | 1 | Ortama yaklaşır. |
 | Kum | ortam | 0,04 | 3 | 550 °C'de cama döner (lavla uzun temas). |
 | Taş | ortam | 0,06 | 4 | 1500 °C'de lava döner. |
-| Su | ortam | 0,08 | 4 | −1 °C'de buza, 100 °C'de buhara döner. 35 °C üstünde ve üstü açıksa yavaşça buharlaşır. |
+| Su | ortam | 0,08 | 4 | −1 °C'nin altında buza, 100 °C'nin üstünde buhara döner. Hücreler ortama yalnızca yaklaştığı için göl ancak ortam −2 °C ya da daha soğukken donar. 35 °C üstünde ve üstü açıksa yavaşça buharlaşır. |
 | Yağ | ortam | 0,03 | 3 | 250 °C'de kendiliğinden tutuşur. |
 | Lav | 1150 °C | 0,04 | 4 | 750 °C'de taşa döner. |
 | Buhar | 105 °C | 0,02 | 1 | 95 °C'de suya döner; %40'ı kaybolur. |
@@ -146,26 +143,28 @@ Eşiği aşan bir hücrenin sıcaklığı eşikte sabitlenir. Fazla ısı `life`
 
 Eşiklerde histerezis vardır (ör. donma −1 °C, erime +1 °C), böylece hücreler iki faz arasında titreşmez.
 
-### 4.3 Yeni materyaller — Mevcut (0.10.0 geliştirme, Görev 8)
+İki kenarı olan materyalde (su: kaynama ve donma) ilerlemenin yönü `flags` bit3'te tutulur. Yön değişince yarım kalan ilerleme sıfırlanır; kaynamaya başlamış su soğutulunca gizli ısıyı atlayıp anında donmaz (0.10.1).
+
+### 4.3 Yeni materyaller — Mevcut (0.10.0)
 
 | Materyal | Anahtar | Kısayol | Tür | Yoğunluk | Davranış |
 |---|---|---|---|---|---|
-| Buz | `ICE` | `B` | statik | — | Doğuş −15 °C, K 0,12, C 3. +1 °C'de suya döner (gizli ısı 300). Su −1 °C'de buza döner; göl yüzeyden donar. |
+| Buz | `ICE` | `B` | statik | — | Doğuş −15 °C, K 0,12, C 3. +1 °C'nin üstünde suya döner (gizli ısı 300); bu yüzden +1 °C'lik ortamda erimez, en az +2 °C gerekir. Su −1 °C'nin altında buza döner; göl yüzeyden donar. |
 | Kar | `SNOW` | `K` | toz | 8 | Doğuş −8 °C, yalıtkan (K 0,01, C 1). +1 °C'de suya döner (gizli ısı 30, buzdan hızlı). Suyun üstünde yüzer. |
 | Metal | `METAL` | `M` | statik | — | Isıyı çok hızlı iletir (K 1,6, C 8; havaya kayıpla ~10 hücre menzil). 450 °C'den sonra kızarır, 1400 °C'de erir (gizli ısı 1200). |
 | Erimiş metal | `MOLTEN_METAL` | `E` | sıvı | 40 | Doğuş 1450 °C, K 0,8, C 4, dağılım 4 (çok akışkan). 1300 °C'de metale döner (gizli ısı 400). Lavdan ağırdır, lavın içinde batar. |
 | Magma kaynağı | `MAGMA` | — | statik | — | Seçicide yok; sahneler yerleştirir (volkan odası ve yarık damarı, Buzul bacası, Dökümhane kaidesi, Mağara lav cebi). Sabit 1200 °C ısı kaynağıdır. |
-| Çoğaltıcı | `CLONER` | `X` | statik | — | **Mevcut (0.10.0 geliştirme).** Bkz. §4.5. |
-| Yutucu | `SINK` | `Y` | statik | — | **Mevcut (0.10.0 geliştirme).** Bkz. §4.5. |
+| Çoğaltıcı | `CLONER` | `X` | statik | — | **Mevcut (0.10.0).** Bkz. §4.5. |
+| Yutucu | `SINK` | `Y` | statik | — | **Mevcut (0.10.0).** Bkz. §4.5. |
 
-### 4.4 Araçlar — Mevcut (0.10.0 geliştirme, Görev 10)
+### 4.4 Araçlar — Mevcut (0.10.0)
 
 | Araç | Kısayol | Etki |
 |---|---|---|
-| Isıt | `H` | Materyal koymaz. Fırçanın altındaki sıcaklığı her uygulamada 25 °C artırır (en fazla 2500 °C). Basılı tutunca sürer. |
+| Isıt | `H` | Materyal koymaz. Fırçanın altındaki her hücrenin sıcaklığını tick başına en fazla bir kez 25 °C artırır (en fazla 2500 °C). Sürükleme ve üst üste binen fırça izleri birikmez; basılı tutunca her tick yeniden uygulanır. Duraklatılmışken her yeni çizim bir kez uygular (0.10.1). |
 | Soğut | `C` | Aynı etki, ters yönde (en az −100 °C). |
 
-### 4.5 Çoğaltıcı (`CLONER`) ve Yutucu (`SINK`) — Mevcut (0.10.0 geliştirme)
+### 4.5 Çoğaltıcı (`CLONER`) ve Yutucu (`SINK`) — Mevcut (0.10.0)
 
 - **Öğrenme:** çoğaltıcı ilk temas ettiği hareketli materyali "öğrenir". Hareketli materyaller toz, sıvı ve gazdır; örneğin üstüne dökülen kum, su ya da lav.
 - **Üretim:** öğrendikten sonra her tick rastgele bir komşusuna bakar. O komşu boşsa oraya bir kopya koyar. Kopya materyalin doğuş sıcaklığıyla doğar.
@@ -178,9 +177,17 @@ Eşiklerde histerezis vardır (ör. donma −1 °C, erime +1 °C), böylece hüc
   - Hücre başına 1000 birimlik bütçesi vardır; `65535` sınırsızdır.
   - Dünya genelinde tick başına en fazla 300 yutma olur.
   - Bütçesi biten yutucu grileşir.
-- **Kum saati:** üst haznenin tepesinde kumu öğrenmiş sınırsız çoğaltıcı sırası (8 hücre), alt haznenin dibinde sınırsız yutucu sırası (6 hücre; altta küçük ve sabit bir yığın kalır) vardır. Kum sürekli akar.
+- **Aşağı yönlü mod (0.10.1):** sahneler `sim.configureSource(x, y, { downward: true })` ile kaynağa yön verebilir (`flags` bit2). Aşağı yönlü kaynak 8 komşu yerine yalnızca yönündeki üç komşudan birine bakar:
+  - aşağı yönlü çoğaltıcı yalnızca alttaki üç komşuya üretir;
+  - aşağı yönlü yutucu yalnızca üstteki üç komşudan yutar.
+  Yön dünya koordinatındadır; dünya çevrilince alttaki kaynaklar üste geçer ve görevleri kendiliğinden değişir. Seçiciden boyanan kaynaklar yönsüzdür.
+- **Kum saati:** iki kapağın iç yüzünde de aynı aşağı yönlü, sınırsız kaynak sırası vardır: ortada kumu öğrenmiş 8 çoğaltıcı, iki yanda ortaya 12 hücre uzakta 3'er yutucu.
+  - Üstteki kapakta çoğaltıcılar hazneye kum üretir; yutucuların üstü kapak olduğu için boşta kalır.
+  - Alttaki kapakta yutucular biriken kumu yukarıdan yutar; çoğaltıcıların altı kapak olduğu için boşta kalır.
+  - Alt yığın yutuculara uzanana kadar büyür (~370 kum), bu yüzden boyunu yutucuların uzaklığı belirler.
+  - Kum sürekli akar, ters çevrilince de akmaya devam eder. Çevirmeden sonra alt haznenin kenarlarında yutuculara ulaşmayan eğimli yığınlar kalır.
 - **Volkandaki kullanım (mevcut):** iki çoğaltıcı hücre krater yarığının tabanında, yarığın altında bir magma damarı var. Yarık artık yamaca açık (0.9.0'da sağ ucu kapalıydı); lav sağ yamaçtan kabuk bağlayarak aşağı akar ve çoğaltıcı boşalan yeri ~2000 hücre boyunca doldurur.
-- **Sınır:** basınç olmadığı için, dolu bir odanın altındaki çoğaltıcı lavı yukarı itemez; etrafında boş hücre yoksa üretim yapmaz. Basınç alt proje 2'de gelecek.
+- **Sınır:** basınç olmadığı için, dolu bir odanın altındaki çoğaltıcı lavı yukarı itemez; etrafında boş hücre yoksa üretim yapmaz. Basınç, planlanan alt proje 2'nin (Basınç ve patlama) konusu.
 
 ### 4.6 0.9.0 → 0.10.0 etkileşim değişiklikleri (Mevcut)
 

@@ -210,6 +210,61 @@ test('Isıt fırçası sıcaklığı TOOL_DELTA artırır ve materyale dokunmaz'
   assert.deepEqual([...sim.view.type], types);
 });
 
+function maxRise(sim, before) {
+  let rise = 0;
+  const t = sim.view.temp;
+  for (let i = 0; i < t.length; i++) rise = Math.max(rise, t[i] - before[i]);
+  return rise;
+}
+
+test('Isıt sürüklenirken birikmez: her hücre tick başına en fazla bir kez TOOL_DELTA alır', () => {
+  for (const size of [1, 6, 16]) {
+    // Tek çağrıda uzun çizgi: fırça ayak izleri üst üste biner.
+    const a = new Simulation({ width: 48, height: 24 });
+    const before = Float32Array.from(a.view.temp);
+    a.beginStroke();
+    a.paintLine(4, 12, 40, 12, { ...HEAT, size, shape: 'circle' });
+    a.endStroke();
+    assert.equal(maxRise(a, before), TOOL_DELTA, `tek çağrı, boyut ${size}`);
+    // İşaretçi gibi bir hücrelik ardışık parçalar (uç noktalar ortak).
+    const b = new Simulation({ width: 48, height: 24 });
+    b.beginStroke();
+    for (let x = 4; x < 40; x++) b.paintLine(x, 12, x + 1, 12, { ...HEAT, size, shape: 'circle' });
+    b.endStroke();
+    assert.equal(maxRise(b, before), TOOL_DELTA, `ardışık parçalar, boyut ${size}`);
+  }
+});
+
+test('Isıt: yeni tick ve yeni stroke yeniden uygular (basılı tutma ve duraklatılmış tekrar)', () => {
+  const sim = new Simulation({ width: 6, height: 6 });
+  sim.setCell(2, 2, MAT.STONE);
+  const t0 = sim.getCell(2, 2).temp;
+  sim.beginStroke();
+  sim.paintAt(2, 2, HEAT);
+  sim.paintAt(2, 2, HEAT); // aynı tick, aynı stroke: etkisiz
+  sim.endStroke();
+  assert.equal(sim.getCell(2, 2).temp, t0 + TOOL_DELTA);
+  sim.beginStroke();
+  sim.paintAt(2, 2, HEAT); // duraklatılmışken yeni stroke: yeniden uygular
+  sim.endStroke();
+  assert.equal(sim.getCell(2, 2).temp, t0 + 2 * TOOL_DELTA);
+  // Basılı tutma tick başına bir kez uygular; aynı tick'teki işaretçi olayı ikinci kez eklemez.
+  const h = new Simulation({ width: 6, height: 6 });
+  h.setCell(2, 2, MAT.METAL);
+  h.beginStroke();
+  h.setHold(2, 2, { ...HEAT, size: 1 });
+  let prev = h.getCell(2, 2).temp;
+  for (let k = 0; k < 3; k++) {
+    h.step();
+    h.paintAt(2, 2, HEAT);
+    const now = h.getCell(2, 2).temp;
+    assert.ok(now - prev > 0 && now - prev <= TOOL_DELTA + 1e-3, `tick ${k}: artış ${now - prev}`);
+    prev = now;
+  }
+  h.releaseHold();
+  h.endStroke();
+});
+
 test('uzun basılı tutma sınırları aşmaz ve değişmezleri bozmaz', () => {
   const sim = new Simulation({ width: 8, height: 8, debug: true });
   sim.setCell(3, 3, MAT.GLASS);

@@ -114,7 +114,7 @@ npm test        # tüm testler
 
 ## Ekran görüntüleri
 
-![Volkan sahnesi: kraterden taşan lav ağaçları tutuşturur, magma odası ışıldar](docs/screenshots/strata-volcano.png)
+![Volkan sahnesi: yarıktan taşan lav yamaçta kabuk bağlar, magma odası ışıldar](docs/screenshots/strata-volcano.png)
 
 | Kum saati | Vaha | Mobil |
 | --- | --- | --- |
@@ -126,9 +126,8 @@ npm test        # tüm testler
 
 ## Bilinen sınırlamalar
 
-- **Basınç yok:** Sıvılar yalnızca yerel kurallarla akar. U şeklindeki bir boruda iki kol eşitlenmez (cellular automaton sınırlaması).
+- **Basınç yok:** Sıvılar yalnızca yerel kurallarla akar. U şeklindeki bir boruda iki kol eşitlenmez (cellular automaton sınırlaması). Dolu bir odanın altındaki çoğaltıcı lavı yukarı itemez; patlama ve basınç sonraki alt projede.
 - **Konveksiyon yok:** Sıcak hava yükselmez, rüzgâr yoktur; ısı yalnızca iletimle yayılır (ADR-014).
-- **Basınç yok (0.10.0):** Dolu bir odanın altındaki çoğaltıcı lavı yukarı itemez; patlama ve basınç sonraki alt projede.
 - **Undo tek seviyelidir:** Dünyayı son çizimden önceki ana döndürür. Çizimden sonra geçen simülasyon süresi de geri alınır (ADR-010).
 - **Grid boyutu açılışta seçilir:** Ekran döndürülünce ya da pencere büyütülünce dünya korunur ama kenarlarda boşluk kalabilir. Yeni boyut için sayfayı yenilemek gerekir.
 - **Aynı seed farklı grid boyutunda farklı sahne üretir:** Birebir aynılık (sahne, seed, genişlik, yükseklik) dörtlüsüyle garanti edilir.

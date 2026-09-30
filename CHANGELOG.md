@@ -5,6 +5,39 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) yaklaşımını 
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-09-30
+
+0.10.0'ın bütün-dal incelemesinde bulunan hataların yaması.
+
+### Fixed
+
+- **Söndürme (0.10.0 regresyonu):** sönen odun ve bitki, yanan hâlinin 700 °C kaynak sıcaklığını koruyordu. Isı geçişi hücreyi tutuşma eşiğinin üstünde bulup yeniden yakıyordu; su altındaki yanan kalas 700–1300 tick yanmaya devam edebiliyordu. Sönen hücre artık buhar sıcaklığına (105 °C) iner, ısı buhara geçer.
+- **Kum saati ters çevrilince akış kalıcı olarak duruyordu.** Çoğaltıcı kumun altında kalıyor, yutucunun yutacak bir şeyi olmuyordu. Kaynaklara isteğe bağlı "aşağı yönlü" mod eklendi (`sim.configureSource(x, y, { downward: true })`, flags bit2):
+  - aşağı yönlü çoğaltıcı yalnızca alttaki üç komşuya üretir;
+  - aşağı yönlü yutucu yalnızca üstteki üç komşudan yutar.
+  Kum saatinin iki kapağında da aynı sıra var: ortada 8 çoğaltıcı, iki yanda ortaya 12 hücre uzakta 3'er yutucu. Çevirince görevler kendiliğinden yer değiştirir. Boyanan kaynaklar yönsüz kalır.
+- **Isıt/Soğut sürüklerken birikiyordu.** Çizgi boyunca her adım fırça ayak izinin tamamını yeniden uyguluyordu; 16'lık fırça tek bir çizgide +400 °C veriyordu. Hücre artık tick ve stroke başına en fazla bir kez değişir (Uint16 araç mührü ve nesil sayacı). Basılı tutma yine tick başına 25 °C verir.
+- **Su:** kaynama ve donma ilerlemesi aynı sayacı paylaşıyordu. Kısa süre 160 °C'de tutulan su, −3 °C'de 1 tick'te donuyordu. İlerlemenin yönü flags bit3'te tutuluyor; yön değişince ilerleme sıfırlanır.
+- **Ortam değeri:** `setAmbient`, `setDayCycle` ve `undo` dünyanın ortam değerini hemen güncellemiyordu. Duraklatılmışken boyanan hücre eski ortam sıcaklığında doğuyordu.
+- Çoğaltıcı ve Yutucu ısınınca akkorlaşmıyordu.
+- Dokunmatik ekranda sürüm rozetinin dokunma hedefi 32 px idi. Görünmez bir alanla 44 px'e genişletildi; başlık yüksekliği değişmedi.
+- Dokümanlar:
+  - `docs/MATERIALS.md`: `life` tablosu güncel anlamlarla yenilendi, geliştirme sırasındaki "Görev N" notları kaldırıldı.
+  - Volkan açıklaması ve README düzeltildi: lav yamaçta kabuk bağlar, ağaçlara ve göle ulaşmaz.
+  - README'deki yinelenen "Basınç yok" maddesi birleştirildi.
+  - Su donma koşulu açıklandı: ortam −2 °C ya da daha soğuk olmalı.
+
+### Changed
+
+- Kum saati akış testleri artık boğazdaki tanelerin gerçekten hareket ettiğini ölçüyor; tıkalı boğaz akış sayılmıyor. Ters çevirme testi geri geldi.
+- Testler güçlendirildi:
+  - uyku eşdeğerliği testine eriyen buz ve ılık hava alanı eklendi;
+  - mağara testi duvarın yerinde kaldığını ve göl suyunun lav cebine sızmadığını doğruluyor.
+
+### Performance
+
+- Gün/gece döngüsü açıkken ortam sürekli kaydığı için satır uykusu daha az işe yarıyor. Benchmark sahnesinde tick başına artış 0.9.0'a göre ~+0,85–0,90 ms; döngü kapalıyken ~+0,52–0,60 ms (ADR-014).
+
 ## [0.10.0] - 2026-09-30
 
 Sıcaklık sistemi (alt proje 1/4): her hücrede sıcaklık ve ısı iletimi, ortam ve gün/gece, gizli ısılı faz geçişleri; Buz, Kar, Metal, Erimiş metal, Çoğaltıcı, Yutucu; Isıt/Soğut fırçaları; termal görünüm; Buzul, Dökümhane, Mağara sahneleri; sürekli akan kum saati; sekmeli seçici ve Yenilikler diyaloğu. Tasarım: `docs/superpowers/specs/2026-09-30-sicaklik-sistemi-design.md`.
@@ -17,7 +50,7 @@ Sıcaklık sistemi (alt proje 1/4): her hücrede sıcaklık ve ısı iletimi, or
 
 - Başlıkta sürüm rozeti. Rozete tıklanınca "Yenilikler" diyaloğu açılır: en üstte geliştirmedeki sürümün (0.10.0) yayında olan yenilikleri, altında yayınlanmış tüm sürümler listelenir. Görülmemiş sürümde rozette küçük bir işaret görünür.
 - Sürüm tutarlılığı testi: `APP_VERSION`, `package.json`, CHANGELOG ve Yenilikler aynı sürümü göstermek zorunda. `docs/MATERIALS.md` için senkron testi: her materyal belgede yer almak zorunda.
-- Ters çevirme (`F` ya da "Ters çevir" düğmesi): dünya dikey olarak aynalanır ve işlem geri alınabilir. Kum saatinde kum bitince yeniden akıtmak için kullanılır.
+- Ters çevirme (`F` ya da "Ters çevir" düğmesi): dünya dikey olarak aynalanır ve işlem geri alınabilir. (0.10.0'da kum saati çevrilince akış duruyordu; 0.10.1'de düzeltildi.)
 - **Çoğaltıcı** (`X`): üstüne dökülen ilk hareketli materyali (toz, sıvı, gaz) öğrenir ve bitişik boş hücrelere kopyalar. Hücre başına 1000 kopya üretip durur, öğrendiği materyalin rengine bürünür. Statik materyalleri öğrenmez.
 - **Yutucu** (`Y`): değen hareketli materyali yutar; hücre başına 1000 birim, sonra durur ve grileşir.
 - Sınırsız kaynak modu (bütçe 65535) ve sahneler için `sim.configureSource(x, y, { learn, budget })` API'si.

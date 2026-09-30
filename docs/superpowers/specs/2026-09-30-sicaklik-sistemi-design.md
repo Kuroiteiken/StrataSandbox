@@ -422,7 +422,7 @@ dayLabel(p)    : Gece (p < 0.2 ya da p ≥ 0.8), Sabah (< 0.4), Öğle (< 0.6), 
 - **Kapsam:** `type`, `variant`, `life`, `flags` ve `temp` alanlarının hepsi aynalanır. Parçacık sayıları değişmez.
 - **Undo:** işlem `clear` gibi geri alınabilir; öncesinde snapshot alınır.
 - **Arayüz:** Simülasyon bölümünde "Ters çevir" düğmesi, kısayolu `F`.
-- **Kullanım:** kum saatinde kum bitince çevrilir ve kum yeniden akar. Diğer sahnelerde de çalışır; örneğin göl yukarıdan dökülür.
+- **Kullanım:** kum saati çevrilince haznelerin görevi değişir ve kum akmaya devam eder (0.10.1, §7.1). Diğer sahnelerde de çalışır; örneğin göl yukarıdan dökülür.
 - **Çift çevirme:** iki kez çevirmek dünyayı birebir ilk hâline döndürür.
 
 ### 5.3 Materyal seçici
@@ -556,16 +556,17 @@ Kullanıcı isteği (2026-09-30): sürüm numarası ekranda görünsün ve eklen
   - Önce üst yarı üretilir, alt yarı dünyanın orta satırına göre aynalanır (`y → H−1−y`).
   - Böylece çevirme (§5.2) şekli birebir korur; grid yüksekliğinin tek ya da çift olması fark etmez.
 - **Boğaz:** 2 hücre genişliğinde, 2–3 satır uzunluğunda bir tüp.
-- **Sürekli akış** (kullanıcı isteği):
-  - Üst haznenin ilk satırında, kapağın hemen altında, kumu öğrenmiş **sınırsız çoğaltıcı** sırası vardır (en fazla 8 hücre).
-  - Alt haznenin son satırında **sınırsız yutucu** sırası vardır (en fazla 6 hücre; altta küçük, sabit bir yığın kalır).
-  - Çoğaltıcı boşalan yeri doldurur, yutucu biriken kumu yutar. Kum boğazdan hiç durmadan akar ve alt hazne tıkanmaz.
-  - Kaynaklar şeklin simetrisine dahil değildir. Ters çevirme yine çalışır ama sürekli akış için gerekli değildir.
+- **Sürekli akış** (kullanıcı isteği; 0.10.1'de çevirmeye dayanıklı hâle getirildi):
+  - İki kapağın iç yüzündeki satırda aynı **sınırsız, aşağı yönlü** kaynak sırası vardır (ADR-016 eki). Ortada kumu öğrenmiş 8 çoğaltıcı, iki yanda ortaya 12 hücre uzakta 3'er yutucu bulunur.
+  - Üstteki kapakta çoğaltıcılar hazneye kum üretir, yutucuların üstü kapak olduğu için boşta kalır. Alttaki kapakta yutucular yukarıdan yutar, çoğaltıcıların altı kapak olduğu için boşta kalır.
+  - Alt yığın yutuculara uzanana kadar büyür (~370 kum). Kum boğazdan hiç durmadan akar ve alt hazne tıkanmaz.
+  - Kaynaklar şeklin simetrisine dahildir. Ters çevirince görevler kendiliğinden yer değiştirir ve akış sürer.
+  - 0.10.0'da kaynaklar yönsüzdü ve yalnızca bir kapaktaydı. Çevirme akışı kalıcı olarak durduruyordu; bütün-dal incelemesinde bulundu.
 - **Çerçeve:**
   - üstte ve altta 3 satır kalınlığında odun kapak
   - iki yanda odun direk; direkler camdan 2 hücre uzakta
 - **Kum miktarı:** üst haznenin yaklaşık %85'i.
-- **İpucu:** sahne yüklenince duyuru bölgesine (`aria-live`) "Kum bitince Ters çevir (F)" yazılır.
+- **İpucu:** sahne yüklenince duyuru bölgesine (`aria-live`) sürekli akışı ve çevirmeyi anlatan kısa bir cümle yazılır (`js/scenes/index.js`).
 
 ### 7.2 Yeni sahne: Dökümhane
 
@@ -680,9 +681,10 @@ Kullanıcı isteği (2026-09-30): sürüm numarası ekranda görünsün ve eklen
 - Volkan regresyon testi ve magma testi.
 - **Kum saati:**
   - Üretilen dünya kendi aynasına eşittir.
-  - Üst hazne boşalır: 400×225'te 1× hızda 30–60 s içinde kumun %99,5'i alta geçer.
-  - Çevrilince kum yeniden akar.
-  - Toplam kum korunur.
+  - Sürekli akar: 3000 tick sonra boğazdaki taneler örneklerin en az %80'inde hareket eder; üst hazne dolu kalır, alt hazne tıkanmaz.
+  - Çevrilince (iki kez) akış sürer (0.10.1).
+  - Uç en-boy oranlarında (64×48, 400×120, 120×300) da akar.
+  - (Boşalma süresi ve toplam kum korunumu testleri sürekli akışla anlamını yitirdi; Görev 3 kararı.)
 - **Dökümhane:** 3000 tick sonunda metal sayısı artar, erimiş metal azalır, kalıplar dolar. Erimiş metal oluk dışına taşmaz.
 - **Mağara:** göl suyu mağaradan dışarı sızmaz. Lav cebi ile göl arasındaki duvar yerinde kalır.
 - **Çoğaltıcı:**

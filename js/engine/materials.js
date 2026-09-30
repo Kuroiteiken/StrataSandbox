@@ -49,7 +49,7 @@ export const MAT = Object.freeze({
 //   drift: yükselirken köşegeni önce deneme olasılığı (yatay sürüklenme)
 //   rise:  tick başına hareket etme olasılığı (varsayılan 1; ateş yakıtın yanında oyalanır)
 // Reaksiyon alanları:
-//   life:      [min, max] spawn ömrü/sayacı (ateş ömrü, buhar yoğuşma süresi, yanma süresi, bitki bütçesi)
+//   life:      [min, max] spawn ömrü/sayacı (ateş ömrü, yanma süresi, bitki bütçesi, kaynak bütçesi)
 //   flammable: ateş/yanan komşu örneklediğinde tutuşma olasılığı; burnsInto: tutuşunca olacağı materyal
 //   burn:      yanan durumlar için { emit: üstüne ateş üretme, douse: suyla sönme, ash: kül bırakma,
 //              extinguishTo: sönünce olacağı materyal }

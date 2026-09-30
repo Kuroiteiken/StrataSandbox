@@ -2,12 +2,18 @@
 // Cam ve odun şekli dünyanın orta satırına göre tam simetriktir (ters çevirince (F) aynı kalır).
 // Akış sahte değildir: kum yalnızca fizik kurallarıyla boğazdan akar.
 // Duvar eğimi satır başına en fazla 1 hücredir (A ≤ 0,66·L), bu yüzden kum camda takılmaz.
-// Sürekli akış: üstte kumu öğrenmiş sınırsız çoğaltıcı boşalan yeri doldurur, altta sınırsız yutucu
-// biriken kumu yutar (kaynaklar şeklin simetrisine dahil değildir).
+// Sürekli akış: iki kapağın iç yüzünde de aynı kaynak sırası var, hepsi sınırsız ve "aşağı yönlü":
+// ortada kumu öğrenmiş çoğaltıcılar, iki yanda biraz uzakta yutucular. Üstteki kapakta çoğaltıcılar
+// hazneye kum üretir (yutucuların üstü kapak, boşta kalır); alttaki kapakta yutucular yukarıdan
+// yutar (çoğaltıcıların altı kapak, boşta kalır). Alttaki yığın yutuculara uzanana kadar büyür, bu
+// yüzden boyu yutucuların ortaya uzaklığıyla belirlenir. Çevirince (F) roller yer değiştirir.
 import { MAT } from '../engine/materials.js';
 import { frame } from './tools.js';
 
 const SAND_FILL = 0.85; // üst haznenin doluluk oranı
+const CLONER_HALF = 4; // ortada en fazla 8 çoğaltıcı
+const SINK_GAP = 12; // yutucuların ortadaki çifte uzaklığı (alt yığının yarı taban genişliği)
+const SINK_RUN = 3; // her yanda 3 yutucu
 const smoothstep = (u) => u * u * (3 - 2 * u);
 
 export function hourglass(sim) {
@@ -53,15 +59,17 @@ export function hourglass(sim) {
     filled += 2 + 2 * a;
   }
 
-  // Kaynaklar: iç boşluğun ortasında; yarı genişlik ≤ A + 1 olduğundan camın içinde kalır.
-  const clonerHalf = Math.min(4, A + 1); // en fazla 8 hücre
-  const sinkHalf = Math.min(3, A + 1); // en fazla 6 hücre: yutma akışa yetişir, altta küçük bir yığın kalır
-  for (let x = cx + 1 - clonerHalf; x <= cx + clonerHalf; x++) {
-    sim.setCell(x, glassTop, MAT.CLONER);
-    sim.configureSource(x, glassTop, { learn: MAT.SAND, budget: Infinity });
-  }
-  for (let x = cx + 1 - sinkHalf; x <= cx + sinkHalf; x++) {
-    sim.setCell(x, H - 1 - glassTop, MAT.SINK);
-    sim.configureSource(x, H - 1 - glassTop, { budget: Infinity });
-  }
+  // Kaynaklar: kapağın altındaki satırda; ortadaki çifte uzaklık d ≤ A olduğundan camın içinde kalır.
+  // Sıra sol/sağ simetriktir: d < cHalf çoğaltıcı, d ∈ [k, k + SINK_RUN) yutucu.
+  const cHalf = Math.min(CLONER_HALF, A + 1);
+  const k = Math.max(cHalf, Math.min(SINK_GAP, A + 1 - SINK_RUN));
+  const source = (d, mat, options) => {
+    if (d > A) return;
+    for (const x of [cx - d, cx + 1 + d]) {
+      put(x, glassTop, mat);
+      for (const y of [glassTop, H - 1 - glassTop]) sim.configureSource(x, y, options);
+    }
+  };
+  for (let d = 0; d < cHalf; d++) source(d, MAT.CLONER, { learn: MAT.SAND, budget: Infinity, downward: true });
+  for (let d = k; d < k + SINK_RUN; d++) source(d, MAT.SINK, { budget: Infinity, downward: true });
 }

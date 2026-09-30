@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MAT } from '../js/engine/materials.js';
 import { Simulation } from '../js/engine/simulation.js';
-import { CLONER_LEARNED, SOURCE_INFINITE } from '../js/engine/reactions.js';
+import { CLONER_LEARNED, SOURCE_DOWNWARD, SOURCE_INFINITE } from '../js/engine/reactions.js';
 import { makeSim, countMaterial, runTicks, hashView, toAscii } from './helpers.js';
 
 function source(sim, x, y, mat, options) {
@@ -88,10 +88,50 @@ test('configureSource yalnızca kaynaklarda, hareketli materyal ve geçerli büt
   assert.equal(sim.configureSource(2, 2, { budget: 70000 }), false);
   assert.equal(sim.configureSource(2, 2, { budget: 1.5 }), false);
   assert.equal(sim.configureSource(9, 9, { budget: 5 }), false, 'dünya dışı');
+  assert.equal(sim.configureSource(2, 2, { downward: 'evet' }), false, 'yön mantıksal olmalı');
   assert.equal(sim.configureSource(2, 2, { learn: MAT.OIL, budget: 7 }), true);
   assert.equal(sim.getCell(2, 2).variant, MAT.OIL);
   assert.equal(sim.getCell(2, 2).life, 7);
   assert.equal(sim.canUndo, false, 'ayar undo noktası oluşturmaz');
+});
+
+test('aşağı yönlü çoğaltıcı yalnızca alttaki üç komşuya üretir (üstüne ve yanlarına kopya yok)', () => {
+  const sim = new Simulation({ width: 9, height: 12, seed: 'down-clone', debug: true });
+  source(sim, 4, 3, MAT.CLONER, { learn: MAT.SAND, budget: Infinity, downward: true });
+  assert.ok((sim.world.flags[sim.world.index(4, 3)] & SOURCE_DOWNWARD) !== 0);
+  for (let t = 0; t < 300; t++) {
+    sim.step();
+    for (let x = 0; x < 9; x++) for (let y = 0; y <= 3; y++) {
+      if (y === 3 && x === 4) continue;
+      assert.equal(sim.getCell(x, y).material, MAT.EMPTY, `tick ${t}: (${x},${y}) dolu\n${toAscii(sim)}`);
+    }
+  }
+  assert.ok(countMaterial(sim, MAT.SAND) > 20, 'aşağı üretmeli');
+});
+
+test('aşağı yönlü yutucu yalnızca üstündekini yutar; yandaki ve alttaki kalır', () => {
+  const sim = makeSim(`
+    .......
+    ...S...
+    .#SVS#.
+    .##S##.
+    #######
+  `, { seed: 'down-sink' });
+  assert.equal(sim.configureSource(3, 2, { budget: Infinity, downward: true }), true);
+  runTicks(sim, 400);
+  assert.equal(sim.getCell(3, 1).material, MAT.EMPTY, 'üstteki yutulmalı');
+  for (const [x, y] of [[2, 2], [4, 2], [3, 3]]) assert.equal(sim.getCell(x, y).material, MAT.SAND, `(${x},${y}) kalmalı\n${toAscii(sim)}`);
+});
+
+test('yönsüz yutucu (varsayılan) yandakini de yutar', () => {
+  const sim = makeSim(`
+    .......
+    ..SVS..
+    #######
+  `, { seed: 'omni-sink' });
+  assert.equal(sim.configureSource(3, 1, { budget: Infinity }), true);
+  runTicks(sim, 400);
+  assert.equal(countMaterial(sim, MAT.SAND), 0);
 });
 
 test('kaynaklar deterministiktir', () => {

@@ -2,8 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MAT } from '../js/engine/materials.js';
 import { Simulation } from '../js/engine/simulation.js';
+import { SOURCE_DOWNWARD } from '../js/engine/reactions.js';
 import { SCENES, getScene, DEFAULT_SCENE_ID } from '../js/scenes/index.js';
-import { valueNoise, fillPolygon } from '../js/scenes/tools.js';
+import { valueNoise, fillPolygon, frame } from '../js/scenes/tools.js';
 import { countMaterial, runTicks, cellType } from './helpers.js';
 
 const SIZES = [[320, 180], [400, 225], [120, 166], [64, 48]];
@@ -97,8 +98,34 @@ function neckHasSand(sim) {
   return false;
 }
 
-test('Kum saati: kum ve kaynaklar dışındaki şekil orta satıra göre tam simetrik, başta tüm kum üstte', () => {
-  const norm = (m) => (m === MAT.SAND || m === MAT.CLONER || m === MAT.SINK ? MAT.EMPTY : m);
+// Boğazdaki taneler gerçekten akıyor mu: ardışık örneklerde boğaz hücrelerinin (tür, ton) imzası
+// değişmeli. Tıkanmış boğaz kum dolu olsa da imzası sabit kalır.
+function neckSignature(sim) {
+  const { width: W, height: H } = sim.view;
+  const cx = Math.floor((W - 2) / 2);
+  const midRow = Math.floor((H - 1) / 2);
+  const neckStart = H % 2 === 1 ? midRow - 1 : midRow;
+  let s = '';
+  for (let y = neckStart - 2; y <= H + 1 - neckStart; y++) for (const x of [cx, cx + 1]) { const c = sim.getCell(x, y); s += `${c.material}:${c.variant},`; }
+  return s;
+}
+
+function flowRatio(sim, ticks) {
+  let moving = 0;
+  let samples = 0;
+  let prev = neckSignature(sim);
+  for (let t = 0; t < ticks; t += 20) {
+    runTicks(sim, 20);
+    const sig = neckSignature(sim);
+    samples++;
+    if (neckHasSand(sim) && sig !== prev) moving++;
+    prev = sig;
+  }
+  return moving / samples;
+}
+
+test('Kum saati: kum dışındaki şekil (kaynaklar dahil) orta satıra göre tam simetrik, başta tüm kum üstte', () => {
+  const norm = (m) => (m === MAT.SAND ? MAT.EMPTY : m);
   for (const [w, h] of HG_SIZES) {
     const sim = load('hourglass', 'hg', w, h);
     assert.ok(present(sim, MAT.GLASS, MAT.WOOD, MAT.SAND, MAT.CLONER, MAT.SINK), `${w}×${h}`);
@@ -111,22 +138,23 @@ test('Kum saati: kum ve kaynaklar dışındaki şekil orta satıra göre tam sim
   }
 });
 
-test('Kum saati: üstte kumu öğrenmiş sınırsız çoğaltıcı, altta sınırsız yutucu', () => {
+test('Kum saati: iki kapakta da aynı aşağı yönlü kaynak sırası (kumu öğrenmiş sınırsız çoğaltıcı + sınırsız yutucu)', () => {
   const sim = load('hourglass', 'hg', 320, 180);
-  assert.ok(countMaterial(sim, MAT.CLONER) > 0 && countMaterial(sim, MAT.SINK) > 0, 'kaynaklar yerleşmeli');
+  const halves = { [MAT.CLONER]: [0, 0], [MAT.SINK]: [0, 0] };
   for (let y = 0; y < 180; y++) {
     for (let x = 0; x < 320; x++) {
       const m = cellType(sim, x, y);
-      if (m === MAT.CLONER) {
-        assert.ok(y < 90, 'çoğaltıcı üst yarıda');
-        assert.equal(sim.getCell(x, y).variant, MAT.SAND);
-        assert.equal(sim.getCell(x, y).life, 65535);
-      }
-      if (m === MAT.SINK) {
-        assert.ok(y >= 90, 'yutucu alt yarıda');
-        assert.equal(sim.getCell(x, y).life, 65535);
-      }
+      if (m !== MAT.CLONER && m !== MAT.SINK) continue;
+      halves[m][y < 90 ? 0 : 1]++;
+      const c = sim.getCell(x, y);
+      assert.equal(c.life, 65535, 'sınırsız');
+      assert.ok((sim.world.flags[sim.world.index(x, y)] & SOURCE_DOWNWARD) !== 0, 'aşağı yönlü');
+      if (m === MAT.CLONER) assert.equal(c.variant, MAT.SAND);
     }
+  }
+  for (const m of [MAT.CLONER, MAT.SINK]) {
+    assert.ok(halves[m][0] >= 4, `kapak başına en az 4 (${m})`);
+    assert.equal(halves[m][0], halves[m][1], 'iki kapak aynı');
   }
 });
 
@@ -134,17 +162,26 @@ test('Kum saati sürekli akar: boğaz boşalmaz, üst hazne dolu kalır, alt haz
   const sim = load('hourglass', 'hg', 400, 225);
   const initialTop = sandHalves(sim).top;
   runTicks(sim, 3000);
-  let flowing = 0;
-  let samples = 0;
-  for (let t = 3000; t < 6000; t += 20) {
-    runTicks(sim, 20);
-    samples++;
-    if (neckHasSand(sim)) flowing++;
-  }
-  assert.ok(flowing / samples >= 0.8, `boğazda kum oranı ${(flowing / samples).toFixed(2)}`);
+  const ratio = flowRatio(sim, 3000);
+  assert.ok(ratio >= 0.8, `boğazda akan kum oranı ${ratio.toFixed(2)}`);
   const { top, bottom } = sandHalves(sim);
   assert.ok(top >= initialTop * 0.5, `üst ${top} / başlangıç ${initialTop}`);
   assert.ok(bottom < initialTop * 0.6, `alt ${bottom} (tıkanma)`);
+});
+
+test('Kum saati çevrilince (F) de sürekli akar; geri çevirince yine akar', () => {
+  const sim = load('hourglass', 'hg', 400, 225);
+  runTicks(sim, 3000);
+  const initial = sandHalves(sim).top + sandHalves(sim).bottom;
+  for (const round of [1, 2]) {
+    sim.flipVertical();
+    runTicks(sim, 3000);
+    const ratio = flowRatio(sim, 3000);
+    assert.ok(ratio >= 0.8, `çevirme ${round}: boğazda akan kum oranı ${ratio.toFixed(2)}`);
+    const { top, bottom } = sandHalves(sim);
+    assert.ok(top >= initial * 0.3, `çevirme ${round}: üst ${top} / toplam ${initial}`);
+    assert.ok(bottom < initial * 0.6, `çevirme ${round}: alt ${bottom} (tıkanma)`);
+  }
 });
 
 test('Kum saati uç en-boy oranlarında da akar', () => {
@@ -265,16 +302,31 @@ test('Dökümhane: erimiş metal kalıplara akar ve katılaşır', () => {
   assert.deepEqual(sim.world.checkInvariants(), []);
 });
 
-test('Mağara: göl ve lav cebi arasındaki duvar kalır; ısınan göl kenarından buhar yükselir', () => {
+test('Mağara: göl ve lav cebi arasındaki duvar kalır, göl suyu cebe sızmaz; ısınan göl kenarından buhar yükselir', () => {
   const sim = load('cave', 'c', 320, 180);
   assert.ok(present(sim, MAT.WATER, MAT.LAVA, MAT.MAGMA, MAT.WOOD, MAT.OIL, MAT.SAND, MAT.STONE));
+  // cave.js ile aynı geometri: lav cebinin merkez satırında cebin solundaki taş duvar.
+  const { W, X, Y, S } = frame(sim);
+  const lx = X(0.58);
+  const lr = Math.max(3, S(0.11));
+  const pr = Math.max(2, S(0.04));
+  const pxc = Math.min(W - 2 - pr, lx + lr + 3 + pr);
+  const pyc = Y(0.72) + Math.round(lr / 3);
+  const wall = [];
+  for (let x = pxc - pr - 1; x > lx && cellType(sim, x, pyc) === MAT.STONE; x--) wall.push(x);
+  assert.ok(wall.length >= 2, `duvar ${wall.length} hücre`);
+  const inPocket = (x, y) => (x - pxc) * (x - pxc) + (y - pyc) * (y - pyc) <= pr * pr;
   let steamAt = -1;
-  for (let k = 0; k < 4000 && steamAt < 0; k++) {
+  for (let k = 0; k < 4000; k++) {
     sim.step();
-    if (countMaterial(sim, MAT.STEAM) > 0) steamAt = k;
+    if (steamAt < 0 && countMaterial(sim, MAT.STEAM) > 0) steamAt = k;
   }
   assert.ok(steamAt >= 0, 'kaplıca buharı oluşmadı');
   assert.ok(countMaterial(sim, MAT.MAGMA) > 0);
+  for (const x of wall) assert.equal(cellType(sim, x, pyc), MAT.STONE, `duvar (${x},${pyc}) yerinde kalmalı`);
+  for (let y = pyc - pr; y <= pyc + pr; y++) {
+    for (let x = pxc - pr; x <= pxc + pr; x++) if (inPocket(x, y)) assert.notEqual(cellType(sim, x, y), MAT.WATER, `cepte su (${x},${y})`);
+  }
 });
 
 test('Volkan: magma kaynağı yerinde kalır ve magma odasındaki lav uzun süre sıvı kalır', () => {

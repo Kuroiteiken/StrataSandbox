@@ -12,6 +12,18 @@ export const UNRELEASED = Object.freeze({
 
 export const RELEASES = Object.freeze([
   {
+    version: '0.10.1',
+    date: '2026-09-30',
+    items: [
+      'Su, yanan odunu ve bitkiyi yeniden güvenilir biçimde söndürüyor (0.10.0’da sönen odun kendi ısısıyla yeniden tutuşabiliyordu).',
+      'Kum saati ters çevrilince (F) de akmaya devam ediyor: iki kapakta aynı kaynak sırası var ve çevirince görevleri yer değiştiriyor.',
+      'Isıt ve Soğut fırçası sürüklerken artık birikmiyor: fırça boyutundan bağımsız olarak her hücre tick başına en fazla 25 °C değişiyor.',
+      'Kaynamaya başlamış su soğutulunca gizli ısıyı atlayıp anında donmuyor (tersi de geçerli).',
+      'Duraklatılmışken ortam sıcaklığı değiştirilince yeni boyanan materyal yeni sıcaklıkta doğuyor.',
+      'Isınan Çoğaltıcı ve Yutucu da kızarıp parlıyor. Dokunmatik ekranda sürüm rozeti daha kolay dokunuluyor.',
+    ],
+  },
+  {
     version: '0.10.0',
     date: '2026-09-30',
     items: [
@@ -19,7 +31,7 @@ export const RELEASES = Object.freeze([
       'Ortam bölümü: sıcaklık kaydırıcısı (−40…60 °C), gün/gece döngüsü ve termal görünüm (T). Başlıkta ortam sıcaklığı ve imlecin altındaki materyalin sıcaklığı görünür.',
       'Materyal seçici sekmelere ayrıldı: Toz, Sıvı, Gaz, Katı, Araç.',
       'Isıt (H) ve Soğut (C) fırçaları: materyal koymadan sıcaklığı değiştirir; suyu kaynatmak, lavı dondurmak ya da metali eritmek için basılı tutun.',
-      'Yeni materyaller: Buz (B), Kar (K), Metal (M) ve Erimiş metal (E). Su 0 °C altında donar ve göl yüzeyden buz tutar; metal ısıyı hızla iletip kızarır ve 1400 °C’de erir.',
+      'Yeni materyaller: Buz (B), Kar (K), Metal (M) ve Erimiş metal (E). Ortam −2 °C ya da daha soğuksa su donar ve göl yüzeyden buz tutar; metal ısıyı hızla iletip kızarır ve 1400 °C’de erir.',
       'Sıcaklık: her hücrenin bir sıcaklığı var ve ısı komşulara iletiliyor. Su kaynıyor, buhar soğuyunca yoğuşup yağıyor, lav dış yüzeyinden soğuyup taşa dönüyor, lavla uzun temas eden kum cama dönüşüyor.',
       'Odun, yağ ve bitki yeterince ısınınca kendiliğinden tutuşuyor; sıcak ortamda açık su yavaşça buharlaşıyor.',
       'Isı görselleri: 450 °C üstündeki taş, kum ve cam kızarıyor ve parlıyor; lav soğudukça koyulaşıyor, donmaya yaklaşan su açık maviye dönüyor.',

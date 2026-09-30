@@ -504,6 +504,13 @@
   .version-badge {
     min-height: 32px;
   }
+
+  /* Dokunma hedefi ≥ 44 px: görünür boyut ve başlık yüksekliği değişmeden görünmez alan genişler. */
+  .version-badge::before {
+    content: "";
+    position: absolute;
+    inset: -6px -4px;
+  }
 }
 
 /* Materyal seçici sekmeleri */

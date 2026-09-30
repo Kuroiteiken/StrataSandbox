@@ -179,6 +179,7 @@ Burada yalnızca gerçekten önemli teknik kararlar tutulur. Her kayıt dört ba
 - **Alternatif:** 4×4 kaba ısı ızgarası; mevcut `life` sayaçlarını genişletmek.
 - **Sonuç:** Reddedildi. Kaba ızgara ince yapıları ve ısının maddeyle taşınmasını kaybeder. Sayaçlar iletimi hiç modellemez.
 - **Ölçüm:** 400×225 benchmark sahnesinde tick başına ~+0,64–0,71 ms. Isı geçişinin kendisi ~0,62 ms. Hedef +0,6 ms'ydi; ~0,1 ms aşıldı, karar kaydı DEVELOPMENT.md'de.
+  - **Gün/gece açıkken (0.10.1 incelemesi):** ortam sürekli kaydığı için taş gibi iç bölgeler hiç yerleşmez ve satır uykusu daha az işe yarar. Aktif satır oranı benchmark'ta %66'dan %100'e, volkanda %45'ten %82'ye çıkar. Eşleştirilmiş ölçümde artış döngü kapalıyken ~+0,52–0,60 ms, açıkken ~+0,85–0,90 ms. Toplam tick yine ADR-005'in 6 ms eşiğinin çok altında.
 - **Optimizasyonlar:**
   - satır uykusu (±0,5 °C, bilinçli yaklaşıklık)
   - materyal başına eşik adayı penceresi
@@ -196,6 +197,7 @@ Burada yalnızca gerçekten önemli teknik kararlar tutulur. Her kayıt dört ba
   - Anlık dönüşüm titreşim üretir.
   - Entalpi alanı ek bellek ve geçiş maliyeti getirir.
 - **Bilinen basitleştirme:** sönen ilerlemenin enerjisi geri verilmez.
+- **İki kenarlı materyal (0.10.1):** su hem kaynar hem donar ve iki yön aynı `life` sayacını kullanır. İlerlemenin yönü `flags` bit3'te tutulur; yön değişince ilerleme sıfırlanır. `transform` bu biti temizler (yalnızca bit0 korunur).
 
 ## ADR-016 — Kaynaklar: Çoğaltıcı ve Yutucu
 
@@ -211,3 +213,8 @@ Burada yalnızca gerçekten önemli teknik kararlar tutulur. Her kayıt dört ba
 - **Alternatif:** Sahneye özgü sabit "emitter" materyalleri.
 - **Sonuç:** Reddedildi. Genel kaynak her sahnede ve kullanıcı boyamasında işe yarıyor.
 - **Bilinen sınır:** basınç yok. Dolu bir odanın altındaki çoğaltıcının boş komşusu olmaz ve üretim yapmaz (alt proje 2).
+- **Ek (0.10.1): aşağı yönlü mod.** `configureSource(x, y, { downward: true })` `flags` bit2'yi açar. Aşağı yönlü kaynak yalnızca yönündeki üç komşudan birini örnekler: çoğaltıcı alttakilere üretir, yutucu üsttekileri yutar.
+  - **Neden:** yönsüz kaynaklarla kum saati ters çevrilince akış kalıcı olarak duruyordu. Alttaki çoğaltıcı kumun altında kalıyor, üstteki yutucu boşta kalıyordu. Yön dünya koordinatında olduğu için iki kapağa aynı sıra konunca çevirme görevleri kendiliğinden değiştirir.
+  - **Alternatif:** çoğaltıcıyı her zaman "materyalin hareket yönünde" üretir yapmak. Reddedildi: volkan yarığının tabanındaki çoğaltıcılar lavı yukarı doğru dolduruyor, kullanıcının boyadığı "üstüne döküleni çoğaltan" kaynağın davranışı da değişirdi.
+  - **Alternatif:** sahneye çevirme kancası. Reddedildi: çevirme genel bir dünya işlemi.
+  - Seçiciden boyanan kaynaklar yönsüz kalır.

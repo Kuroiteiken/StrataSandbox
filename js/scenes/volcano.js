@@ -1,6 +1,7 @@
 // Volkan (varsayılan sahne): taş koni, krater ve magma odası, sağa açılan bir yarıktan
 // taşan lav, yamaçlarda kum, solda göl ve kıyısında bitkiler, sağda ağaçlar.
-// Lav zamanla ağaçlara ve göle ulaşır: tutuşma, buharlaşma ve taşlaşma etkileşimleri.
+// Lav sağ yamaçtan kabuk bağlayarak iner ve taşlaşır; soğuk yamaçta donduğu için ağaçlara ve göle
+// ulaşmaz (ateş, su ve tutuşma etkileşimleri için Isıt fırçası ya da elle dökülen lav kullanılır).
 import { MAT } from '../engine/materials.js';
 import { frame, valueNoise, rect, disk, fillColumns, isEmpty } from './tools.js';
 

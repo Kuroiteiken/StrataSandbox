@@ -1,6 +1,6 @@
 {
   "name": "strata-sandbox",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "private": true,
   "description": "Strata Sandbox: tarayıcıda çalışan, grid tabanlı (cellular automaton) materyal ve fizik sandbox'ı.",
   "type": "module",

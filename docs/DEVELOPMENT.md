@@ -804,4 +804,5 @@ Benchmark sahnesi (Phase 7) ve `tools/bench.js` (Phase 10) hazır olduğunda dol
 | 2026-09-30 | Phase 10 | Win10 x64, Node 22.17 | 200×200 | 19 917 | 1,78 | 3,78 | |
 | 2026-09-30 | Görev 5 | Win10 x64, Node 22.17 | 400×225 | 43 911 | 1,25–1,27 (ısısız aynı ölçüm 0,77) | 1,57–1,61 | ısı geçişi: aktif satır oranı %26, geçişin payı ~0,39 ms; hedef +0,6 ms içinde |
 | 2026-09-30 | Görev 14 | Win10 x64, Node 22.17 | 400×225 | 44 378 | 1,49–1,74 (eşleştirilmiş en iyi; aynı koşulda 0.9.0 0,85–1,03) | 2,7–4,1 | +0,64–0,71 ms; ısı geçişi ~0,62 ms (eşik adayı penceresi + hava hızlı yolu); makine gürültülü |
+| 2026-09-30 | 0.10.1 yaması | Win10 x64, Node 22.17 | 400×225 | 44 378 | 1,36 | 2,14 | Araç mührü, yönlü kaynaklar ve faz yönü biti sonrası; gerileme yok. Gün/gece açıkken artış ~+0,85–0,90 ms (inceleme ölçümü, ADR-014) |
 | 2026-09-30 | Phase 10 | Chrome 154 (Playwright) | 320×207 | 32 466 | 3,0 | 4,5 | render medyanı 2,3 ms (glow: high) |

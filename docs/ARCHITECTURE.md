@@ -44,7 +44,7 @@ Renderer.render(view, frameInfo)                                 ← state'i asl
 | `type` | `Uint8Array` | materyal id (0 = EMPTY/hava) |
 | `variant` | `Uint8Array` | parçacığa özgü kozmetik ton; parçacıkla birlikte taşınır |
 | `life` | `Uint16Array` | materyale göre anlamı değişen sayaç: ömür, yanma, faz ilerlemesi, büyüme bütçesi, kaynak bütçesi |
-| `flags` | `Uint8Array` | bit0 = sıvının kalıcı akış yönü; bit1 = çoğaltıcı materyal öğrendi |
+| `flags` | `Uint8Array` | bit0 = sıvının kalıcı akış yönü; bit1 = çoğaltıcı materyal öğrendi; bit2 = kaynak aşağı yönlü (ADR-016); bit3 = faz ilerlemesi aşağı kenara doğru (ADR-015). `transform` yalnızca bit0'ı korur |
 | `temp` / `tempNext` | `Float32Array` | sıcaklık (°C), hava dahil her hücre; difüzyon için çift tampon (0.10.0, ADR-014) |
 | `stamp` | `Uint16Array` | update stamp; taşmada `fill(0)` yapılır ve saat 1'den başlar |
 

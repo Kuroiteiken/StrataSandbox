@@ -50,6 +50,29 @@ test('faz ilerlemesi eşiğin gerisine dönülünce söner', () => {
   assert.equal(cellType(sim, 0, 1), MAT.WATER);
 });
 
+test('kaynama ilerlemesi donmayı kısaltmaz (ve tersi): yön değişince ilerleme sıfırlanır', () => {
+  const freezeTicks = (preheat) => {
+    const sim = new Simulation({ width: 1, height: 2, seed: 'dir' });
+    sim.setCell(0, 1, MAT.WATER);
+    if (preheat) holdTemp(sim, 0, 1, 160, 2);
+    return holdTemp(sim, 0, 1, -3, 400, (s) => cellType(s, 0, 1) === MAT.ICE);
+  };
+  const plain = freezeTicks(false);
+  const after = freezeTicks(true);
+  assert.ok(plain > 10, `normal donma ${plain} tick`);
+  assert.ok(after >= plain * 0.8, `kaynama ilerlemesinden sonra donma ${after} tick (normal ${plain})`);
+  const boilTicks = (prechill) => {
+    const sim = new Simulation({ width: 1, height: 2, seed: 'dir2' });
+    sim.setCell(0, 1, MAT.WATER);
+    if (prechill) holdTemp(sim, 0, 1, -40, 2);
+    return holdTemp(sim, 0, 1, 110, 400, (s) => countMaterial(s, MAT.STEAM) > 0 || cellType(s, 0, 1) !== MAT.WATER);
+  };
+  const boil = boilTicks(false);
+  const boilAfter = boilTicks(true);
+  assert.ok(boil > 10, `normal kaynama ${boil} tick`);
+  assert.ok(boilAfter >= boil * 0.8, `donma ilerlemesinden sonra kaynama ${boilAfter} tick (normal ${boil})`);
+});
+
 test('odun 300 °C üstünde kendiliğinden tutuşur, 250 °C\'de tutuşmaz', () => {
   const hot = new Simulation({ width: 3, height: 3, seed: 'ign' });
   hot.setCell(1, 1, MAT.WOOD);

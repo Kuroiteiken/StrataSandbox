@@ -86,20 +86,19 @@ export function fillPixels(view, out, pal, ramps, frame, reducedMotion, glow = n
           if (glow) g = withAlpha(out[o], (30 + burnLevel * 150) | 0, littleEndian);
           break;
         }
-        case DYN.CLONER: {
-          // variant öğrenilen materyali tutar; ton hücre indeksinden. Öğrenmiş: %50, bütçesi bitmiş: %20 karışım.
-          let c = pal[t * SHADES + (i & SHADE_MASK)];
-          if ((flags[i] & 2) !== 0) c = mixPacked(c, pal[variant[i] * SHADES + (i & SHADE_MASK)], life[i] > 0 ? 0.5 : 0.2);
-          out[o] = c;
-          break;
-        }
-        case DYN.SINK: {
-          const c = pal[t * SHADES + (i & SHADE_MASK)];
-          out[o] = life[i] > 0 ? c : mixPacked(c, spent, 0.5);
-          break;
-        }
         default: {
-          let c = pal[t * SHADES + (variant[i] & SHADE_MASK)];
+          let c;
+          if (DYNAMIC[t] === DYN.CLONER) {
+            // variant öğrenilen materyali tutar; ton hücre indeksinden. Öğrenmiş: %50, bütçesi bitmiş: %20 karışım.
+            c = pal[t * SHADES + (i & SHADE_MASK)];
+            if ((flags[i] & 2) !== 0) c = mixPacked(c, pal[variant[i] * SHADES + (i & SHADE_MASK)], life[i] > 0 ? 0.5 : 0.2);
+          } else if (DYNAMIC[t] === DYN.SINK) {
+            c = pal[t * SHADES + (i & SHADE_MASK)];
+            if (life[i] === 0) c = mixPacked(c, spent, 0.5);
+          } else {
+            c = pal[t * SHADES + (variant[i] & SHADE_MASK)];
+          }
+          // Akkorluk ve soğuk su tonu: ateş, lav ve yanma dışındaki tüm maddeler (kaynaklar dahil).
           const T = temp[i];
           if (T >= INC_START) {
             hotCells++;

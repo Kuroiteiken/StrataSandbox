@@ -140,6 +140,19 @@ test('öğrenmiş çoğaltıcı öğrendiği materyalin rengine bürünür; büt
   assert.ok(luma(out[5]) > luma(out[4]) + 20, 'tükenmiş yutucu grileşir');
 });
 
+test('sıcak çoğaltıcı ve yutucu da akkorlaşır (kaynak rengi korunarak)', () => {
+  const sim = simWith([[0, 0, MAT.CLONER, undefined, 20], [1, 0, MAT.CLONER, undefined, 900], [0, 1, MAT.SINK, undefined, 20], [1, 1, MAT.SINK, undefined, 900]]);
+  const out = new Uint32Array(12);
+  const glow = new Uint32Array(12);
+  const hot = fillPixels(sim.view, out, pal, ramps, 0, true, glow);
+  assert.equal(hot, 2);
+  for (const [cold, warm] of [[0, 1], [4, 5]]) {
+    assert.ok(red(out[warm]) > red(out[cold]) + 40, `hücre ${warm} kızarmalı`);
+    assert.equal(glow[cold], 0);
+    assert.ok(glow[warm] >>> 24 > 0, `hücre ${warm} glow vermeli`);
+  }
+});
+
 test('fillPixels simülasyon durumunu değiştirmez', () => {
   const sim = new Simulation({ width: 12, height: 8 });
   for (let x = 0; x < 12; x++) {

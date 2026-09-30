@@ -29,6 +29,9 @@ const EMPTY = MAT.EMPTY;
 const STEAM = MAT.STEAM;
 const U32 = 4294967296;
 const DECAY = HEAT.PROGRESS_DECAY * PROGRESS_SCALE; // sayaç adımı cinsinden
+// flags bit3: ilerleme aşağı kenara (donma/yoğuşma/katılaşma) doğru. İki kenarlı materyalde (su)
+// yön değişince yarım ilerleme sıfırlanır; transform bu biti temizler (yalnızca bit0 kalır).
+const PROGRESS_DOWN = 8;
 const K_AIR_OVER_C = CONDUCT[EMPTY] * INV_CAP[EMPTY]; // hava–hava iletimi (hızlı yol)
 
 // Eşik adayı penceresi (materyal başına önceden hesaplanır): T < CAND_LO ya da T >= CAND_HI olan hücre
@@ -101,7 +104,7 @@ function transition(world, rng, i, into, vanish) {
 
 // Faz geçişleri, sıcaklıkla tutuşma, buharlaşma: güncel alan üzerinde, yalnızca işlenen satırlarda.
 function applyThermalRules(world, rng, state) {
-  const { width, height, stride, type, life } = world;
+  const { width, height, stride, type, life, flags } = world;
   const temp = world.temp;
   const ignite = (HEAT.IGNITE_CHANCE * U32) >>> 0;
   for (let y = 0; y < height; y++) {
@@ -113,11 +116,19 @@ function applyThermalRules(world, rng, state) {
       if (HAS_PHASE[t] !== 0) {
         if (T > UP_AT[t]) {
           temp[i] = UP_AT[t];
+          if ((flags[i] & PROGRESS_DOWN) !== 0) {
+            flags[i] &= ~PROGRESS_DOWN;
+            life[i] = 0;
+          }
           if (addProgress(life, rng, i, (T - UP_AT[t]) * CAP[t], UP_LATENT[t])) transition(world, rng, i, UP_INTO[t], UP_VANISH[t]);
           continue;
         }
         if (T < DOWN_AT[t]) {
           temp[i] = DOWN_AT[t];
+          if ((flags[i] & PROGRESS_DOWN) === 0) {
+            flags[i] |= PROGRESS_DOWN;
+            life[i] = 0;
+          }
           if (addProgress(life, rng, i, (DOWN_AT[t] - T) * CAP[t], DOWN_LATENT[t])) transition(world, rng, i, DOWN_INTO[t], DOWN_VANISH[t]);
           continue;
         }

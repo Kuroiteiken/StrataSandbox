@@ -8,7 +8,7 @@ export const APP_NAME = 'Strata Sandbox';
 export const APP_SLUG = 'strata';
 
 // Uygulama sürümü: package.json ve CHANGELOG.md ile aynı olmalı (tests/releases.test.js).
-export const APP_VERSION = '0.10.0';
+export const APP_VERSION = '0.10.1';
 
 // localStorage anahtarı bilinçli olarak addan bağımsızdır: ad değişince
 // kullanıcı tercihleri kaybolmaz.
