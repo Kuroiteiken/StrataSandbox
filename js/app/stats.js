@@ -66,3 +66,16 @@ export function attachStats(root, getValues, { interval = 400 } = {}) {
   const id = setInterval(update, interval);
   return () => clearInterval(id);
 }
+
+// Gün fazı (0 gece yarısı, 0.5 öğle) → Türkçe etiket.
+export function dayLabel(p) {
+  if (p < 0.2 || p >= 0.8) return 'Gece';
+  if (p < 0.4) return 'Sabah';
+  if (p < 0.6) return 'Öğle';
+  return 'Akşam';
+}
+
+export function formatClimate(cycle, phase, ambient) {
+  const t = `${Math.round(ambient)} °C`;
+  return cycle ? `${dayLabel(phase)} · ${t}` : `Sabit · ${t}`;
+}

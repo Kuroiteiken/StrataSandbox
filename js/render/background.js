@@ -1,4 +1,4 @@
-// Procedural, cache'lenen arka plan: alacakaranlık gradyanı, soluk yıldızlar ve
+// Procedural, cache'lenen arka plan: gün/gece gradyanı, soluk yıldızlar ve
 // uzakta katmanlı sırt siluetleri (strata). Yalnızca resize/seed değişince yeniden çizilir.
 import { Rng } from '../engine/rng.js';
 
@@ -31,11 +31,39 @@ const LAYERS = [
   { base: 0.95, amp: 0.2, color: '#2e221c' },
 ];
 
-export function paintBackground(ctx, width, height, seed) {
+// Gökyüzü: gece yarısı (0) → alacakaranlık (0.5, gün/gece kapalıyken sabit görünüm) → öğle (1).
+const SKY_NIGHT = ['#07070c', '#0c0a10', '#130e0c'];
+const SKY_DUSK = ['#15131c', '#1d1719', '#261b15'];
+const SKY_DAY = ['#2c3a52', '#4a4048', '#5a3f2c'];
+
+function mixHex(a, b, u) {
+  if (u <= 0) return a;
+  if (u >= 1) return b;
+  const pa = parseInt(a.slice(1), 16);
+  const pb = parseInt(b.slice(1), 16);
+  const ch = (s) => Math.round(((pa >> s) & 255) + (((pb >> s) & 255) - ((pa >> s) & 255)) * u);
+  return `#${((ch(16) << 16) | (ch(8) << 8) | ch(0)).toString(16).padStart(6, '0')}`;
+}
+
+export function skyColors(daylight) {
+  const d = daylight < 0 ? 0 : daylight > 1 ? 1 : daylight;
+  const [from, to, u] = d < 0.5 ? [SKY_NIGHT, SKY_DUSK, d / 0.5] : [SKY_DUSK, SKY_DAY, (d - 0.5) / 0.5];
+  return from.map((c, k) => mixHex(c, to[k], u));
+}
+
+// Yıldız görünürlüğü çarpanı: 0.5'te 1 (bugünkü), gece daha parlak, öğlen görünmez.
+export function starAlpha(daylight) {
+  const v = 2 * (1 - daylight);
+  return v < 0 ? 0 : v > 1.6 ? 1.6 : v;
+}
+
+// daylight: 0 gece yarısı … 1 öğle; 0.5 gün/gece kapalıyken kullanılan alacakaranlık görünümü.
+export function paintBackground(ctx, width, height, seed, daylight = 0.5) {
+  const [c0, c1, c2] = skyColors(daylight);
   const sky = ctx.createLinearGradient(0, 0, 0, height);
-  sky.addColorStop(0, '#15131c');
-  sky.addColorStop(0.55, '#1d1719');
-  sky.addColorStop(1, '#261b15');
+  sky.addColorStop(0, c0);
+  sky.addColorStop(0.55, c1);
+  sky.addColorStop(1, c2);
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, width, height);
 
@@ -45,7 +73,7 @@ export function paintBackground(ctx, width, height, seed) {
   for (let s = 0; s < count; s++) {
     const x = stars.next() * width;
     const y = stars.next() * height * 0.6;
-    const a = 0.12 + stars.next() * 0.35;
+    const a = Math.min(1, (0.12 + stars.next() * 0.35) * starAlpha(daylight));
     ctx.fillStyle = `rgba(239, 230, 212, ${a.toFixed(3)})`;
     ctx.fillRect(Math.floor(x), Math.floor(y), 1, 1);
   }

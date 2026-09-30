@@ -21,6 +21,8 @@ Hedef sürüm 0.10.0: sıcaklık sistemi, Buz, Kar, Metal, yeni sahneler ve kum 
 - Isı görselleri: 450 °C üstündeki her materyal akkorlaşır (koyu kırmızı → sarı-beyaz) ve parlar. Lav soğudukça koyulaşır; donma noktasına yaklaşan su açık maviye kayar.
 - Termal görünüm (`renderer.setViewMode('thermal')`): sıcaklık rampası (−40 mavi → 1200+ beyaz). Hava ve madde ayrı tonlarda gösterilir.
 - Yeni materyaller: **Buz** (`B`, 1 °C'de erir; su −1 °C'de donar ve göl yüzeyden buz tutar), **Kar** (`K`, hafif toz, suda yüzer, çabuk erir), **Metal** (`M`, ısıyı çok hızlı iletir, kızarır, 1400 °C'de erir), **Erimiş metal** (`E`, lavdan ağır, soğuyunca metal olur) ve sahneler için gizli **Magma kaynağı** (sabit 1200 °C).
+- Gün/gece döngüsü (motor; arayüz düğmesi sonraki adımda): 1× hızda bir gün ≈ 4 dakika, ortam sıcaklığı gece 10 °C düşer, öğlen 10 °C yükselir. Gökyüzü geceleri kararır, yıldızlar belirginleşir.
+- Sahnelerin varsayılan ortam sıcaklığı var (Vaha 30 °C, diğerleri 20 °C); sahne yüklenince alan bu sıcaklıkla başlar.
 - `docs/MATERIALS.md`: tüm materyallerin ve etkileşimlerinin (mevcut ve planlanan) başvuru belgesi. Tür, yoğunluk, kısayol, olasılıklar ve 0.10.0'da değişecek kurallar burada tutulur.
 
 ### Changed

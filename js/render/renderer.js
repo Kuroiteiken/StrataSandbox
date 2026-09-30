@@ -5,6 +5,7 @@ import { MATERIALS } from '../engine/materials.js';
 import { buildPalette, buildRamps, ANIMATED_IDS } from './palette.js';
 import { fillPixels, fillThermal } from './pixels.js';
 import { paintBackground } from './background.js';
+import { daylight } from '../engine/climate.js';
 import { computeLayout, pointToCell } from './layout.js';
 import { footprintOutline } from '../engine/brush.js';
 
@@ -129,18 +130,20 @@ export class Renderer {
     this.layout = computeLayout(this.gridW, this.gridH, this.canvas.width, this.canvas.height);
   }
 
-  _ensureBackground() {
+  // Gün/gece açıkken gökyüzü 32 aydınlık adımında önbelleklenir (her adım bir kez çizilir).
+  _ensureBackground(view) {
     const { drawW, drawH } = this.layout;
     const w = Math.max(1, Math.ceil(drawW * BACKGROUND_RES));
     const h = Math.max(1, Math.ceil(drawH * BACKGROUND_RES));
-    const key = `${w}x${h}:${this.seed}`;
+    const step = view?.dayCycle ? Math.round(daylight(view.dayPhase) * 32) : 16;
+    const key = `${w}x${h}:${this.seed}:${step}`;
     if (key === this._backgroundKey) return;
     this._backgroundKey = key;
     if (this.background) this.background.width = 0;
     this.background = document.createElement('canvas');
     this.background.width = w;
     this.background.height = h;
-    paintBackground(this.background.getContext('2d'), w, h, this.seed);
+    paintBackground(this.background.getContext('2d'), w, h, this.seed, step / 32);
   }
 
   _isAnimated(view) {
@@ -251,7 +254,7 @@ export class Renderer {
     out.width = w;
     out.height = h;
     const ctx = out.getContext('2d');
-    this._ensureBackground();
+    this._ensureBackground(view);
     ctx.imageSmoothingEnabled = true;
     ctx.drawImage(this.background, 0, 0, w, h);
     ctx.imageSmoothingEnabled = false;
@@ -279,7 +282,7 @@ export class Renderer {
     ctx.fillStyle = this.frameColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     if (l.drawW > 0 && l.drawH > 0) {
-      this._ensureBackground();
+      this._ensureBackground(view);
       ctx.imageSmoothingEnabled = true;
       ctx.drawImage(this.background, l.offsetX, l.offsetY, l.drawW, l.drawH);
       ctx.imageSmoothingEnabled = false; // canvas resize bu ayarı sıfırlar; her karede set edilir

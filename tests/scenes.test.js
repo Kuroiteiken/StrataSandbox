@@ -217,3 +217,8 @@ test('fillPolygon üçgenin içini doldurur, dışını doldurmaz', () => {
   assert.equal(cellType(sim, 2, 2), MAT.EMPTY);
   assert.equal(cellType(sim, 18, 5), MAT.EMPTY);
 });
+
+test('her sahnenin ortam sıcaklığı −40..60 aralığında; Vaha ılık', () => {
+  for (const s of SCENES) assert.ok(Number.isFinite(s.ambient) && s.ambient >= -40 && s.ambient <= 60, s.id);
+  assert.equal(getScene('oasis').ambient, 30);
+});

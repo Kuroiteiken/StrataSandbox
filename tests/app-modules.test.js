@@ -4,7 +4,7 @@ import { MAT } from '../js/engine/materials.js';
 import { PICKER, pickerByKey, pickerByShortcut } from '../js/app/catalog.js';
 import { DEFAULT_PREFS, sanitizePrefs, loadPrefs, savePrefs } from '../js/app/storage.js';
 import { keyToAction, shouldIgnoreTarget, attachKeyboard } from '../js/app/keyboard.js';
-import { formatCount, formatStats, createRateMeter } from '../js/app/stats.js';
+import { formatCount, formatStats, createRateMeter, dayLabel, formatClimate } from '../js/app/stats.js';
 import { SCENES, getScene, DEFAULT_SCENE_ID } from '../js/scenes/index.js';
 import { Simulation } from '../js/engine/simulation.js';
 
@@ -163,6 +163,16 @@ test('oran ölçer kare ve tick hızını zaman penceresinde hesaplar', () => {
   const r = meter.rates(1000);
   assert.ok(Math.abs(r.fps - 60) < 1.5, `fps=${r.fps}`);
   assert.ok(Math.abs(r.tps - 120) < 3, `tps=${r.tps}`);
+});
+
+test('gün etiketi ve iklim satırı', () => {
+  assert.equal(dayLabel(0.1), 'Gece');
+  assert.equal(dayLabel(0.3), 'Sabah');
+  assert.equal(dayLabel(0.5), 'Öğle');
+  assert.equal(dayLabel(0.7), 'Akşam');
+  assert.equal(dayLabel(0.9), 'Gece');
+  assert.equal(formatClimate(true, 0.5, 27.6), 'Öğle · 28 °C');
+  assert.equal(formatClimate(false, 0.5, -15), 'Sabit · -15 °C');
 });
 
 // ---------- scenes ----------

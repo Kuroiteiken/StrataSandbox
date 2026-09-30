@@ -7,7 +7,7 @@ import { stepPowder, stepLiquid, stepGas } from './kernels.js';
 import { react, createReactionState, beginReactionTick, initialLife, isMover, SOURCE_INFINITE, CLONER_LEARNED } from './reactions.js';
 import { footprint, lineCells, SPRAY_DENSITY } from './brush.js';
 import { stepHeat, createHeatState } from './heat.js';
-import { DEFAULT_AMBIENT, clampAmbient, TEMP_MIN, TEMP_MAX } from './climate.js';
+import { DEFAULT_AMBIENT, clampAmbient, TEMP_MIN, TEMP_MAX, ambientAt, dayPhase } from './climate.js';
 
 export const SPEEDS = Object.freeze([0.5, 1, 2, 4]);
 
@@ -55,6 +55,7 @@ export class Simulation {
     this._gasRows = new Uint8Array(height); // geçiş 2'de taranacak satırlar
     this._heat = createHeatState(height); // geçiş 3 (ısı) durumu
     this.ambientBase = DEFAULT_AMBIENT; // kullanıcı ayarı (undo ile geri alınmaz)
+    this.dayCycle = false; // gün/gece döngüsü (kullanıcı tercihi)
 
     this._hold = null; // basılı tutma: { x, y, brush } — tick başına yeniden uygulanır
     this._strokeDirty = false;
@@ -84,6 +85,12 @@ export class Simulation {
       get tick() {
         return sim.tick;
       },
+      get dayCycle() {
+        return sim.dayCycle;
+      },
+      get dayPhase() {
+        return sim.dayPhase;
+      },
       get version() {
         return sim.version;
       },
@@ -111,9 +118,18 @@ export class Simulation {
     this._acc = 0;
   }
 
-  // Bu tick'in ortam sıcaklığı (gün/gece dalgası sonraki adımda eklenir).
+  // Bu tick'in ortam sıcaklığı: taban + (açıksa) gün/gece dalgası.
   get ambient() {
-    return this.ambientBase;
+    return ambientAt(this.ambientBase, this.tick, this.dayCycle);
+  }
+
+  // Gün fazı: 0 gece yarısı, 0.5 öğle (tick'ten türetilir).
+  get dayPhase() {
+    return dayPhase(this.tick);
+  }
+
+  setDayCycle(on) {
+    this.dayCycle = Boolean(on);
   }
 
   // Ortam sıcaklığı: hava ona yavaşça yaklaşır. Sahneyi yeniden üretmez, undo noktası oluşturmaz.
@@ -307,9 +323,11 @@ export class Simulation {
     this.rng = new Rng(this.seed, 'sim');
     this.inputRng = new Rng(this.seed, 'input');
     this._seedSalt = hashSeed(this.seed)[0];
+    // Sahnenin ortam sıcaklığı; alan onunla başlar (set'ler doğuş sıcaklıklarını buna göre yazar).
+    this.ambientBase = clampAmbient(scene.ambient ?? DEFAULT_AMBIENT);
+    this.tick = 0;
     this.world.ambient = this.ambient;
     this.world.clear();
-    this.tick = 0;
     this._acc = 0;
     this._hold = null;
     this._undo = null;
@@ -456,6 +474,9 @@ export class Simulation {
       paused: this.paused,
       physicsMs: this.physicsMs,
       seed: this.seed,
+      ambient: this.ambient,
+      dayCycle: this.dayCycle,
+      dayPhase: this.dayPhase,
     };
   }
 }
