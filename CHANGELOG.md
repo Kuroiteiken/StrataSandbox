@@ -11,11 +11,16 @@ Hedef sürüm 0.10.0: sıcaklık sistemi, Buz, Kar, Metal, yeni sahneler ve kum 
 
 - Başlıkta sürüm rozeti. Rozete tıklanınca "Yenilikler" diyaloğu açılır ve son sürümlerin kullanıcıya dönük notlarını listeler. Görülmemiş sürümde rozette küçük bir işaret görünür.
 - Sürüm tutarlılığı testi: `APP_VERSION`, `package.json`, CHANGELOG ve Yenilikler aynı sürümü göstermek zorunda. `docs/MATERIALS.md` için senkron testi: her materyal belgede yer almak zorunda.
+- Ters çevirme (`F` ya da "Ters çevir" düğmesi): dünya dikey olarak aynalanır ve işlem geri alınabilir. Kum saatinde kum bitince yeniden akıtmak için kullanılır.
 - `docs/MATERIALS.md`: tüm materyallerin ve etkileşimlerinin (mevcut ve planlanan) başvuru belgesi. Tür, yoğunluk, kısayol, olasılıklar ve 0.10.0'da değişecek kurallar burada tutulur.
 
 ### Changed
 
 - CI: yalnızca `docs/` altında değişiklik olduğunda test ve yayın akışı çalışmıyor (`paths-ignore`). Karışık push'larda akış yine çalışır.
+
+### Fixed
+
+- Çizim sürerken Temizle ya da ters çevirme yapılırsa, çizimin undo noktası bekleyen snapshot'ın üzerine yazılabiliyordu.
 
 ### Removed
 

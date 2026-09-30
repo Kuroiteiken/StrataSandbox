@@ -93,6 +93,24 @@ export class World {
     this.moves++;
   }
 
+  // Dünyayı dikey aynalar: iç satır y ↔ H−1−y (kenar çerçevesi yerinde kalır). Sayaçlar değişmez.
+  // Damgalar aynalanmaz: çevirme tick'ler arasında yapılır ve bir sonraki tick yeni saatle başlar.
+  flipVertical() {
+    const { width, height, stride } = this;
+    const arrays = [this.type, this.variant, this.life, this.flags];
+    for (let top = 1, bottom = height; top < bottom; top++, bottom--) {
+      const a = top * stride + 1;
+      const b = bottom * stride + 1;
+      for (const arr of arrays) {
+        for (let k = 0; k < width; k++) {
+          const t = arr[a + k];
+          arr[a + k] = arr[b + k];
+          arr[b + k] = t;
+        }
+      }
+    }
+  }
+
   clear() {
     const { width, height, stride } = this;
     this.type.fill(MAT.EMPTY);

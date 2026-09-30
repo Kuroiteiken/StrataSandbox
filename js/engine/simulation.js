@@ -232,6 +232,15 @@ export class Simulation {
     this.version++;
   }
 
+  // Dünyayı baş aşağı çevirir (kum saati). Clear gibi geri alınabilir.
+  flipVertical() {
+    const snap = this._spareSnapshot();
+    this._capture(snap);
+    this._undo = snap;
+    this.world.flipVertical();
+    this.version++;
+  }
+
   // Sahne yükleme: dünya temizlenir, seed'e bağlı RNG stream'leri yeniden kurulur,
   // tick/undo/hold sıfırlanır ve sahne kendi 'scene' stream'iyle üretilir.
   // Sahne nesnesi dışarıdan verilir ({ id, generate(sim, rng) }); engine sahne kaydını bilmez.
@@ -347,7 +356,8 @@ export class Simulation {
 
   // Undo noktası olmayan tampon (gerekirse bir kez ayrılır; sonra hep yeniden kullanılır).
   _spareSnapshot() {
-    for (const snap of this._snapshots) if (snap !== this._undo) return snap;
+    // Undo noktası ve (çizim sürerken) bekleyen stroke snapshot'ı korunur.
+    for (const snap of this._snapshots) if (snap !== this._undo && snap !== this._pending) return snap;
     const size = this.world.size;
     const snap = {
       type: new Uint8Array(size),

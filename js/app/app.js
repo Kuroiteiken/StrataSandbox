@@ -134,6 +134,11 @@ export function createApp({ sim, renderer, prefs, storage, doc, onStateChange = 
       announce('Dünya temizlendi. Geri al ile geri getirilebilir.');
       sync();
     },
+    flip() {
+      sim.flipVertical();
+      announce('Dünya ters çevrildi. Geri al ile geri alınabilir.');
+      sync();
+    },
     setScene(id) {
       state.scene = getScene(id).id;
       load();
@@ -218,6 +223,8 @@ export function createApp({ sim, renderer, prefs, storage, doc, onStateChange = 
           return actions.changeSpeed(action.delta);
         case 'undo':
           return actions.undo();
+        case 'flip':
+          return actions.flip();
         case 'help':
           return actions.help();
         default:

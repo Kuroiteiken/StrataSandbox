@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MAT } from '../js/engine/materials.js';
 import { Simulation, SPEEDS } from '../js/engine/simulation.js';
-import { makeSim, cellType } from './helpers.js';
+import { makeSim, cellType, toAscii, ascii, hashView } from './helpers.js';
 
 const fallingSand = () => makeSim(`
   ..S..
@@ -213,4 +213,49 @@ test('loadScene tick\'i, undo\'yu ve basılı tutmayı sıfırlar; fizik RNG\'si
   assert.equal(sim.getStats().particles, 0, 'hold temizlenmeliydi');
   const fresh = new Simulation({ width: 20, height: 20, seed: 'fresh' });
   assert.deepEqual([...sim.rng.getState()], [...(() => { fresh.step(); return fresh.rng.getState(); })()]);
+});
+
+test('flipVertical dünyayı dikey aynalar; iki kez çevirmek ilk hâle döndürür', () => {
+  const sim = makeSim(`
+    S..
+    .~.
+    ..#
+  `);
+  const before = hashView(sim);
+  sim.flipVertical();
+  assert.equal(toAscii(sim), ascii(`
+    ..#
+    .~.
+    S..
+  `));
+  assert.deepEqual(sim.world.checkInvariants(), []);
+  sim.flipVertical();
+  assert.equal(hashView(sim), before);
+});
+
+test('flipVertical geri alınabilir ve parçacık sayılarını korur', () => {
+  const sim = makeSim(`
+    SS.
+    ...
+    ~~#
+  `);
+  const before = hashView(sim);
+  const counts = [...sim.view.counts];
+  sim.flipVertical();
+  assert.deepEqual([...sim.view.counts], counts);
+  assert.equal(sim.canUndo, true);
+  sim.undo();
+  assert.equal(hashView(sim), before);
+});
+
+test('çizim sürerken çevirmek, çizimin undo noktasını bozmaz', () => {
+  const sim = new Simulation({ width: 10, height: 10, debug: true });
+  sim.setCell(1, 1, MAT.STONE);
+  const before = hashView(sim);
+  sim.beginStroke();
+  sim.paintAt(5, 5, { material: MAT.STONE, size: 1, shape: 'square' });
+  sim.flipVertical();
+  sim.endStroke();
+  assert.ok(sim.undo());
+  assert.equal(hashView(sim), before, 'undo çizim öncesine dönmeli');
 });

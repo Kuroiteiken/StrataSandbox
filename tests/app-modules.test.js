@@ -104,6 +104,8 @@ test('kısayol eşlemesi planla uyumlu', () => {
   assert.deepEqual(keyToAction(key('=')), { type: 'speed', delta: 1 });
   assert.deepEqual(keyToAction(key('-')), { type: 'speed', delta: -1 });
   assert.deepEqual(keyToAction(key('?', { shiftKey: true })), { type: 'help' });
+  assert.deepEqual(keyToAction(key('f')), { type: 'flip' });
+  assert.deepEqual(keyToAction(key('F', { shiftKey: true })), { type: 'flip' });
 });
 
 test('Ctrl+Z ve Cmd+Z undo; Ctrl+Shift+Z ve modifier ile basılan rakamlar yok sayılır', () => {

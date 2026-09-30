@@ -731,7 +731,7 @@ Taze bağlamlı bir reviewer ajanı `f0956b6..34969c5` aralığını inceledi. C
 Spec: `docs/superpowers/specs/2026-09-30-sicaklik-sistemi-design.md` · Plan: `docs/superpowers/plans/2026-09-30-sicaklik-sistemi.md` · Materyal belgesi: `docs/MATERIALS.md`
 
 - [x] Sürüm rozeti ve Yenilikler diyaloğu
-- [ ] Ters çevirme (`flipVertical`, düğme, `F`)
+- [x] Ters çevirme (`flipVertical`, düğme, `F`)
 - [ ] Kum saati yenilemesi
 - [ ] Sıcaklık alanı veri modeli
 - [ ] Isı geçişi (difüzyon, hava, kaynaklar, uyuyan satırlar)

@@ -168,3 +168,11 @@ test('Yenilikler diyaloğu açılınca görülen sürüm güncellenir ve kaydedi
   await new Promise((r) => setTimeout(r, 350)); // PERSIST_DELAY_MS
   assert.equal(JSON.parse(storage.data['fsbox.prefs.v1']).seenVersion, APP_VERSION);
 });
+
+test('flip eylemi dünyayı çevirir ve geri alınabilir', () => {
+  const { app, sim } = setup();
+  sim.setCell(0, 0, MAT.STONE);
+  app.dispatch({ type: 'flip' });
+  assert.equal(sim.getCell(0, sim.view.height - 1).material, MAT.STONE);
+  assert.equal(sim.canUndo, true);
+});

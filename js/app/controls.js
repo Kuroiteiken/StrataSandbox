@@ -74,6 +74,7 @@ export function createControls(doc, { palette, scenes, actions }) {
   const play = $('btn-play');
   play.addEventListener('click', () => actions.togglePause());
   $('btn-step').addEventListener('click', () => actions.step());
+  $('btn-flip').addEventListener('click', () => actions.flip());
   const speeds = [...doc.querySelectorAll('input[name="speed"]')];
   for (const r of speeds) r.addEventListener('change', () => actions.setSpeed(Number(r.value)));
   const undo = $('btn-undo');
