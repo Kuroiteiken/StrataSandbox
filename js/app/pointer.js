@@ -38,9 +38,11 @@ export function attachPointer(canvas, { renderer, sim, getBrush, onCursor = () =
       if (!cell) return;
       e.preventDefault();
       const base = getBrush();
+      const erase = e.button === SECONDARY; // sağ tık her araçta geçici silgidir
       const brush = {
         ...base,
-        material: e.button === SECONDARY ? MAT.EMPTY : base.material,
+        material: erase ? MAT.EMPTY : base.material,
+        tool: erase ? null : base.tool ?? null,
         replace: Boolean(base.replace || e.shiftKey),
       };
       active = { id: e.pointerId, last: cell, brush };

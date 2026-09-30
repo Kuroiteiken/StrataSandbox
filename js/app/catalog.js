@@ -20,6 +20,8 @@ export const PICKER = Object.freeze([
   { key: 'CLONER', mat: MAT.CLONER, label: 'Çoğaltıcı', shortcut: 'x', category: 'solid' },
   { key: 'SINK', mat: MAT.SINK, label: 'Yutucu', shortcut: 'y', category: 'solid' },
   { key: 'ERASER', mat: MAT.EMPTY, label: 'Silgi', shortcut: '0', category: 'tool' },
+  { key: 'HEAT', mat: null, tool: 'heat', label: 'Isıt', shortcut: 'h', category: 'tool' },
+  { key: 'COOL', mat: null, tool: 'cool', label: 'Soğut', shortcut: 'c', category: 'tool' },
 ]);
 
 export function pickerByKey(key) {

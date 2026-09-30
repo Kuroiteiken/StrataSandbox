@@ -156,7 +156,7 @@ Eşiklerde histerezis vardır (ör. donma −1 °C, erime +1 °C), böylece hüc
 | Çoğaltıcı | `CLONER` | `X` | statik | — | **Mevcut (0.10.0 geliştirme).** Bkz. §4.5. |
 | Yutucu | `SINK` | `Y` | statik | — | **Mevcut (0.10.0 geliştirme).** Bkz. §4.5. |
 
-### 4.4 Araçlar
+### 4.4 Araçlar — Mevcut (0.10.0 geliştirme, Görev 10)
 
 | Araç | Kısayol | Etki |
 |---|---|---|

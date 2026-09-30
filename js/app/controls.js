@@ -9,7 +9,7 @@ import { releaseSections } from './releases.js';
 
 const SWATCH = 6; // numune dokusu (hücre); CSS ile büyütülür
 
-function paintSwatch(canvas, mat, palette) {
+function paintSwatch(canvas, pick, palette) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
   const img = ctx.createImageData(SWATCH, SWATCH);
@@ -17,12 +17,17 @@ function paintSwatch(canvas, mat, palette) {
   const light = packRGBA(90, 82, 74, 255);
   const dark = packRGBA(52, 46, 40, 255);
   for (let k = 0; k < px.length; k++) {
-    if (mat === MAT.EMPTY) {
-      const x = k % SWATCH;
-      const y = (k / SWATCH) | 0;
+    const x = k % SWATCH;
+    const y = (k / SWATCH) | 0;
+    if (pick.tool) {
+      const u = y / (SWATCH - 1); // araç: dikey sıcak/soğuk gradyan
+      px[k] = pick.tool === 'heat'
+        ? packRGBA(255, Math.round(200 - 150 * u), Math.round(90 - 80 * u), 255)
+        : packRGBA(Math.round(120 - 90 * u), Math.round(200 - 60 * u), 255, 255);
+    } else if (pick.mat === MAT.EMPTY) {
       px[k] = ((x >> 1) + (y >> 1)) % 2 === 0 ? light : dark; // silgi: dama deseni
     } else {
-      px[k] = palette[mat * SHADES + ((k * 7) % SHADES)];
+      px[k] = palette[pick.mat * SHADES + ((k * 7) % SHADES)];
     }
   }
   ctx.putImageData(img, 0, 0);
@@ -48,7 +53,7 @@ export function createControls(doc, { palette, scenes, actions }) {
     swatch.width = SWATCH;
     swatch.height = SWATCH;
     swatch.setAttribute('aria-hidden', 'true');
-    paintSwatch(swatch, p.mat, palette);
+    paintSwatch(swatch, p, palette);
     const name = doc.createElement('span');
     name.className = 'specimen-name';
     name.textContent = p.label;

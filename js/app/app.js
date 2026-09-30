@@ -202,7 +202,8 @@ export function createApp({ sim, renderer, prefs, storage, doc, onStateChange = 
     load,
     sync,
     brush() {
-      return { material: pickerByKey(state.material).mat, size: state.brushSize, shape: state.brushShape, replace: state.replace };
+      const pick = pickerByKey(state.material);
+      return { material: pick.mat ?? 0, tool: pick.tool ?? null, size: state.brushSize, shape: state.brushShape, replace: state.replace };
     },
     bindControls(c) {
       controls = c;

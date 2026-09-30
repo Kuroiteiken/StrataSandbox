@@ -209,3 +209,11 @@ test('buton bırakılmış halde gelen pointermove (kaçan pointerup) çizimi bi
   assert.equal(strokeEnds.length, 1);
   assert.equal(countMaterial(sim, MAT.STONE), 1, 'buton basılı değilken çizgi çekilmemeli');
 });
+
+test('ısı aracıyla da sağ tık geçici silgidir', () => {
+  const { sim, fire } = setup({ material: MAT.EMPTY, tool: 'heat', size: 1, shape: 'square', replace: false });
+  sim.setCell(3, 3, MAT.STONE);
+  fire('pointerdown', ev(3, 3, { button: 2 }));
+  fire('pointerup', ev(3, 3, { button: 2 }));
+  assert.equal(cellType(sim, 3, 3), MAT.EMPTY);
+});

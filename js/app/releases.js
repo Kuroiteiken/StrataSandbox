@@ -8,6 +8,7 @@
 export const UNRELEASED = Object.freeze({
   version: '0.10.0',
   items: [
+    'Isıt (H) ve Soğut (C) fırçaları: materyal koymadan sıcaklığı değiştirir; suyu kaynatmak, lavı dondurmak ya da metali eritmek için basılı tutun.',
     'Yeni materyaller: Buz (B), Kar (K), Metal (M) ve Erimiş metal (E). Su 0 °C altında donar ve göl yüzeyden buz tutar; metal ısıyı hızla iletip kızarır ve 1400 °C’de erir.',
     'Sıcaklık: her hücrenin bir sıcaklığı var ve ısı komşulara iletiliyor. Su kaynıyor, buhar soğuyunca yoğuşup yağıyor, lav dış yüzeyinden soğuyup taşa dönüyor, lavla uzun temas eden kum cama dönüşüyor.',
     'Odun, yağ ve bitki yeterince ısınınca kendiliğinden tutuşuyor; sıcak ortamda açık su yavaşça buharlaşıyor.',

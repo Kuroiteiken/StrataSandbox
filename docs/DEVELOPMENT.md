@@ -739,7 +739,7 @@ Spec: `docs/superpowers/specs/2026-09-30-sicaklik-sistemi-design.md` · Plan: `d
 - [x] Faz geçişleri ve sayaç hilelerinin taşınması
 - [x] Buz, Kar, Metal, Erimiş metal, Magma
 - [x] Gün/gece döngüsü, sahne ortamları, gökyüzü
-- [ ] Isıt ve Soğut fırçaları
+- [x] Isıt ve Soğut fırçaları
 - [ ] Sekmeli seçici, Ortam bölümü, termal düğme, kısayollar, göstergeler
 - [x] Çoğaltıcı (`CLONER`) ve Yutucu (`SINK`) — Görev 3'te, kum saatiyle birlikte
 - [ ] Buzul, Dökümhane ve Mağara sahneleri; volkan magması ve çoğaltıcısı

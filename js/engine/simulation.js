@@ -11,6 +11,11 @@ import { DEFAULT_AMBIENT, clampAmbient, TEMP_MIN, TEMP_MAX, ambientAt, dayPhase 
 
 export const SPEEDS = Object.freeze([0.5, 1, 2, 4]);
 
+// Isıt/Soğut fırçası: boyama başına (basılı tutunca tick başına) sıcaklık değişimi ve sınırlar (°C).
+export const TOOL_DELTA = 25;
+export const TOOL_MIN = -100;
+export const TOOL_MAX = 2500;
+
 const BASE_TPS = 60;
 const MAX_FRAME_MS = 100; // uzun duraklamalardan sonra devasa catch-up yok
 const MAX_TICKS_PER_FRAME = 8;
@@ -347,10 +352,14 @@ export class Simulation {
   // Fırçayı (x0,y0)→(x1,y1) çizgisi boyunca boşluksuz uygular; boyanan hücre sayısını döner.
   // brush = { material, size, shape: 'circle'|'square'|'spray', replace }
   // Varsayılan: yalnızca boş ve gaz hücrelere yazar; replace tümüne; EMPTY (silgi) her şeyi siler.
+  // brush.tool = 'heat' | 'cool' ise materyal yok sayılır ve yalnızca sıcaklık değişir.
   paintLine(x0, y0, x1, y1, brush) {
+    const delta = brush.tool === 'heat' ? TOOL_DELTA : brush.tool === 'cool' ? -TOOL_DELTA : 0;
     const material = brush.material;
-    const def = MATERIALS.defs[material];
-    if (!def || def.internal) return 0;
+    if (delta === 0) {
+      const def = MATERIALS.defs[material];
+      if (!def || def.internal) return 0;
+    }
     if (![x0, y0, x1, y1].every(Number.isFinite)) return 0;
     const fp = footprint(brush.shape, brush.size);
     const spray = brush.shape === 'spray';
@@ -358,7 +367,9 @@ export class Simulation {
     let painted = 0;
     lineCells(Math.floor(x0), Math.floor(y0), Math.floor(x1), Math.floor(y1), (cx, cy) => {
       for (let k = 0; k < fp.length; k += 2) {
-        painted += this._paintCell(cx + fp[k], cy + fp[k + 1], material, replace, spray);
+        painted += delta !== 0
+          ? this._heatCell(cx + fp[k], cy + fp[k + 1], delta, spray)
+          : this._paintCell(cx + fp[k], cy + fp[k + 1], material, replace, spray);
       }
     });
     if (painted > 0) {
@@ -366,6 +377,22 @@ export class Simulation {
       this._strokeDirty = true;
     }
     return painted;
+  }
+
+  // Isıt/Soğut: hücre sıcaklığını delta kadar değiştirir ([TOOL_MIN, TOOL_MAX]); materyale dokunmaz.
+  // Zaten sınırın ötesindeki bir hücre (ör. 5000 °C'lik kaynak) sınıra çekilmez.
+  _heatCell(x, y, delta, spray) {
+    const w = this.world;
+    if (!w.inBounds(x, y)) return 0;
+    if (spray && !this.inputRng.chance(SPRAY_DENSITY)) return 0;
+    const i = w.index(x, y);
+    const T = w.temp[i];
+    let v = T + delta;
+    if (v > TOOL_MAX) v = T > TOOL_MAX ? T : TOOL_MAX;
+    if (v < TOOL_MIN) v = T < TOOL_MIN ? T : TOOL_MIN;
+    if (v === T) return 0;
+    w.temp[i] = v;
+    return 1;
   }
 
   _paintCell(x, y, material, replace, spray) {

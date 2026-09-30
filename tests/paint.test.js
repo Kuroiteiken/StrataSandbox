@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MAT } from '../js/engine/materials.js';
-import { Simulation } from '../js/engine/simulation.js';
+import { Simulation, TOOL_DELTA, TOOL_MIN, TOOL_MAX } from '../js/engine/simulation.js';
 import { footprint } from '../js/engine/brush.js';
 import { countMaterial, cellType, runTicks, hashView, toAscii } from './helpers.js';
 
@@ -195,4 +195,45 @@ test('undo sonrası view version artar (renderer yeniden çizer)', () => {
   const v = sim.view.version;
   sim.undo();
   assert.ok(sim.view.version > v);
+});
+
+const HEAT = { material: MAT.EMPTY, tool: 'heat', size: 1, shape: 'square' };
+const COOL = { material: MAT.EMPTY, tool: 'cool', size: 1, shape: 'square' };
+
+test('Isıt fırçası sıcaklığı TOOL_DELTA artırır ve materyale dokunmaz', () => {
+  const sim = new Simulation({ width: 6, height: 6 });
+  sim.setCell(2, 2, MAT.STONE);
+  const types = [...sim.view.type];
+  const before = sim.getCell(2, 2).temp;
+  assert.equal(sim.paintAt(2, 2, HEAT), 1);
+  assert.equal(sim.getCell(2, 2).temp, before + TOOL_DELTA);
+  assert.deepEqual([...sim.view.type], types);
+});
+
+test('uzun basılı tutma sınırları aşmaz ve değişmezleri bozmaz', () => {
+  const sim = new Simulation({ width: 8, height: 8, debug: true });
+  sim.setCell(3, 3, MAT.GLASS);
+  sim.setHold(3, 3, { ...HEAT, size: 3 });
+  for (let t = 0; t < 200; t++) sim.step();
+  sim.releaseHold();
+  let max = -Infinity;
+  for (const v of sim.view.temp) max = Math.max(max, v);
+  assert.ok(max <= TOOL_MAX, `en yüksek ${max}`);
+  sim.setHold(3, 3, { ...COOL, size: 3 });
+  for (let t = 0; t < 400; t++) sim.step();
+  let min = Infinity;
+  for (const v of sim.view.temp) min = Math.min(min, v);
+  assert.ok(min >= TOOL_MIN, `en düşük ${min}`);
+});
+
+test('ısıt stroke\'u geri alınır; undo sıcaklıkları geri getirir', () => {
+  const sim = new Simulation({ width: 6, height: 6 });
+  sim.setCell(2, 2, MAT.STONE);
+  const before = hashView(sim);
+  sim.beginStroke();
+  sim.paintAt(2, 2, { ...HEAT, size: 3 });
+  sim.endStroke();
+  assert.equal(sim.canUndo, true, 'yalnızca sıcaklık değişse de undo noktası oluşmalı');
+  sim.undo();
+  assert.equal(hashView(sim), before);
 });

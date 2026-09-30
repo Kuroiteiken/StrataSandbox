@@ -129,7 +129,7 @@ test('tercihler gecikmeli olarak kaydedilir ve geri okunabilir', async () => {
 
 test('fırça durumu engine brush nesnesine çevrilir (silgi = EMPTY)', () => {
   const { app } = setup({ material: 'ERASER', brushSize: 4, brushShape: 'square' });
-  assert.deepEqual(app.brush(), { material: MAT.EMPTY, size: 4, shape: 'square', replace: false });
+  assert.deepEqual(app.brush(), { material: MAT.EMPTY, tool: null, size: 4, shape: 'square', replace: false });
   app.actions.setReplace(true);
   assert.equal(app.brush().replace, true);
 });
@@ -175,4 +175,13 @@ test('flip eylemi dünyayı çevirir ve geri alınabilir', () => {
   app.dispatch({ type: 'flip' });
   assert.equal(sim.getCell(0, sim.view.height - 1).material, MAT.STONE);
   assert.equal(sim.canUndo, true);
+});
+
+test('Isıt seçilince fırça aracı taşır; silgi taşımaz', () => {
+  const { app } = setup();
+  app.actions.setMaterial('HEAT');
+  assert.equal(app.brush().tool, 'heat');
+  app.actions.setMaterial('ERASER');
+  assert.equal(app.brush().tool, null);
+  assert.equal(app.brush().material, MAT.EMPTY);
 });
