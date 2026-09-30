@@ -30,6 +30,9 @@ export function keyToAction(e) {
     case 'f':
     case 'F':
       return altGr ? null : { type: 'flip' };
+    case 't':
+    case 'T':
+      return altGr ? null : { type: 'toggleThermal' };
     case 's':
     case 'S':
       return altGr ? null : { type: 'cycleShape' };
@@ -57,7 +60,7 @@ export function shouldIgnoreTarget(target) {
   return false;
 }
 
-const NO_REPEAT = new Set(['togglePause', 'undo', 'help', 'cycleShape', 'flip']);
+const NO_REPEAT = new Set(['togglePause', 'undo', 'help', 'cycleShape', 'flip', 'toggleThermal']);
 
 // Panel butonları fareyle tıklanınca odağı bırakır (controls.js). Bu yüzden odakta bir buton
 // varsa klavyeyle gelinmiştir; Space o butonu tetiklesin (erişilebilirlik).

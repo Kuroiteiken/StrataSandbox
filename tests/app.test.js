@@ -33,7 +33,7 @@ function memoryStorage() {
 
 function setup(prefs = {}) {
   const sim = new Simulation({ width: 80, height: 50, debug: true });
-  const renderer = { seeds: [], setBackground(seed) { this.seeds.push(seed); } };
+  const renderer = { seeds: [], modes: [], setBackground(seed) { this.seeds.push(seed); }, setViewMode(m) { this.modes.push(m); } };
   const storage = memoryStorage();
   const doc = fakeDoc();
   const app = createApp({ sim, renderer, prefs: { ...DEFAULT_PREFS, ...prefs }, storage, doc });
@@ -184,4 +184,37 @@ test('Isıt seçilince fırça aracı taşır; silgi taşımaz', () => {
   app.actions.setMaterial('ERASER');
   assert.equal(app.brush().tool, null);
   assert.equal(app.brush().material, MAT.EMPTY);
+});
+
+test('materyal seçmek sekmesini açar; setTab yalnızca geçerli kategoriyi kabul eder', () => {
+  const { app } = setup();
+  app.actions.setMaterial('ICE');
+  assert.equal(app.state.tab, 'solid');
+  app.actions.setTab('gas');
+  assert.equal(app.state.tab, 'gas');
+  app.actions.setTab('bogus');
+  assert.equal(app.state.tab, 'gas');
+});
+
+test('ortam ayarı dünyayı anında değiştirmez ve sahne yüklenince sahnenin değerine döner', () => {
+  const { app, sim } = setup({ scene: 'volcano' });
+  const types = [...sim.view.type];
+  app.actions.setAmbient(-25);
+  assert.equal(sim.ambientBase, -25);
+  assert.equal(app.state.ambient, -25);
+  assert.equal(sim.canUndo, false);
+  assert.deepEqual([...sim.view.type], types);
+  app.actions.setScene('oasis');
+  assert.equal(app.state.ambient, 30);
+});
+
+test('gün/gece tercihi simülasyona uygulanır ve kaydedilir; termal görünüm renderer\'a iletilir', async () => {
+  const { app, sim, storage, renderer } = setup({ dayCycle: false });
+  app.actions.setDayCycle(true);
+  assert.equal(sim.dayCycle, true);
+  app.dispatch({ type: 'toggleThermal' });
+  assert.equal(renderer.modes.at(-1), 'thermal');
+  assert.equal(app.state.thermal, true);
+  await new Promise((r) => setTimeout(r, 350));
+  assert.equal(JSON.parse(storage.data['fsbox.prefs.v1']).dayCycle, true);
 });

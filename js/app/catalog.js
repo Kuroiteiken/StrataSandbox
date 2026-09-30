@@ -24,6 +24,19 @@ export const PICKER = Object.freeze([
   { key: 'COOL', mat: null, tool: 'cool', label: 'Soğut', shortcut: 'c', category: 'tool' },
 ]);
 
+// Seçici sekmeleri (sıra ve Türkçe etiket).
+export const CATEGORIES = Object.freeze([
+  { id: 'powder', label: 'Toz' },
+  { id: 'liquid', label: 'Sıvı' },
+  { id: 'gas', label: 'Gaz' },
+  { id: 'solid', label: 'Katı' },
+  { id: 'tool', label: 'Araç' },
+]);
+
+export function categoryOf(key) {
+  return pickerByKey(key)?.category ?? CATEGORIES[0].id;
+}
+
 export function pickerByKey(key) {
   return PICKER.find((p) => p.key === key) ?? null;
 }

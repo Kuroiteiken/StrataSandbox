@@ -1,7 +1,7 @@
 // Kontrol paneli: DOM olaylarını uygulama eylemlerine bağlar ve durumu panele yansıtır.
 // Paneldeki hiçbir öğe simülasyon içindekilere doğrudan erişmez (yalnızca actions).
 import { MAT } from '../engine/materials.js';
-import { PICKER } from './catalog.js';
+import { PICKER, CATEGORIES } from './catalog.js';
 import { SHADES, packRGBA } from '../render/palette.js';
 import { getScene } from '../scenes/index.js';
 import { APP_VERSION } from '../config.js';
@@ -37,6 +37,37 @@ export function createControls(doc, { palette, scenes, actions }) {
   const $ = (id) => doc.getElementById(id);
 
   // Numune kartları
+  // Kategori sekmeleri (ARIA tablist): ok tuşları, Home/End; seçim otomatik (roving tabindex).
+  const tabList = $('material-tabs');
+  const tabPanel = $('material-panel');
+  const tabs = new Map();
+  const tabIds = CATEGORIES.map((c) => c.id);
+  for (const c of CATEGORIES) {
+    const tab = doc.createElement('button');
+    tab.type = 'button';
+    tab.id = `tab-${c.id}`;
+    tab.className = 'picker-tab';
+    tab.setAttribute('role', 'tab');
+    tab.setAttribute('aria-controls', 'material-panel');
+    tab.textContent = c.label;
+    tab.addEventListener('click', () => actions.setTab(c.id));
+    tab.addEventListener('keydown', (e) => {
+      const at = tabIds.indexOf(c.id);
+      const next = {
+        ArrowRight: tabIds[(at + 1) % tabIds.length],
+        ArrowLeft: tabIds[(at - 1 + tabIds.length) % tabIds.length],
+        Home: tabIds[0],
+        End: tabIds[tabIds.length - 1],
+      }[e.key];
+      if (!next) return;
+      e.preventDefault();
+      actions.setTab(next);
+      tabs.get(next).focus();
+    });
+    tabList.append(tab);
+    tabs.set(c.id, tab);
+  }
+
   const picker = $('material-picker');
   const cards = new Map();
   for (const p of PICKER) {
@@ -63,8 +94,17 @@ export function createControls(doc, { palette, scenes, actions }) {
     label.append(input, swatch, name, kbd);
     picker.append(label);
     input.addEventListener('change', () => actions.setMaterial(p.key));
-    cards.set(p.key, { label, input });
+    cards.set(p.key, { label, input, category: p.category });
   }
+
+  // Ortam
+  const ambient = $('ambient');
+  const ambientOut = $('ambient-out');
+  ambient.addEventListener('input', () => actions.setAmbient(Number(ambient.value)));
+  const dayCycle = $('day-cycle');
+  dayCycle.addEventListener('change', () => actions.setDayCycle(dayCycle.checked));
+  const thermal = $('btn-thermal');
+  thermal.addEventListener('click', () => actions.toggleThermal());
 
   // Fırça
   const size = $('brush-size');
@@ -152,10 +192,11 @@ export function createControls(doc, { palette, scenes, actions }) {
 
   return {
     sync(state) {
-      for (const [key, { label, input }] of cards) {
+      for (const [key, { label, input, category }] of cards) {
         const selected = key === state.material;
         label.dataset.selected = String(selected);
         input.checked = selected;
+        label.hidden = category !== state.tab;
       }
       size.value = String(state.brushSize);
       sizeOut.value = String(state.brushSize);
@@ -167,6 +208,16 @@ export function createControls(doc, { palette, scenes, actions }) {
       for (const r of speeds) r.checked = Number(r.value) === state.speed;
       undo.disabled = !state.canUndo;
       quality.value = state.quality;
+      for (const [id, tab] of tabs) {
+        const on = id === state.tab;
+        tab.setAttribute('aria-selected', String(on));
+        tab.tabIndex = on ? 0 : -1;
+      }
+      tabPanel.setAttribute('aria-labelledby', `tab-${state.tab}`);
+      ambient.value = String(state.ambient);
+      ambientOut.textContent = `${state.ambient} °C`;
+      dayCycle.checked = state.dayCycle;
+      thermal.setAttribute('aria-pressed', String(state.thermal));
       // Seçicide olmayan (ör. yalnızca debug'da listelenen) aktif sahne için seçenek ekle.
       if (![...sceneSelect.options].some((o) => o.value === state.scene)) {
         const opt = doc.createElement('option');

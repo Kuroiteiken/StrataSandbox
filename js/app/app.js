@@ -1,6 +1,6 @@
 // Uygulama durumu ve eylemleri. Panel, klavye ve pointer bu eylemleri çağırır;
 // simülasyon yalnızca public API'si üzerinden kullanılır.
-import { pickerByKey } from './catalog.js';
+import { pickerByKey, CATEGORIES, categoryOf } from './catalog.js';
 import { SPEEDS } from '../engine/simulation.js';
 import { BRUSH_SHAPES, clampBrushSize } from '../engine/brush.js';
 import { getScene } from '../scenes/index.js';
@@ -31,8 +31,13 @@ export function createApp({ sim, renderer, prefs, storage, doc, onStateChange = 
     scene: getScene(prefs.scene).id,
     seed: prefs.seed,
     seenVersion: prefs.seenVersion,
+    tab: categoryOf(prefs.material), // açık seçici sekmesi
+    ambient: sim.ambientBase, // ortam sıcaklığı (sahne yüklenince sahnenin değeri)
+    dayCycle: prefs.dayCycle,
+    thermal: false, // termal görünüm (saklanmaz)
   };
   sim.setSpeed(state.speed);
+  sim.setDayCycle(state.dayCycle);
 
   let controls = null;
   let persistTimer = 0;
@@ -40,8 +45,8 @@ export function createApp({ sim, renderer, prefs, storage, doc, onStateChange = 
   const persist = () => {
     clearTimeout(persistTimer);
     persistTimer = setTimeout(() => {
-      const { material, brushSize, brushShape, speed, quality, seed, scene, seenVersion } = state;
-      savePrefs({ material, brushSize, brushShape, speed, quality, seed, scene, seenVersion }, storage, STORAGE_KEY);
+      const { material, brushSize, brushShape, speed, quality, seed, scene, seenVersion, dayCycle } = state;
+      savePrefs({ material, brushSize, brushShape, speed, quality, seed, scene, seenVersion, dayCycle }, storage, STORAGE_KEY);
     }, PERSIST_DELAY_MS);
   };
 
@@ -58,6 +63,7 @@ export function createApp({ sim, renderer, prefs, storage, doc, onStateChange = 
   const load = () => {
     const scene = getScene(state.scene);
     sim.loadScene(scene, state.seed);
+    state.ambient = sim.ambientBase;
     renderer.setBackground(state.seed);
     if (scene.hint) announce(scene.hint);
     sync();
@@ -68,8 +74,33 @@ export function createApp({ sim, renderer, prefs, storage, doc, onStateChange = 
       const pick = pickerByKey(key);
       if (!pick) return;
       state.material = key;
+      state.tab = pick.category;
       announce(`Materyal: ${pick.label}`);
       persist();
+      sync();
+    },
+    setTab(id) {
+      if (!CATEGORIES.some((c) => c.id === id)) return;
+      state.tab = id;
+      sync();
+    },
+    // Ortam sıcaklığı: hava yavaşça yaklaşır; sahne yeniden üretilmez, undo noktası oluşmaz.
+    setAmbient(c) {
+      sim.setAmbient(Number(c));
+      state.ambient = sim.ambientBase;
+      sync();
+    },
+    setDayCycle(on) {
+      state.dayCycle = Boolean(on);
+      sim.setDayCycle(state.dayCycle);
+      announce(state.dayCycle ? 'Gün/gece döngüsü açık' : 'Gün/gece döngüsü kapalı');
+      persist();
+      sync();
+    },
+    toggleThermal() {
+      state.thermal = !state.thermal;
+      renderer.setViewMode?.(state.thermal ? 'thermal' : 'normal');
+      announce(state.thermal ? 'Termal görünüm açık' : 'Termal görünüm kapalı');
       sync();
     },
     setBrushSize(size) {
@@ -228,6 +259,8 @@ export function createApp({ sim, renderer, prefs, storage, doc, onStateChange = 
           return actions.undo();
         case 'flip':
           return actions.flip();
+        case 'toggleThermal':
+          return actions.toggleThermal();
         case 'help':
           return actions.help();
         default:

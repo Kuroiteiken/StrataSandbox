@@ -146,3 +146,10 @@
     display: none;
   }
 }
+
+/* İmleç altı bilgisi yalnızca hassas işaretçide (fare, kalem) anlamlı. */
+@media (pointer: coarse) {
+  .pointer-fine {
+    display: none;
+  }
+}

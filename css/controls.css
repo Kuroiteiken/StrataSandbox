@@ -505,3 +505,45 @@
     min-height: 32px;
   }
 }
+
+/* Materyal seçici sekmeleri */
+.picker-tabs {
+  display: flex;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.picker-tab {
+  flex: 0 0 auto;
+  min-height: var(--control-height);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--ink-600);
+  border-radius: var(--radius-s);
+  background: var(--ink-800);
+  color: var(--bone-300);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.picker-tab:hover {
+  color: var(--bone-100);
+}
+
+.picker-tab[aria-selected="true"] {
+  border-color: var(--brass-600);
+  background: var(--ink-700);
+  color: var(--brass-400);
+  font-weight: 600;
+}
+
+.picker-tab:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.specimen[hidden] {
+  display: none;
+}

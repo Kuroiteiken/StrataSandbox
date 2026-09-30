@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MAT } from '../js/engine/materials.js';
-import { PICKER, pickerByKey, pickerByShortcut } from '../js/app/catalog.js';
+import { PICKER, pickerByKey, pickerByShortcut, CATEGORIES, categoryOf } from '../js/app/catalog.js';
 import { DEFAULT_PREFS, sanitizePrefs, loadPrefs, savePrefs } from '../js/app/storage.js';
 import { keyToAction, shouldIgnoreTarget, attachKeyboard } from '../js/app/keyboard.js';
 import { formatCount, formatStats, createRateMeter, dayLabel, formatClimate } from '../js/app/stats.js';
@@ -155,6 +155,21 @@ test('formatStats panel alanlarını üretir', () => {
   assert.equal(f.seed, 's1');
   const paused = formatStats({ particles: 0, fps: 0, tps: 0, width: 1, height: 1, speed: 1, paused: true, seed: 'x' });
   assert.equal(paused.speed, 'duraklatıldı');
+});
+
+test('kategoriler seçici sırasını tanımlar; her kategoride en az bir giriş var', () => {
+  assert.deepEqual(CATEGORIES.map((c) => c.id), ['powder', 'liquid', 'gas', 'solid', 'tool']);
+  assert.deepEqual(CATEGORIES.map((c) => c.label), ['Toz', 'Sıvı', 'Gaz', 'Katı', 'Araç']);
+  for (const c of CATEGORIES) assert.ok(PICKER.some((p) => p.category === c.id), c.id);
+  assert.equal(categoryOf('METAL'), 'solid');
+  assert.equal(categoryOf('nope'), 'powder');
+});
+
+test('T termal görünümü açıp kapatır; dayCycle tercihi boolean olarak doğrulanır', () => {
+  assert.deepEqual(keyToAction(key('t')), { type: 'toggleThermal' });
+  assert.equal(sanitizePrefs({ dayCycle: true }).dayCycle, true);
+  assert.equal(sanitizePrefs({ dayCycle: 'yes' }).dayCycle, false);
+  assert.equal(sanitizePrefs({}).dayCycle, false, '0.9.0 kaydı: alan yok → kapalı');
 });
 
 test('oran ölçer kare ve tick hızını zaman penceresinde hesaplar', () => {

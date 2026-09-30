@@ -29,6 +29,8 @@
         <div><dt>FPS</dt><dd data-stat="fps">0</dd></div>
         <div><dt>Grid</dt><dd data-stat="grid">–</dd></div>
         <div><dt>Hız</dt><dd data-stat="speed">1×</dd></div>
+        <div><dt>Ortam</dt><dd data-stat="ambient">–</dd></div>
+        <div class="pointer-fine"><dt>İmleç</dt><dd data-stat="cursor">–</dd></div>
         <div><dt>Seed</dt><dd data-stat="seed">–</dd></div>
       </dl>
     </header>
@@ -42,7 +44,10 @@
     <aside class="panel" id="panel" aria-label="Kontroller">
       <section class="panel-section" aria-labelledby="h-material">
         <h2 class="section-title" id="h-material">Materyal</h2>
-        <div class="specimens" id="material-picker" role="radiogroup" aria-labelledby="h-material"></div>
+        <div class="picker-tabs" id="material-tabs" role="tablist" aria-label="Materyal kategorileri"></div>
+        <div id="material-panel" role="tabpanel">
+          <div class="specimens" id="material-picker" role="radiogroup" aria-labelledby="h-material"></div>
+        </div>
       </section>
 
       <section class="panel-section" aria-labelledby="h-brush">
@@ -92,6 +97,22 @@
         </label>
       </section>
 
+      <section class="panel-section" aria-labelledby="h-ambient">
+        <h2 class="section-title" id="h-ambient">Ortam</h2>
+        <label class="field" for="ambient">
+          <span class="field-label">Sıcaklık <output id="ambient-out" for="ambient">20 °C</output></span>
+          <input type="range" id="ambient" min="-40" max="60" step="1" value="20">
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="day-cycle">
+          <span>Gün/gece döngüsü</span>
+        </label>
+        <p class="hint" data-stat="climate">–</p>
+        <div class="button-row">
+          <button type="button" class="btn" id="btn-thermal" aria-pressed="false">Termal görünüm <kbd>T</kbd></button>
+        </div>
+      </section>
+
       <details class="panel-more" id="more-controls">
         <summary class="section-title">Sahne ve diğer ayarlar</summary>
       <section class="panel-section" aria-labelledby="h-scene">
@@ -130,6 +151,7 @@
           <div><dt>Kalite</dt><dd data-stat="quality">–</dd></div>
           <div><dt>İmleç</dt><dd data-stat="cursorCell">–</dd></div>
           <div><dt>Materyal</dt><dd data-stat="cursorMaterial">–</dd></div>
+          <div><dt>İmleç °C</dt><dd data-stat="cursorTemp">–</dd></div>
         </dl>
       </section>
     </aside>
@@ -147,6 +169,7 @@
         <tr><th scope="row"><kbd>Space</kbd></th><td>Duraklat / Devam</td></tr>
         <tr><th scope="row"><kbd>.</kbd></th><td>Tek adım</td></tr>
         <tr><th scope="row"><kbd>F</kbd></th><td>Dünyayı ters çevir (kum saati)</td></tr>
+        <tr><th scope="row"><kbd>T</kbd></th><td>Termal görünüm</td></tr>
         <tr><th scope="row"><kbd>[</kbd> <kbd>]</kbd></th><td>Fırça küçült / büyüt</td></tr>
         <tr><th scope="row"><kbd>S</kbd></th><td>Fırça şekli: Daire → Kare → Sprey</td></tr>
         <tr><th scope="row"><kbd>−</kbd> <kbd>+</kbd></th><td>Simülasyon hızı</td></tr>

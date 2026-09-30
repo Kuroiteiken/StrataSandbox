@@ -24,10 +24,13 @@ Hedef sürüm 0.10.0: sıcaklık sistemi, Buz, Kar, Metal, yeni sahneler ve kum 
 - Gün/gece döngüsü (motor; arayüz düğmesi sonraki adımda): 1× hızda bir gün ≈ 4 dakika, ortam sıcaklığı gece 10 °C düşer, öğlen 10 °C yükselir. Gökyüzü geceleri kararır, yıldızlar belirginleşir.
 - Sahnelerin varsayılan ortam sıcaklığı var (Vaha 30 °C, diğerleri 20 °C); sahne yüklenince alan bu sıcaklıkla başlar.
 - **Isıt** (`H`) ve **Soğut** (`C`) fırçaları: materyal koymadan fırçanın altındaki hücrelerin sıcaklığını her uygulamada 25 °C değiştirir. Basılı tutunca etki sürer, sınırlar −100…2500 °C. Geri alınabilir; sağ tık yine silgidir.
+- Görünür **Ortam** bölümü: sıcaklık kaydırıcısı (−40…60 °C), gün/gece döngüsü onay kutusu, anlık durum ("Öğle · 28 °C") ve termal görünüm düğmesi (`T`).
+- Başlıkta Ortam değeri; fare ve kalemde imlecin altındaki materyal ve sıcaklık ("Su · 12 °C").
 - `docs/MATERIALS.md`: tüm materyallerin ve etkileşimlerinin (mevcut ve planlanan) başvuru belgesi. Tür, yoğunluk, kısayol, olasılıklar ve 0.10.0'da değişecek kurallar burada tutulur.
 
 ### Changed
 
+- Materyal seçici sekmelere ayrıldı: Toz, Sıvı, Gaz, Katı, Araç. Ok tuşlarıyla gezilir; kısayolla seçilen materyalin sekmesi açılır.
 - Faz geçişleri artık sıcaklık alanında ve gizli ısıyla çalışıyor: su 100 °C'de kaynıyor; buhar 95 °C'de yoğuşuyor ve bir kısmı kayboluyor; lav 750 °C'de taşa dönüyor (önce dış yüzeyi, ortası en son); kum 550 °C'de cama dönüyor; taş 1500 °C'de eriyor.
 - Sıcak ortamda (≥ 35 °C) açık su yüzeyi yavaşça buharlaşıyor. Odun (300 °C), yağ ve bitki (250 °C) sıcaklıkla kendiliğinden tutuşuyor; bitki 5 °C'nin altında büyümüyor.
 - Eski `life` sayaç hileleri (kum ısısı, lav soğuma sayacı, buhar zamanlayıcısı) kaldırıldı. Temasla tutuşma ve ateşin suyu buharlaştırması korundu; tüm buhar üretimi tek bir yoldan (`emitSteam`) geçiyor.

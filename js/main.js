@@ -9,7 +9,7 @@ import { attachKeyboard } from './app/keyboard.js';
 import { createControls } from './app/controls.js';
 import { createApp } from './app/app.js';
 import { loadPrefs, safeLocalStorage, sanitizePrefs, isValidSeed } from './app/storage.js';
-import { attachStats, formatStats, createRateMeter } from './app/stats.js';
+import { attachStats, formatStats, createRateMeter, formatClimate } from './app/stats.js';
 import { materialLabel } from './app/catalog.js';
 import { SCENES } from './scenes/index.js';
 import { createQualityGovernor } from './app/quality.js';
@@ -113,7 +113,12 @@ attachStats(document, () => {
   const s = sim.getStats();
   const { fps, tps } = meter.rates(1000);
   const values = formatStats({ ...s, fps, tps });
+  values.ambient = `${Math.round(s.ambient)} °C`;
+  values.climate = formatClimate(s.dayCycle, s.dayPhase, s.ambient);
+  const under = cursor ? sim.getCell(cursor.x, cursor.y) : null;
+  values.cursor = under ? `${materialLabel(under.material)} · ${Math.round(under.temp)} °C` : '–';
   if (debug) {
+    values.cursorTemp = under ? under.temp.toFixed(1) : '–';
     values.physicsMs = s.physicsMs.toFixed(2);
     values.renderMs = renderer.lastRenderMs.toFixed(2);
     values.activeCells = String(s.activeCells);
