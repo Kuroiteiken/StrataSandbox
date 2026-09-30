@@ -83,14 +83,15 @@ test('sönen ateş yerinde sıcak hava bırakır (vanish sıcaklığı korur)', 
   assert.ok(hottestAir > 300, `en sıcak hava ${hottestAir}`);
 });
 
-test('yutucunun boşalttığı hücre ortam sıcaklığına döner', () => {
+// Yutulan madde ısısıyla birlikte yok olur: hücre 600 °C'yi taşımaz (difüzyon komşulardan biraz ısıtabilir).
+test('yutucunun boşalttığı hücre yutulan maddenin ısısını taşımaz', () => {
   const sim = new Simulation({ width: 5, height: 5, seed: 'sink-temp' });
   sim.setCell(2, 4, MAT.SINK);
   sim.setCell(2, 3, MAT.SAND);
   sim.world.temp[sim.world.index(2, 3)] = 600;
   for (let t = 0; t < 400 && countMaterial(sim, MAT.SAND) > 0; t++) sim.step();
   assert.equal(countMaterial(sim, MAT.SAND), 0);
-  assert.equal(sim.getCell(2, 3).temp, sim.world.ambient);
+  assert.ok(sim.getCell(2, 3).temp < 100, `hücre ${sim.getCell(2, 3).temp} °C`);
 });
 
 test('clampAmbient aralığa kırpar, sonlu olmayanı varsayılana çevirir', () => {

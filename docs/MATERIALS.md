@@ -112,6 +112,8 @@ Her hücrenin bir sıcaklığı (°C) olur ve ısı komşu hücrelere iletilir. 
 
 ### 4.1 Termal özellikler (başlangıç değerleri; uygulama sırasında ayarlanabilir)
 
+> Durum: doğuş sıcaklığı, iletkenlik, ısı kapasitesi ve kaynaklar **mevcut** (0.10.0 geliştirme, Görev 5). Kaynaklar (çoğaltıcı ve yutucu) K 0,06, C 4 değerini kullanır. "Sıcaklıkla davranış" sütunundaki faz geçişleri ve tutuşma Görev 7'de gelir.
+
 | Materyal | Doğuş sıcaklığı | İletkenlik K | Isı kapasitesi C | Sıcaklıkla davranış |
 |---|---|---|---|---|
 | Hava | ortam | 0,01 | 1 | Ortama yaklaşır. |

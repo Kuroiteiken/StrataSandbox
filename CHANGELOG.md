@@ -16,6 +16,8 @@ Hedef sürüm 0.10.0: sıcaklık sistemi, Buz, Kar, Metal, yeni sahneler ve kum 
 - **Yutucu** (`Y`): değen hareketli materyali yutar; hücre başına 1000 birim, sonra durur ve grileşir.
 - Sınırsız kaynak modu (bütçe 65535) ve sahneler için `sim.configureSource(x, y, { learn, budget })` API'si.
 - Sıcaklık alanı (`world.temp`, °C): her hücrenin bir sıcaklığı var ve sıcaklık parçacıkla birlikte taşınıyor. Undo ve ters çevirme sıcaklığı da kapsıyor. Sönen ateş geride sıcak hava bırakıyor, yutucunun boşalttığı yer ortam sıcaklığına dönüyor.
+- Isı iletimi (`js/engine/heat.js`): tick'in yeni 3. geçişi. Çift tamponlu 4 komşulu difüzyon kullanır (yön bias'ı yok, enerji korunur). Hava ortam sıcaklığına yaklaşır; ateş ve yanan materyaller ısı kaynağıdır. Sakin satırlar atlanır (benchmark'ta tick başına ~+0,5 ms).
+- `sim.setAmbient` ve `sim.setTemp` API'leri. Ortam ayarı dünyayı anında değiştirmez, undo noktası oluşturmaz.
 - `docs/MATERIALS.md`: tüm materyallerin ve etkileşimlerinin (mevcut ve planlanan) başvuru belgesi. Tür, yoğunluk, kısayol, olasılıklar ve 0.10.0'da değişecek kurallar burada tutulur.
 
 ### Changed

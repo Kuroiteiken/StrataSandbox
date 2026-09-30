@@ -49,43 +49,47 @@ export const MAT = Object.freeze({
 //              extinguishTo: sönünce olacağı materyal }
 //   hidden:    materyal seçicide gösterilmez (programatik olarak yazılabilir)
 //   temp:      doğuş sıcaklığı °C (yoksa ortam sıcaklığı)
+// Isı alanları (ADR-014):
+//   conduct:   iletkenlik K (iki hücre arası k = min(K_i, K_j)); varsayılan 0,02
+//   capacity:  ısı kapasitesi C (≥ 1); varsayılan 2. Kararlılık için K/C ≤ 0,25 (derlemede doğrulanır)
+//   source:    sabit kaynak sıcaklığı °C (hücre bunun altına inmez: ateş, yanma, magma)
 //   cools:     life (ısı) her tick 1 azalır; tarama döngüsünde satır içi yapılır (react() çağrısı yok)
 export const MATERIAL_DEFS = [
-  { id: MAT.EMPTY, key: 'EMPTY', name: 'Empty', kind: KIND.NONE, density: 5, color: null },
-  { id: MAT.WALL, key: 'WALL', name: 'Wall', kind: KIND.STATIC, density: 255, color: '#000000', internal: true },
-  { id: MAT.SAND, key: 'SAND', name: 'Sand', kind: KIND.POWDER, density: 20, color: '#d9bb82', cools: true },
-  { id: MAT.STONE, key: 'STONE', name: 'Stone', kind: KIND.STATIC, density: 255, color: '#6e6964' },
-  { id: MAT.WATER, key: 'WATER', name: 'Water', kind: KIND.LIQUID, density: 10, color: '#3f7fc2', dispersion: 5, spread: 1, drag: 0.5 },
+  { id: MAT.EMPTY, key: 'EMPTY', name: 'Empty', kind: KIND.NONE, density: 5, color: null, conduct: 0.01, capacity: 1 },
+  { id: MAT.WALL, key: 'WALL', name: 'Wall', kind: KIND.STATIC, density: 255, color: '#000000', internal: true, conduct: 0.01, capacity: 1 },
+  { id: MAT.SAND, key: 'SAND', name: 'Sand', kind: KIND.POWDER, density: 20, color: '#d9bb82', cools: true, conduct: 0.04, capacity: 3 },
+  { id: MAT.STONE, key: 'STONE', name: 'Stone', kind: KIND.STATIC, density: 255, color: '#6e6964', conduct: 0.06, capacity: 4 },
+  { id: MAT.WATER, key: 'WATER', name: 'Water', kind: KIND.LIQUID, density: 10, color: '#3f7fc2', dispersion: 5, spread: 1, drag: 0.5, conduct: 0.08, capacity: 4 },
   {
     id: MAT.OIL, key: 'OIL', name: 'Oil', kind: KIND.LIQUID, density: 8, color: '#6a5424',
-    dispersion: 2, spread: 0.6, drag: 0.6, flammable: 1, burnsInto: MAT.BURNING_OIL,
+    dispersion: 2, spread: 0.6, drag: 0.6, flammable: 1, burnsInto: MAT.BURNING_OIL, conduct: 0.03, capacity: 3,
   },
-  { id: MAT.LAVA, key: 'LAVA', name: 'Lava', kind: KIND.LIQUID, density: 30, color: '#e4531e', dispersion: 1, spread: 0.2, drag: 0.9, reactive: true },
-  { id: MAT.STEAM, key: 'STEAM', name: 'Steam', kind: KIND.GAS, density: 2, color: '#c8d2da', drift: 0.45, life: [240, 480], reactive: true },
-  { id: MAT.FIRE, key: 'FIRE', name: 'Fire', kind: KIND.GAS, density: 3, color: '#ff8a2a', drift: 0.3, rise: 0.65, life: [10, 26], reactive: true },
-  { id: MAT.WOOD, key: 'WOOD', name: 'Wood', kind: KIND.STATIC, density: 255, color: '#7a5232', flammable: 0.25, burnsInto: MAT.BURNING_WOOD },
-  { id: MAT.GLASS, key: 'GLASS', name: 'Glass', kind: KIND.STATIC, density: 255, color: '#a9d6d4' },
+  { id: MAT.LAVA, key: 'LAVA', name: 'Lava', kind: KIND.LIQUID, density: 30, color: '#e4531e', dispersion: 1, spread: 0.2, drag: 0.9, reactive: true, temp: 1150, conduct: 0.04, capacity: 4 },
+  { id: MAT.STEAM, key: 'STEAM', name: 'Steam', kind: KIND.GAS, density: 2, color: '#c8d2da', drift: 0.45, life: [240, 480], reactive: true, temp: 105, conduct: 0.02, capacity: 1 },
+  { id: MAT.FIRE, key: 'FIRE', name: 'Fire', kind: KIND.GAS, density: 3, color: '#ff8a2a', drift: 0.3, rise: 0.65, life: [10, 26], reactive: true, temp: 900, source: 900, conduct: 0.05, capacity: 1 },
+  { id: MAT.WOOD, key: 'WOOD', name: 'Wood', kind: KIND.STATIC, density: 255, color: '#7a5232', flammable: 0.25, burnsInto: MAT.BURNING_WOOD, conduct: 0.02, capacity: 3 },
+  { id: MAT.GLASS, key: 'GLASS', name: 'Glass', kind: KIND.STATIC, density: 255, color: '#a9d6d4', conduct: 0.05, capacity: 3 },
   {
     id: MAT.PLANT, key: 'PLANT', name: 'Plant', kind: KIND.STATIC, density: 255, color: '#4c9a3a',
-    life: [8, 8], flammable: 0.5, burnsInto: MAT.BURNING_PLANT, reactive: true,
+    life: [8, 8], flammable: 0.5, burnsInto: MAT.BURNING_PLANT, reactive: true, conduct: 0.02, capacity: 3,
   },
   {
     id: MAT.BURNING_WOOD, key: 'BURNING_WOOD', name: 'Burning Wood', kind: KIND.STATIC, density: 255, color: '#9a4a1e',
-    hidden: true, reactive: true, life: [300, 600], burn: { emit: 0.12, douse: 0.5, ash: 0.3, extinguishTo: MAT.WOOD },
+    hidden: true, reactive: true, life: [300, 600], temp: 700, source: 700, conduct: 0.04, capacity: 2, burn: { emit: 0.12, douse: 0.5, ash: 0.3, extinguishTo: MAT.WOOD },
   },
   {
     id: MAT.BURNING_PLANT, key: 'BURNING_PLANT', name: 'Burning Plant', kind: KIND.STATIC, density: 255, color: '#c8682a',
-    hidden: true, reactive: true, life: [30, 60], burn: { emit: 0.3, douse: 0.7, ash: 0.05, extinguishTo: MAT.PLANT },
+    hidden: true, reactive: true, life: [30, 60], temp: 700, source: 700, conduct: 0.04, capacity: 2, burn: { emit: 0.3, douse: 0.7, ash: 0.05, extinguishTo: MAT.PLANT },
   },
   {
     id: MAT.BURNING_OIL, key: 'BURNING_OIL', name: 'Burning Oil', kind: KIND.LIQUID, density: 8, color: '#f06a1c',
-    dispersion: 2, spread: 0.6, drag: 0.6, hidden: true, reactive: true, life: [120, 240],
+    dispersion: 2, spread: 0.6, drag: 0.6, hidden: true, reactive: true, life: [120, 240], temp: 700, source: 700, conduct: 0.04, capacity: 2,
     burn: { emit: 0.35, douse: 0, ash: 0, extinguishTo: MAT.OIL },
   },
-  { id: MAT.ASH, key: 'ASH', name: 'Ash', kind: KIND.POWDER, density: 12, color: '#8c8680', hidden: true },
+  { id: MAT.ASH, key: 'ASH', name: 'Ash', kind: KIND.POWDER, density: 12, color: '#8c8680', hidden: true, conduct: 0.01, capacity: 2 },
   // Kaynaklar: life = kalan bütçe (65535 = sınırsız); çoğaltıcının öğrendiği materyal variant'ta (reactions.js).
-  { id: MAT.CLONER, key: 'CLONER', name: 'Cloner', kind: KIND.STATIC, density: 255, color: '#6a5a86', reactive: true, life: [1000, 1000] },
-  { id: MAT.SINK, key: 'SINK', name: 'Sink', kind: KIND.STATIC, density: 255, color: '#1b1626', reactive: true, life: [1000, 1000] },
+  { id: MAT.CLONER, key: 'CLONER', name: 'Cloner', kind: KIND.STATIC, density: 255, color: '#6a5a86', reactive: true, life: [1000, 1000], conduct: 0.06, capacity: 4 },
+  { id: MAT.SINK, key: 'SINK', name: 'Sink', kind: KIND.STATIC, density: 255, color: '#1b1626', reactive: true, life: [1000, 1000], conduct: 0.06, capacity: 4 },
 ];
 
 const VALID_KINDS = new Set(Object.values(KIND));
@@ -116,6 +120,9 @@ function displaceChance(mover, target) {
   }
 }
 
+const DEFAULT_CONDUCT = 0.02;
+const DEFAULT_CAPACITY = 2;
+
 export function compileMaterials(defs) {
   const KIND_T = new Uint8Array(256);
   const DENSITY = new Uint8Array(256);
@@ -134,6 +141,10 @@ export function compileMaterials(defs) {
   const ASH_CHANCE = new Uint8Array(256);
   const EXTINGUISH_TO = new Uint8Array(256);
   const SPAWN_TEMP = new Float32Array(256).fill(NaN);
+  const CONDUCT = new Float32Array(256);
+  const CAP = new Float32Array(256);
+  const INV_CAP = new Float32Array(256);
+  const SOURCE_TEMP = new Float32Array(256).fill(-Infinity);
   const DISPLACE = new Uint8Array(256 * 256);
   const byId = new Array(256).fill(null);
   const byKey = {};
@@ -169,6 +180,14 @@ export function compileMaterials(defs) {
       ASH_CHANCE[def.id] = toByte(def.burn.ash);
       EXTINGUISH_TO[def.id] = def.burn.extinguishTo;
     }
+    const K = def.conduct ?? DEFAULT_CONDUCT;
+    const C = def.capacity ?? DEFAULT_CAPACITY;
+    if (!(C >= 1)) throw new RangeError(`Isı kapasitesi en az 1 olmalı (${def.key})`);
+    if (!(K >= 0 && K / C <= 0.25)) throw new RangeError(`Kararsız ısı iletimi: K/C > 0,25 (${def.key})`);
+    CONDUCT[def.id] = K;
+    CAP[def.id] = C;
+    INV_CAP[def.id] = 1 / C;
+    if (def.source !== undefined) SOURCE_TEMP[def.id] = def.source;
     if (def.temp !== undefined && def.temp !== null) {
       if (!Number.isFinite(def.temp)) throw new RangeError(`Geçersiz doğuş sıcaklığı (${def.key})`);
       SPAWN_TEMP[def.id] = def.temp;
@@ -201,6 +220,10 @@ export function compileMaterials(defs) {
     ASH_CHANCE,
     EXTINGUISH_TO,
     SPAWN_TEMP,
+    CONDUCT,
+    CAP,
+    INV_CAP,
+    SOURCE_TEMP,
     DISPLACE,
     GAS_IDS: Object.freeze(gasIds),
     defs: byId,

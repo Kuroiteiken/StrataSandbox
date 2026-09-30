@@ -106,3 +106,18 @@ test('Her materyalin bir key ile bulunabilir tanımı vardır', () => {
   assert.equal(MATERIALS.byKey.SAND.id, MAT.SAND);
   assert.equal(MATERIALS.defs[MAT.STONE].key, 'STONE');
 });
+
+test('kararsız ısı iletimi (K/C > 0,25) ve 1\'den küçük ısı kapasitesi derleme hatası verir', () => {
+  const base = { id: 0, key: 'EMPTY', name: 'E', kind: KIND.NONE, density: 5 };
+  assert.throws(() => compileMaterials([{ ...base, conduct: 0.3, capacity: 1 }]), /K\/C/);
+  assert.throws(() => compileMaterials([{ ...base, conduct: 0.1, capacity: 0.5 }]), /kapasite/);
+  assert.doesNotThrow(() => compileMaterials([{ ...base, conduct: 0.25, capacity: 1 }]));
+});
+
+test('termal tablolar: lav ve ateş sıcak doğar, ateş ve yanan odun kaynaktır, taş kaynak değildir', () => {
+  assert.equal(MATERIALS.SPAWN_TEMP[MAT.LAVA], 1150);
+  assert.equal(MATERIALS.SOURCE_TEMP[MAT.FIRE], 900);
+  assert.equal(MATERIALS.SOURCE_TEMP[MAT.BURNING_WOOD], 700);
+  assert.equal(MATERIALS.SOURCE_TEMP[MAT.STONE], -Infinity);
+  for (const def of MATERIALS.list) assert.ok(MATERIALS.CONDUCT[def.id] / MATERIALS.CAP[def.id] <= 0.25, def.key);
+});

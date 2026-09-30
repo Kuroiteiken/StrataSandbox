@@ -6,6 +6,8 @@ import { MAT, KIND, MATERIALS, spawnTemp } from './materials.js';
 import { stepPowder, stepLiquid, stepGas } from './kernels.js';
 import { react, createReactionState, beginReactionTick, initialLife, isMover, SOURCE_INFINITE, CLONER_LEARNED } from './reactions.js';
 import { footprint, lineCells, SPRAY_DENSITY } from './brush.js';
+import { stepHeat, createHeatState } from './heat.js';
+import { DEFAULT_AMBIENT, clampAmbient, TEMP_MIN, TEMP_MAX } from './climate.js';
 
 export const SPEEDS = Object.freeze([0.5, 1, 2, 4]);
 
@@ -51,6 +53,8 @@ export class Simulation {
     this._now = now;
     this._reactions = createReactionState();
     this._gasRows = new Uint8Array(height); // geçiş 2'de taranacak satırlar
+    this._heat = createHeatState(height); // geçiş 3 (ısı) durumu
+    this.ambientBase = DEFAULT_AMBIENT; // kullanıcı ayarı (undo ile geri alınmaz)
 
     this._hold = null; // basılı tutma: { x, y, brush } — tick başına yeniden uygulanır
     this._strokeDirty = false;
@@ -74,7 +78,7 @@ export class Simulation {
         return w.temp;
       },
       get ambient() {
-        return w.ambient;
+        return sim.ambient;
       },
       counts: w.counts, // materyal başına hücre sayısı (salt-okunur; ör. renderer animasyon kararı)
       get tick() {
@@ -105,6 +109,25 @@ export class Simulation {
 
   resetTiming() {
     this._acc = 0;
+  }
+
+  // Bu tick'in ortam sıcaklığı (gün/gece dalgası sonraki adımda eklenir).
+  get ambient() {
+    return this.ambientBase;
+  }
+
+  // Ortam sıcaklığı: hava ona yavaşça yaklaşır. Sahneyi yeniden üretmez, undo noktası oluşturmaz.
+  setAmbient(c) {
+    this.ambientBase = clampAmbient(c);
+  }
+
+  // Tek hücrenin sıcaklığı (sahneler, testler). Sonlu olmayan değer ve dünya dışı reddedilir.
+  setTemp(x, y, c) {
+    const w = this.world;
+    if (!w.inBounds(x, y) || !Number.isFinite(c)) return false;
+    w.temp[w.index(x, y)] = c < TEMP_MIN ? TEMP_MIN : c > TEMP_MAX ? TEMP_MAX : c;
+    this.version++;
+    return true;
   }
 
   // Tam olarak bir tick; pause durumundan bağımsız.
@@ -138,6 +161,7 @@ export class Simulation {
 
   _tickOnce() {
     const w = this.world;
+    w.ambient = this.ambient;
     w.beginTick();
     const { type, stamp, life, stride, width, height } = w;
     const clock = w.clock;
@@ -184,6 +208,9 @@ export class Simulation {
         stepGas(w, rng, i, t);
       }
     }
+
+    // Geçiş 3 — ısı (heat.js): difüzyon, hava, kaynaklar.
+    stepHeat(w, rng, this._heat);
 
     // Basılı tutma tick sonunda uygulanır: kaynak hücre bu tick boşaldıysa hemen yeniden dolar
     // (kesintisiz akış); yeni hücreler bir sonraki tick hareket eder.
@@ -258,6 +285,7 @@ export class Simulation {
     const snap = this._spareSnapshot();
     this._capture(snap);
     this._undo = snap;
+    this.world.ambient = this.ambient;
     this.world.clear();
     this.version++;
   }
@@ -280,6 +308,7 @@ export class Simulation {
     this.rng = new Rng(this.seed, 'sim');
     this.inputRng = new Rng(this.seed, 'input');
     this._seedSalt = hashSeed(this.seed)[0];
+    this.world.ambient = this.ambient;
     this.world.clear();
     this.tick = 0;
     this._acc = 0;
