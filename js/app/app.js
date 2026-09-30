@@ -5,7 +5,7 @@ import { SPEEDS } from '../engine/simulation.js';
 import { BRUSH_SHAPES, clampBrushSize } from '../engine/brush.js';
 import { getScene } from '../scenes/index.js';
 import { isValidSeed, savePrefs, QUALITY_LEVELS } from './storage.js';
-import { APP_SLUG, STORAGE_KEY } from '../config.js';
+import { APP_SLUG, APP_VERSION, STORAGE_KEY } from '../config.js';
 
 const PERSIST_DELAY_MS = 300;
 
@@ -30,6 +30,7 @@ export function createApp({ sim, renderer, prefs, storage, doc, onStateChange = 
     quality: prefs.quality,
     scene: getScene(prefs.scene).id,
     seed: prefs.seed,
+    seenVersion: prefs.seenVersion,
   };
   sim.setSpeed(state.speed);
 
@@ -39,8 +40,8 @@ export function createApp({ sim, renderer, prefs, storage, doc, onStateChange = 
   const persist = () => {
     clearTimeout(persistTimer);
     persistTimer = setTimeout(() => {
-      const { material, brushSize, brushShape, speed, quality, seed, scene } = state;
-      savePrefs({ material, brushSize, brushShape, speed, quality, seed, scene }, storage, STORAGE_KEY);
+      const { material, brushSize, brushShape, speed, quality, seed, scene, seenVersion } = state;
+      savePrefs({ material, brushSize, brushShape, speed, quality, seed, scene, seenVersion }, storage, STORAGE_KEY);
     }, PERSIST_DELAY_MS);
   };
 
@@ -175,6 +176,13 @@ export function createApp({ sim, renderer, prefs, storage, doc, onStateChange = 
     help() {
       const dialog = doc.getElementById('help-dialog');
       if (dialog && !dialog.open) dialog.showModal();
+    },
+    whatsNew() {
+      const dialog = doc.getElementById('whats-new-dialog');
+      if (dialog && !dialog.open) dialog.showModal();
+      state.seenVersion = APP_VERSION;
+      persist();
+      sync();
     },
     refresh() {
       sync();

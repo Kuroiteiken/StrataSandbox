@@ -7,6 +7,9 @@ export const APP_NAME = 'Strata Sandbox';
 // Dosya adlarında kullanılan kısa ad (ör. yakalanan PNG).
 export const APP_SLUG = 'strata';
 
+// Uygulama sürümü: package.json ve CHANGELOG.md ile aynı olmalı (tests/releases.test.js).
+export const APP_VERSION = '0.9.0';
+
 // localStorage anahtarı bilinçli olarak addan bağımsızdır: ad değişince
 // kullanıcı tercihleri kaybolmaz.
 export const STORAGE_KEY = 'fsbox.prefs.v1';

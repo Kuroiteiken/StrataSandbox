@@ -17,6 +17,7 @@ export const DEFAULT_PREFS = Object.freeze({
   quality: 'auto',
   seed: DEFAULT_SEED,
   scene: DEFAULT_SCENE_ID,
+  seenVersion: '', // Yenilikler diyaloğunda görülen son sürüm
 });
 
 const SEED_PATTERN = /^[A-Za-z0-9_-]{1,32}$/;
@@ -36,6 +37,7 @@ export function sanitizePrefs(raw) {
     quality: QUALITY_LEVELS.includes(r.quality) ? r.quality : d.quality,
     seed: isValidSeed(r.seed) ? r.seed : d.seed,
     scene: SCENES.some((s) => s.id === r.scene) ? r.scene : d.scene,
+    seenVersion: typeof r.seenVersion === 'string' && /^\d+\.\d+\.\d+$/.test(r.seenVersion) ? r.seenVersion : d.seenVersion,
   };
 }
 

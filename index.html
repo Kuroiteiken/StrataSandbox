@@ -21,6 +21,7 @@
     <header class="app-header">
       <div class="brand">
         <h1 class="app-title"><span data-app-name>Strata Sandbox</span></h1>
+        <button type="button" class="version-badge" id="btn-whats-new" aria-haspopup="dialog" title="Yenilikler">v–</button>
         <p class="app-subtitle">materyal fiziği</p>
       </div>
       <dl class="readout" aria-label="Durum">
@@ -149,6 +150,14 @@
         <tr><th scope="row"><kbd>Shift</kbd> + çizim</th><td>Dolu hücrelerin üzerine yaz</td></tr>
       </tbody>
     </table>
+    <form method="dialog" class="dialog-actions">
+      <button class="btn" value="close">Kapat</button>
+    </form>
+  </dialog>
+
+  <dialog class="dialog" id="whats-new-dialog" aria-labelledby="whats-new-title">
+    <h2 class="section-title" id="whats-new-title">Yenilikler</h2>
+    <div class="releases" id="whats-new-list"></div>
     <form method="dialog" class="dialog-actions">
       <button class="btn" value="close">Kapat</button>
     </form>

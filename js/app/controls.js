@@ -4,6 +4,8 @@ import { MAT } from '../engine/materials.js';
 import { PICKER } from './catalog.js';
 import { SHADES, packRGBA } from '../render/palette.js';
 import { getScene } from '../scenes/index.js';
+import { APP_VERSION } from '../config.js';
+import { RELEASES, WHATS_NEW_COUNT } from './releases.js';
 
 const SWATCH = 6; // numune dokusu (hücre); CSS ile büyütülür
 
@@ -114,10 +116,29 @@ export function createControls(doc, { palette, scenes, actions }) {
   $('btn-capture').addEventListener('click', () => actions.capture());
   $('btn-help').addEventListener('click', () => actions.help());
 
+  // Sürüm rozeti ve Yenilikler listesi
+  const badge = $('btn-whats-new');
+  badge.textContent = `v${APP_VERSION}`;
+  badge.addEventListener('click', () => actions.whatsNew());
+  const releaseList = $('whats-new-list');
+  for (const r of RELEASES.slice(0, WHATS_NEW_COUNT)) {
+    const title = doc.createElement('h3');
+    title.className = 'release-title';
+    title.textContent = `v${r.version} · ${r.date}`;
+    const items = doc.createElement('ul');
+    items.className = 'release-items';
+    for (const text of r.items) {
+      const li = doc.createElement('li');
+      li.textContent = text;
+      items.append(li);
+    }
+    releaseList.append(title, items);
+  }
+
   // Fareyle tıklanan butonlar odağı bırakır: sonraki Space pause yapsın, butonu tekrar
   // tetiklemesin (ör. "Yeniden üret" dünyayı silerdi). Klavyeyle etkinleştirmede (detail 0)
   // odak korunur (erişilebilirlik).
-  for (const el of doc.querySelectorAll('#panel button, #panel summary')) {
+  for (const el of doc.querySelectorAll('#panel button, #panel summary, .app-header button')) {
     el.addEventListener('click', (e) => {
       if (e.detail > 0) el.blur();
     });
@@ -150,6 +171,7 @@ export function createControls(doc, { palette, scenes, actions }) {
       sceneSelect.value = state.scene;
       committedSeed = state.seed;
       if (doc.activeElement !== seedInput) seedInput.value = state.seed;
+      badge.dataset.new = String(state.seenVersion !== APP_VERSION);
     },
   };
 }

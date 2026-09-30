@@ -76,6 +76,16 @@ test('savePrefs/loadPrefs gidiş-dönüşü tercihleri korur', () => {
   assert.deepEqual(loadPrefs(store, 'k'), prefs);
 });
 
+test('seenVersion yalnızca x.y.z biçimini kabul eder; 0.9.0 tercih kaydı sorunsuz yüklenir', () => {
+  assert.equal(sanitizePrefs({ seenVersion: '0.9.0' }).seenVersion, '0.9.0');
+  assert.equal(sanitizePrefs({ seenVersion: '<b>' }).seenVersion, DEFAULT_PREFS.seenVersion);
+  // 0.9.0'ın kaydettiği alanlar (yeni alanlar yok):
+  const old = { material: 'LAVA', brushSize: 6, brushShape: 'circle', speed: 1, quality: 'auto', seed: 'strata', scene: 'volcano' };
+  const p = loadPrefs(memoryStorage({ k: JSON.stringify(old) }), 'k');
+  assert.equal(p.material, 'LAVA');
+  assert.equal(p.seenVersion, DEFAULT_PREFS.seenVersion);
+});
+
 // ---------- keyboard ----------
 
 const key = (k, mods = {}) => ({ key: k, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, ...mods });

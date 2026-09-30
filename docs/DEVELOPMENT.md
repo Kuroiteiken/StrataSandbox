@@ -726,6 +726,25 @@ Taze bağlamlı bir reviewer ajanı `f0956b6..34969c5` aralığını inceledi. C
 - Küçük kare başı allocation'lar (layout/arka plan anahtar string'leri, glow kaynak dizisi, `paintLine` kapanışı); per-cell döngüde değil.
 - "Benchmark seed'den bağımsız" ifadesi yalnızca yerleşim için doğru; tonlar ve RNG seed'e bağlı. `bench.js` sabit seed kullandığı için etkisiz.
 
+### Phase 13 — Sıcaklık sistemi ve yeni içerik (0.10.0)
+
+Spec: `docs/superpowers/specs/2026-09-30-sicaklik-sistemi-design.md` · Plan: `docs/superpowers/plans/2026-09-30-sicaklik-sistemi.md` · Materyal belgesi: `docs/MATERIALS.md`
+
+- [x] Sürüm rozeti ve Yenilikler diyaloğu
+- [ ] Ters çevirme (`flipVertical`, düğme, `F`)
+- [ ] Kum saati yenilemesi
+- [ ] Sıcaklık alanı veri modeli
+- [ ] Isı geçişi (difüzyon, hava, kaynaklar, uyuyan satırlar)
+- [ ] Isı görselleri ve termal görünüm
+- [ ] Faz geçişleri ve sayaç hilelerinin taşınması
+- [ ] Buz, Kar, Metal, Erimiş metal, Magma
+- [ ] Gün/gece döngüsü, sahne ortamları, gökyüzü
+- [ ] Isıt ve Soğut fırçaları
+- [ ] Sekmeli seçici, Ortam bölümü, termal düğme, kısayollar, göstergeler
+- [ ] Çoğaltıcı (`CLONER`)
+- [ ] Buzul, Dökümhane ve Mağara sahneleri; volkan magması ve çoğaltıcısı
+- [ ] Performans, dokümanlar, 0.10.0 sürümü
+
 ---
 
 ## Manuel test checklist

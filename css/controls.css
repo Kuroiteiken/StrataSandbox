@@ -440,3 +440,61 @@
     padding: var(--space-2) 0;
   }
 }
+
+/* Sürüm rozeti (başlık) ve Yenilikler diyaloğu */
+.version-badge {
+  align-self: center;
+  padding: 1px var(--space-2);
+  border: 1px solid var(--ink-600);
+  border-radius: var(--radius-s);
+  background: var(--ink-800);
+  color: var(--bone-300);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  position: relative;
+}
+
+.version-badge:hover {
+  border-color: var(--brass-600);
+  color: var(--brass-400);
+}
+
+.version-badge:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Görülmemiş sürüm: küçük pirinç nokta */
+.version-badge[data-new="true"]::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--brass-400);
+}
+
+.release-title {
+  margin: var(--space-3) 0 var(--space-1);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--brass-400);
+}
+
+.release-items {
+  margin: 0;
+  padding-left: var(--space-4);
+  color: var(--bone-300);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@media (pointer: coarse) {
+  .version-badge {
+    min-height: 32px;
+  }
+}

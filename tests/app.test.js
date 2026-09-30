@@ -6,19 +6,23 @@ import { createApp, randomSeed } from '../js/app/app.js';
 import { DEFAULT_PREFS, loadPrefs, isValidSeed } from '../js/app/storage.js';
 import { STORAGE_KEY } from '../js/config.js';
 import { hashView } from './helpers.js';
+import { APP_VERSION } from '../js/config.js';
 
 function fakeDoc() {
   const announcer = { textContent: '' };
-  const dialog = {
+  const makeDialog = () => ({
     open: false,
     showModal() {
       this.open = true;
     },
-  };
+  });
+  const dialog = makeDialog();
+  const whatsNew = makeDialog();
   return {
     announcer,
     dialog,
-    getElementById: (id) => ({ announcer, 'help-dialog': dialog })[id] ?? null,
+    whatsNew,
+    getElementById: (id) => ({ announcer, 'help-dialog': dialog, 'whats-new-dialog': whatsNew })[id] ?? null,
   };
 }
 
@@ -154,4 +158,13 @@ test('clear geri alınabilir ve bunu duyurur', () => {
   assert.match(doc.announcer.textContent, /Geri al/);
   app.actions.undo();
   assert.equal(sim.getStats().particles, before);
+});
+
+test('Yenilikler diyaloğu açılınca görülen sürüm güncellenir ve kaydedilir', async () => {
+  const { app, doc, storage } = setup({ seenVersion: '' });
+  app.actions.whatsNew();
+  assert.equal(doc.whatsNew.open, true);
+  assert.equal(app.state.seenVersion, APP_VERSION);
+  await new Promise((r) => setTimeout(r, 350)); // PERSIST_DELAY_MS
+  assert.equal(JSON.parse(storage.data['fsbox.prefs.v1']).seenVersion, APP_VERSION);
 });

@@ -107,7 +107,7 @@ Ek (Görev 2): bir çizim sürerken çevirmek, çizimin undo noktasını bozmama
 
 ---
 
-### Görev 1: Sürüm rozeti ve Yenilikler diyaloğu
+### Task 1 (Görev 1): Sürüm rozeti ve Yenilikler diyaloğu
 
 **Files:**
 - Modify: `js/config.js` (APP_VERSION)
@@ -470,7 +470,7 @@ git push -q origin main
 
 ---
 
-### Görev 2: Ters çevirme
+### Task 2 (Görev 2): Ters çevirme
 
 **Files:**
 - Modify: `js/engine/world.js` (`flipVertical`)
@@ -678,7 +678,7 @@ git push -q origin main
 
 ---
 
-### Görev 3: Kum saati yenilemesi
+### Task 3 (Görev 3): Kum saati yenilemesi
 
 **Files:**
 - Modify: `js/scenes/hourglass.js` (tamamen yeniden yazılır)
@@ -870,7 +870,7 @@ git push -q origin main
 
 ---
 
-### Görev 4: Sıcaklık alanı veri modeli
+### Task 4 (Görev 4): Sıcaklık alanı veri modeli
 
 **Files:**
 - Create: `js/engine/climate.js`
@@ -1219,7 +1219,7 @@ git push -q origin main
 
 ---
 
-### Görev 5: Isı geçişi (difüzyon, hava, kaynaklar, uyuyan satırlar)
+### Task 5 (Görev 5): Isı geçişi (difüzyon, hava, kaynaklar, uyuyan satırlar)
 
 **Files:**
 - Create: `js/engine/heat.js`
@@ -1632,7 +1632,7 @@ git push -q origin main
 
 ---
 
-### Görev 6: Isı görselleri ve termal görünüm
+### Task 6 (Görev 6): Isı görselleri ve termal görünüm
 
 **Files:**
 - Modify: `js/render/palette.js` (akkorluk rampası, soğuk ton, termal rampalar ve LUT; `DYN.SAND` kaldırılır)
@@ -1983,7 +1983,7 @@ git push -q origin main
 
 ---
 
-### Görev 7: Faz geçişleri ve sayaç hilelerinin taşınması
+### Task 7 (Görev 7): Faz geçişleri ve sayaç hilelerinin taşınması
 
 **Files:**
 - Modify: `js/engine/materials.js`:
@@ -2510,7 +2510,7 @@ git push -q origin main
 
 ---
 
-### Görev 8: Buz, Kar, Metal, Erimiş metal, Magma
+### Task 8 (Görev 8): Buz, Kar, Metal, Erimiş metal, Magma
 
 **Files:**
 - Modify: `js/engine/materials.js` (5 yeni materyal, suyun donması)
@@ -2784,7 +2784,7 @@ git push -q origin main
 
 ---
 
-### Görev 9: Gün/gece döngüsü, sahne ortamları, gökyüzü
+### Task 9 (Görev 9): Gün/gece döngüsü, sahne ortamları, gökyüzü
 
 **Files:**
 - Modify: `js/engine/climate.js` (`DAY_TICKS`, `DAY_AMPLITUDE`, `DAY_START`, `dayPhase`, `dayWave`, `ambientAt`, `daylight`)
@@ -3108,7 +3108,7 @@ git push -q origin main
 
 ---
 
-### Görev 10: Isıt ve Soğut fırçaları
+### Task 10 (Görev 10): Isıt ve Soğut fırçaları
 
 **Files:**
 - Modify: `js/engine/simulation.js` (`TOOL_DELTA`, `TOOL_MIN`, `TOOL_MAX`; `paintLine` araç dalı; `_heatCell`)
@@ -3358,7 +3358,7 @@ git push -q origin main
 
 ---
 
-### Görev 11: Sekmeli seçici, Ortam bölümü, termal düğme, kısayollar, göstergeler
+### Task 11 (Görev 11): Sekmeli seçici, Ortam bölümü, termal düğme, kısayollar, göstergeler
 
 **Files:**
 - Modify: `js/app/catalog.js` (`CATEGORIES`, `categoryOf`)
@@ -3768,7 +3768,7 @@ git push -q origin main
 
 ---
 
-### Görev 12: Çoğaltıcı (`CLONER`)
+### Task 12 (Görev 12): Çoğaltıcı (`CLONER`)
 
 **Files:**
 - Modify: `js/engine/materials.js` (`MAT.CLONER = 21`, tanım)
@@ -4021,7 +4021,7 @@ git push -q origin main
 
 ---
 
-### Görev 13: Buzul, Dökümhane, Mağara; volkan magması ve çoğaltıcısı
+### Task 13 (Görev 13): Buzul, Dökümhane, Mağara; volkan magması ve çoğaltıcısı
 
 **Files:**
 - Create: `js/scenes/glacier.js`, `js/scenes/foundry.js`, `js/scenes/cave.js`
@@ -4458,7 +4458,7 @@ git push -q origin main
 
 ---
 
-### Görev 14: Performans, dokümanlar, 0.10.0 sürümü
+### Task 14 (Görev 14): Performans, dokümanlar, 0.10.0 sürümü
 
 **Files:**
 - Modify: `docs/DECISIONS.md` (ADR-003 notu, ADR-014, ADR-015)

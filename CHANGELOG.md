@@ -9,6 +9,8 @@ Hedef sürüm 0.10.0: sıcaklık sistemi, Buz, Kar, Metal, yeni sahneler ve kum 
 
 ### Added
 
+- Başlıkta sürüm rozeti. Rozete tıklanınca "Yenilikler" diyaloğu açılır ve son sürümlerin kullanıcıya dönük notlarını listeler. Görülmemiş sürümde rozette küçük bir işaret görünür.
+- Sürüm tutarlılığı testi: `APP_VERSION`, `package.json`, CHANGELOG ve Yenilikler aynı sürümü göstermek zorunda. `docs/MATERIALS.md` için senkron testi: her materyal belgede yer almak zorunda.
 - `docs/MATERIALS.md`: tüm materyallerin ve etkileşimlerinin (mevcut ve planlanan) başvuru belgesi. Tür, yoğunluk, kısayol, olasılıklar ve 0.10.0'da değişecek kurallar burada tutulur.
 
 ### Changed
