@@ -579,6 +579,7 @@ Kullanıcı isteği (2026-09-30): sürüm numarası ekranda görünsün ve eklen
 - Oluk, basamaklı bir kalıp sırasına iner: taştan U biçimli 3 kalıp. Biri dolunca taşar ve sıradakini doldurur.
 - Sonda bir su teknesi. Oraya ulaşan metal suyu kaynatır ve hızla katılaşır.
 - Zeminde istiflenmiş metal külçeler ve akışın içinden geçen bir metal kiriş. Kiriş ısınıp kızarır.
+- **Uygulama notu:** Görev 13'te soğuk taş olukta metal girişte donduğu için oluk kaldırılmış, metal serbest düşüşle dökülmüştü. 0.11.0'da oluk geri geldi. Tabanı önceden 1350 °C'ye ısıtılıyor, altında magma damarı var. Kiriş, kaidenin yanında kızarıyor.
 
 **Beklenen davranış:**
 

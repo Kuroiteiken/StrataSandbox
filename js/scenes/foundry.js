@@ -1,14 +1,16 @@
-// Dökümhane: magma üstünde taş pota ve içinde erimiş metal; potanın yan yarığından dökülen metal havada
-// düşerek basamaklı üç taş kalıba dolar (dolan kalıp sağ ağzından bir alttakine taşar), sonda su teknesi.
-// Kaidenin yanından çıkan metal kiriş magma çekirdeğinden ısınıp kızarır; zeminde metal külçeler.
-// Metal kalıplarda soğuyup katılaşır; potada kalan metal magma üstünde kızgın ama katı kalır (1200 < 1300 °C).
-// Oluk yerine serbest düşüş: soğuk taş olukta metal girişte donup kanalı tıkıyordu; hava ısıyı yavaş iletir.
+// Dökümhane: magma üstünde taş pota ve içinde erimiş metal; potanın yan yarığından çıkan metal eğimli taş
+// oluktan akar ve basamaklı üç taş kalıba dolar (dolan kalıp sağ ağzından bir alttakine taşar), sonda su
+// teknesi. Oluk ısıtılır: önceden 1350 °C ve altında magma damarı; soğuk taş olukta metal girişte donup
+// kanalı tıkıyordu. Kaidenin yanından çıkan metal kiriş magma çekirdeğinden ısınıp kızarır; zeminde metal
+// külçeler. Metal kalıplarda soğuyup katılaşır; potada kalan metal magma üstünde kızgın ama katı kalır
+// (1200 < 1300 °C).
 import { MAT } from '../engine/materials.js';
 import { frame, rect } from './tools.js';
 
-// Önceden ısıtılmış pota duvarı: metalin katılaşma eşiğinin (1300 °C) üstünde, taşın erime eşiğinin
-// (1500 °C) altında; soğuk duvardaki yarıkta metal kabuk bağlayıp çıkışı tıkamasın.
+// Önceden ısıtılmış pota duvarı ve oluk: metalin katılaşma eşiğinin (1300 °C) üstünde, taşın erime eşiğinin
+// (1500 °C) altında; soğuk duvardaki yarıkta ve olukta metal kabuk bağlayıp çıkışı tıkamasın.
 const POT_WALL_TEMP = 1350;
+const CHUTE_RUN = 2; // oluk eğimi: her 2 sütunda 1 satır
 
 export function foundry(sim) {
   const { W, H, X, Y, S } = frame(sim);
@@ -39,14 +41,29 @@ export function foundry(sim) {
   const beamY = pbot + 2;
   for (let x = Math.max(0, px0 - Math.max(3, S(0.08))); x < px0; x++) sim.setCell(x, beamY, MAT.METAL);
 
-  // Basamaklı kalıplar: ilki yarığın hemen altında (sol duvarı potanın kendisi); her kalıbın sol duvarı
+  // Oluk: yarığın alt satırının hemen altından sağa doğru, her CHUTE_RUN sütunda bir satır iner. Taban iki
+  // hücre kalın taş (önceden ısıtılmış), altında magma damarı; metal olukta 1300 °C'nin üstünde kalıp akar.
+  const chuteLen = Math.max(6, Math.min(X(0.14), CHUTE_RUN * Y(0.1)));
+  const cx0 = px1 + 1;
+  const chuteY = (x) => spoutY + 3 + Math.floor((x - cx0) / CHUTE_RUN);
+  for (let x = cx0; x < cx0 + chuteLen; x++) {
+    const y = chuteY(x);
+    for (const yy of [y, y + 1]) {
+      sim.setCell(x, yy, MAT.STONE);
+      sim.setTemp(x, yy, POT_WALL_TEMP);
+    }
+    sim.setCell(x, y + 2, MAT.MAGMA);
+  }
+  const chuteEnd = cx0 + chuteLen - 1; // oluğun son sütunu
+
+  // Basamaklı kalıplar: ilki oluğun ucunun altında (oluk ucu kalıbın içine uzanır); her kalıbın sol duvarı
   // 2 hücre yüksek olduğundan dolan metal sağ ağızdan bir alttakine taşar.
   const mw = Math.max(5, X(0.1));
   const md = Math.max(3, S(0.05));
-  let L = px1; // ilk kalıbın sol duvarı potanın sağ duvarı
-  let R = spoutY + 6; // kalıp ağzı satırı
+  let L = chuteEnd - 2; // ilk kalıbın sol duvarı oluk ucunun iki sütun gerisinde
+  let R = chuteY(chuteEnd) + 5; // kalıp ağzı satırı (oluk tabanı ve damarının altında)
   for (let k = 0; k < 3; k++) {
-    if (k > 0) rect(sim, L, R - 2, L, R + md + 1, MAT.STONE); // sol duvar (yüksek)
+    rect(sim, L, k === 0 ? R : R - 2, L, R + md + 1, MAT.STONE); // sol duvar (ilk kalıpta oluğun altında kalır)
     rect(sim, L + mw + 1, R, L + mw + 1, R + md + 1, MAT.STONE); // sağ duvar
     rect(sim, L, R + md + 1, L + mw + 1, R + md + 1, MAT.STONE); // taban
     L += mw - 1;

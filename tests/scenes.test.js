@@ -138,35 +138,67 @@ test('Kum saati: kum dışındaki şekil (kaynaklar dahil) orta satıra göre ta
   }
 });
 
-test('Kum saati: iki kapakta da aynı aşağı yönlü kaynak sırası (kumu öğrenmiş sınırsız çoğaltıcı + sınırsız yutucu)', () => {
-  const sim = load('hourglass', 'hg', 320, 180);
-  const halves = { [MAT.CLONER]: [0, 0], [MAT.SINK]: [0, 0] };
-  for (let y = 0; y < 180; y++) {
-    for (let x = 0; x < 320; x++) {
-      const m = cellType(sim, x, y);
-      if (m !== MAT.CLONER && m !== MAT.SINK) continue;
-      halves[m][y < 90 ? 0 : 1]++;
-      const c = sim.getCell(x, y);
-      assert.equal(c.life, 65535, 'sınırsız');
-      assert.ok((sim.world.flags[sim.world.index(x, y)] & SOURCE_DOWNWARD) !== 0, 'aşağı yönlü');
-      if (m === MAT.CLONER) assert.equal(c.variant, MAT.SAND);
+// hourglass.js ile aynı kapak geometrisi: haznenin ilk satırı (kapağın altı).
+function hgGlassTop(H) {
+  const capH = Math.max(2, Math.min(3, Math.round(H * 0.015)));
+  return Math.max(1, Math.round(H * 0.05)) + capH;
+}
+
+test('Kum saati: kapaklarda aynı çoğaltıcı sırası; yutucular dipte değil, alt haznenin üst kısmında akışın iki yanındaki raflarda', () => {
+  for (const [w, h] of [[320, 180], [400, 225], [64, 48], [120, 300]]) {
+    const sim = load('hourglass', 'hg', w, h);
+    const cx = Math.floor((w - 2) / 2);
+    const midRow = Math.floor((h - 1) / 2);
+    const neckStart = h % 2 === 1 ? midRow - 1 : midRow;
+    const glassTop = hgGlassTop(h);
+    const lowerTop = h - 1 - neckStart; // alt haznenin boğaz tarafı
+    const L = neckStart - glassTop;
+    const count = { [MAT.CLONER]: [0, 0], [MAT.SINK]: [0, 0] };
+    const sinkSides = new Set();
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const m = cellType(sim, x, y);
+        if (m !== MAT.CLONER && m !== MAT.SINK) continue;
+        const lower = y > midRow;
+        count[m][lower ? 1 : 0]++;
+        const c = sim.getCell(x, y);
+        const at = `${w}×${h} (${x},${y})`;
+        assert.equal(c.life, 65535, `${at}: sınırsız`);
+        assert.ok((sim.world.flags[sim.world.index(x, y)] & SOURCE_DOWNWARD) !== 0, `${at}: aşağı yönlü`);
+        if (m === MAT.CLONER) {
+          assert.equal(c.variant, MAT.SAND);
+          assert.ok(y === glassTop || y === h - 1 - glassTop, `${at}: çoğaltıcı kapakta`);
+          continue;
+        }
+        assert.ok(y !== glassTop && y !== h - 1 - glassTop, `${at}: yutucu kapakta olmamalı`);
+        assert.ok(x < cx - 1 || x > cx + 2, `${at}: yutucu akış sütununda olmamalı`);
+        // Alt haznede yutucu cam rafın üstünde, üstü açık; aynası üstte cam tavanın altında.
+        assert.equal(cellType(sim, x, lower ? y + 1 : y - 1), MAT.GLASS, `${at}: raf/tavan`);
+        if (lower) {
+          assert.ok(y - lowerTop <= 0.6 * L, `${at}: yutucu alt haznenin üst kısmında (boğazdan ${y - lowerTop} / ${L})`);
+          sinkSides.add(x < cx ? 'sol' : 'sağ');
+        }
+      }
     }
-  }
-  for (const m of [MAT.CLONER, MAT.SINK]) {
-    assert.ok(halves[m][0] >= 4, `kapak başına en az 4 (${m})`);
-    assert.equal(halves[m][0], halves[m][1], 'iki kapak aynı');
+    for (const m of [MAT.CLONER, MAT.SINK]) {
+      assert.ok(count[m][0] >= 4, `${w}×${h}: yarı başına en az 4 (${m})`);
+      assert.equal(count[m][0], count[m][1], `${w}×${h}: iki yarı aynı (${m})`);
+    }
+    assert.equal(sinkSides.size, 2, `${w}×${h}: akışın iki yanında`);
   }
 });
 
-test('Kum saati sürekli akar: boğaz boşalmaz, üst hazne dolu kalır, alt hazne tıkanmaz', () => {
+test('Kum saati sürekli akar: üst hazne dolu kalır, alt hazne raflara kadar dolar ve orada kalır, boğaz tıkanmaz', () => {
   const sim = load('hourglass', 'hg', 400, 225);
   const initialTop = sandHalves(sim).top;
-  runTicks(sim, 3000);
+  runTicks(sim, 4500); // alt hazne ~3000 tick'te raf seviyesine ulaşır
+  const before = sandHalves(sim).bottom;
   const ratio = flowRatio(sim, 3000);
   assert.ok(ratio >= 0.8, `boğazda akan kum oranı ${ratio.toFixed(2)}`);
   const { top, bottom } = sandHalves(sim);
-  assert.ok(top >= initialTop * 0.5, `üst ${top} / başlangıç ${initialTop}`);
-  assert.ok(bottom < initialTop * 0.6, `alt ${bottom} (tıkanma)`);
+  assert.ok(top >= initialTop * 0.9, `üst ${top} / başlangıç ${initialTop}`);
+  assert.ok(bottom >= initialTop * 0.8, `alt hazne dolmalı: ${bottom}`);
+  assert.ok(Math.abs(bottom - before) <= initialTop * 0.02, `alt hazne sabit kalmalı (yutucular fazlayı alır): ${before} → ${bottom}`);
 });
 
 test('Kum saati çevrilince (F) de sürekli akar; geri çevirince yine akar', () => {
@@ -179,8 +211,8 @@ test('Kum saati çevrilince (F) de sürekli akar; geri çevirince yine akar', ()
     const ratio = flowRatio(sim, 3000);
     assert.ok(ratio >= 0.8, `çevirme ${round}: boğazda akan kum oranı ${ratio.toFixed(2)}`);
     const { top, bottom } = sandHalves(sim);
-    assert.ok(top >= initial * 0.3, `çevirme ${round}: üst ${top} / toplam ${initial}`);
-    assert.ok(bottom < initial * 0.6, `çevirme ${round}: alt ${bottom} (tıkanma)`);
+    assert.ok(top >= initial * 0.35, `çevirme ${round}: üst ${top} / toplam ${initial}`);
+    assert.ok(bottom >= initial * 0.35, `çevirme ${round}: alt ${bottom} / toplam ${initial}`);
   }
 });
 
@@ -302,6 +334,40 @@ test('Dökümhane: erimiş metal kalıplara akar ve katılaşır', () => {
   assert.deepEqual(sim.world.checkInvariants(), []);
 });
 
+test('Dökümhane: yarıktan kalıplara ısıtılmış eğimli oluk iner; metalin en az üçte biri oluktan kalıplara dökülür', () => {
+  for (const [w, h] of [[320, 180], [400, 225], [120, 133], [100, 300]]) {
+    const sim = load('foundry', 'f', w, h);
+    let potR = 0; // potanın iç sağ sütunu (erimiş metalin en sağı); sağ duvarın dışı potR + 2
+    let molten0 = 0;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        if (cellType(sim, x, y) !== MAT.MOLTEN_METAL) continue;
+        molten0++;
+        if (x < w / 2) potR = Math.max(potR, x);
+      }
+    }
+    // Oluk: duvarın hemen sağındaki en az 6 sütunda, altında magma damarı olan ≥ 1300 °C taş taban; sağa iner.
+    let prevY = -1;
+    for (let x = potR + 3; x < potR + 9; x++) {
+      let y = -1;
+      for (let yy = 0; yy < h - 2 && y < 0; yy++) {
+        if (cellType(sim, x, yy) === MAT.STONE && sim.getCell(x, yy).temp >= 1300 && cellType(sim, x, yy + 2) === MAT.MAGMA) y = yy;
+      }
+      assert.ok(y >= 0, `${w}×${h}: ${x}. sütunda ısıtılmış oluk yok`);
+      assert.ok(prevY < 0 || (y >= prevY && y <= prevY + 1), `${w}×${h}: oluk sağa doğru inmeli (${prevY} → ${y})`);
+      prevY = y;
+    }
+    const poured = () => {
+      let n = 0;
+      for (let y = 0; y < h; y++) for (let x = potR + 3; x < w; x++) { const m = cellType(sim, x, y); if (m === MAT.MOLTEN_METAL || m === MAT.METAL) n++; }
+      return n;
+    };
+    const p0 = poured();
+    runTicks(sim, 4000);
+    assert.ok(poured() - p0 >= molten0 / 3, `${w}×${h}: dökülen ${poured() - p0} / ${molten0}`);
+  }
+});
+
 test('Mağara: göl ve lav cebi arasındaki duvar kalır, göl suyu cebe sızmaz; ısınan göl kenarından buhar yükselir', () => {
   const sim = load('cave', 'c', 320, 180);
   assert.ok(present(sim, MAT.WATER, MAT.LAVA, MAT.MAGMA, MAT.WOOD, MAT.OIL, MAT.SAND, MAT.STONE));
@@ -348,6 +414,35 @@ test('Volkan: yarıktaki çoğaltıcı lavı öğrenir ve akan lavın yerini dol
   runTicks(sim, 3000);
   for (const [x, y] of cloners) assert.equal(sim.getCell(x, y).variant, MAT.LAVA, 'lavı öğrenmeli');
   assert.ok(budget() < start, 'kopya üretmeli');
+});
+
+test('Volkan: lav sağ yamaçtan ağaçlara ulaşır ve en az bir ağacı tutuşturur', () => {
+  for (const [w, h, seed] of [[320, 180, 'v'], [400, 225, 'readme'], [320, 180, 'l1'], [280, 207, 'l2'], [120, 133, 'v'], [100, 180, 'readme'], [100, 300, 'readme'], [64, 48, 'l2']]) {
+    const sim = load('volcano', seed, w, h);
+    const trunks = [];
+    for (let y = 0; y < h; y++) for (let x = Math.floor(w * 0.7); x < w; x++) if (cellType(sim, x, y) === MAT.WOOD) trunks.push([x, y]);
+    assert.ok(trunks.length > 0, `${w}×${h} ${seed}: ağaç yok`);
+    // Ağacı damarın ısısı değil lav tutuşturmalı: damar ağaçtan uzakta biter ve tutuşmaya kadar ağacın
+    // (gövde ya da taç) bir hücresinin 4 hücre yakınına lav gelmiş olmalı (lav değdiği ya da ısıttığı
+    // kum/cam üzerinden tutuşturur).
+    const tree = [...trunks];
+    for (let y = 0; y < h; y++) for (let x = Math.floor(w * 0.7); x < w; x++) if (cellType(sim, x, y) === MAT.PLANT) tree.push([x, y]);
+    const near = (mat, r) => tree.some(([tx, ty]) => {
+      for (let y = ty - r; y <= ty + r; y++) for (let x = tx - r; x <= tx + r; x++) if (cellType(sim, x, y) === mat) return true;
+      return false;
+    });
+    assert.ok(!near(MAT.MAGMA, 4), `${w}×${h} ${seed}: magma damarı ağaca 4 hücreden yakın`);
+    const lavaTouches = () => near(MAT.LAVA, 4);
+    let lavaNear = false;
+    let burnedAt = -1;
+    for (let t = 0; t < 6000 && burnedAt < 0; t += 5) {
+      runTicks(sim, 5);
+      if (!lavaNear) lavaNear = lavaTouches();
+      if (tree.some(([x, y]) => { const m = cellType(sim, x, y); return m !== MAT.WOOD && m !== MAT.PLANT; })) burnedAt = t + 5;
+    }
+    assert.ok(burnedAt > 0, `${w}×${h} ${seed}: 6000 tick içinde hiçbir ağaç tutuşmadı`);
+    assert.ok(lavaNear, `${w}×${h} ${seed}: ağaç lav ulaşmadan tutuştu (t=${burnedAt})`);
+  }
 });
 
 test('Volkan: yarık yamaca açılır, lav sağ yamaçtan aşağı akar', () => {

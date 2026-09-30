@@ -1,9 +1,14 @@
 // Volkan (varsayılan sahne): taş koni, krater ve magma odası, sağa açılan bir yarıktan
 // taşan lav, yamaçlarda kum, solda göl ve kıyısında bitkiler, sağda ağaçlar.
-// Lav sağ yamaçtan kabuk bağlayarak iner ve taşlaşır; soğuk yamaçta donduğu için ağaçlara ve göle
-// ulaşmaz (ateş, su ve tutuşma etkileşimleri için Isıt fırçası ya da elle dökülen lav kullanılır).
+// Lav sağ yamaçtan iner: yamaç yüzeyinin hemen altındaki magma damarı yolu sıcak tuttuğu için kabuk
+// bağlamadan eteğe ulaşır ve sağdaki ağaçları tutuşturur; etekte soğuk zeminde yayılıp taşlaşır.
+// (Göl sol tarafta; lav yalnızca sağ yarıktan çıktığı için göle ulaşmaz.)
 import { MAT } from '../engine/materials.js';
 import { frame, valueNoise, rect, disk, fillColumns, isEmpty } from './tools.js';
+
+const SLOPE_VEIN_DEPTH = 2; // yamaç damarının yüzeyden uzaklığı (arada 1 sıra taş)
+const TREE_CLEARANCE = 9; // damarın ilk ağacın gövdesinden en az yatay uzaklığı (hücre)
+const VEIN_TREE_GAP = 5; // damar hücresinin herhangi bir ağaç hücresine (gövde/taç) en az uzaklığı
 
 export function volcano(sim, rng) {
   const { W, H, X, Y, S } = frame(sim);
@@ -96,24 +101,63 @@ export function volcano(sim, rng) {
   // dibine değil buraya konur: orada boş komşusu olmaz ve üretim yapamazdı (alt proje 2'de basınç).
   for (const dx of [Math.max(2, vent + 1), Math.max(3, vent + 2)]) sim.setCell(cxi + dx, plateauY + 2, MAT.CLONER);
 
-  // Yamaçlarda kum örtüsü (taşın hemen üstü, kraterden uzak).
+  // Yamaçlarda kum örtüsü (taşın hemen üstü, kraterden uzak). Sağ yamaç lavın yoludur ve magma damarıyla
+  // ısınır: oradaki kum cama dönüp lavın önüne set çekiyor, eteğe kayıp ağaç gövdesine yığılıyor ve damarın
+  // ısısını ağaca iletiyordu; bu yüzden sağ yamaca kum konmaz (RNG sırası korunur: seed aynı sahneyi verir).
   const sandDepth = Math.max(1, S(0.012));
   for (let x = 0; x < W; x++) {
     const d = Math.abs(x - cx) / half;
     if (d < 0.25 || d > 0.95) continue;
     const y = Math.round(top[x]);
-    for (let k = 1; k <= sandDepth + (rng.next() < 0.5 ? 1 : 0); k++) {
+    const depth = sandDepth + (rng.next() < 0.5 ? 1 : 0);
+    if (x > cx) continue;
+    for (let k = 1; k <= depth; k++) {
       if (isEmpty(sim, x, y - k)) sim.setCell(x, y - k, MAT.SAND);
     }
   }
 
   // Ağaçlar (sağ): odun gövde + bitki taç.
   const trees = Math.max(1, Math.min(3, Math.round(W / 110)));
+  const crownR = Math.max(1, S(0.045));
+  let firstTree = W;
   for (let t = 0; t < trees; t++) {
     const x = X(0.84 + (t - (trees - 1) / 2) * 0.07 + (rng.next() - 0.5) * 0.02);
+    firstTree = Math.min(firstTree, x);
     const base = Math.round(top[Math.max(0, Math.min(W - 1, x))]) - 1;
     const trunkH = Math.max(3, S(0.1 + rng.next() * 0.05));
     rect(sim, x, base - trunkH, x + (W > 150 ? 1 : 0), base, MAT.WOOD);
-    disk(sim, x, base - trunkH - S(0.03), Math.max(1, S(0.045)), MAT.PLANT, { onlyEmpty: true });
+    disk(sim, x, base - trunkH - S(0.03), crownR, MAT.PLANT, { onlyEmpty: true });
   }
+
+  // Yamaç damarı: yarık ağzından eteğe doğru, yüzeye paralel ve kesintisiz; yüzeyden tam
+  // SLOPE_VEIN_DEPTH hücre içerideki taşlar (dik yamaçta da boşluksuz). Aradaki taş ~1000 °C'ye ısınır;
+  // lav 750 °C'nin üstünde kalıp yamaç boyunca akar (yamaçtaki kum bu sıcak yolda zamanla cama döner).
+  // Damar ilk ağacın gövdesinin TREE_CLEARANCE hücre önünde biter (taç gövdenin üstünde, damardan
+  // yüksekte kalır): ağacı damarın ısısı değil, oraya ulaşan lav tutuşturur.
+  const veinEnd = Math.min(W - 2, Math.round(cx + half), firstTree - TREE_CLEARANCE);
+  const x0 = Math.max(cxi, riftEnd - 1);
+  const exposed = (x, y, r) => {
+    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) if (!isStone(x + dx, y + dy)) return true;
+    return false;
+  };
+  // Küçük gridlerde taç yamaca yaslanabilir: damar ağaç hücrelerinin (gövde ya da taç) VEIN_TREE_GAP
+  // hücre yakınına konmaz, ısınan yamaç yüzü ağaca değmez.
+  const nearTree = (x, y) => {
+    for (let dy = -VEIN_TREE_GAP; dy <= VEIN_TREE_GAP; dy++) {
+      for (let dx = -VEIN_TREE_GAP; dx <= VEIN_TREE_GAP; dx++) {
+        const m = sim.getCell(x + dx, y + dy)?.material;
+        if (m === MAT.WOOD || m === MAT.PLANT) return true;
+      }
+    }
+    return false;
+  };
+  const vein = [];
+  for (let x = x0; x <= veinEnd; x++) {
+    // Yarığın içinde tabanın altından, ağzın dışında yarık seviyesinden başlar (ağzın hemen önündeki yamaç
+    // yüzü de ısınır; soğuk yüzde lav ağızda kabuk bağlayıp yarığı tıkıyordu).
+    for (let y = x > riftEnd ? plateauY + 1 : plateauY + 3; y < Math.round(ground[x]); y++) {
+      if (isStone(x, y) && exposed(x, y, SLOPE_VEIN_DEPTH) && !exposed(x, y, SLOPE_VEIN_DEPTH - 1) && !nearTree(x, y)) vein.push(x, y);
+    }
+  }
+  for (let k = 0; k < vein.length; k += 2) sim.setCell(vein[k], vein[k + 1], MAT.MAGMA);
 }

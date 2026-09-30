@@ -5,6 +5,17 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) yaklaşımını 
 
 ## [Unreleased]
 
+Hedef sürüm 0.11.0.
+
+### Changed
+
+- **Kum saati:** yutucular kapak dibinden kaldırıldı. Artık alt haznenin üst kısmında, boğazdan inen akışın iki yanında duvara yaslı cam raflar var; her rafta 3 aşağı yönlü, sınırsız yutucu bulunuyor. Raflar boğazdan hazne yüksekliğinin ~%30'u kadar aşağıda; küçük haznede sığana kadar aşağı iner.
+  - Alt hazne raf seviyesine kadar dolar, fazlası yutulur. Hazne tamamen dolup boğazı tıkamaz.
+  - Üst haznedeki aynı raflar yutucunun "tavanı" olduğu için boşta kalır. Çevirince görevler yine kendiliğinden yer değiştirir.
+  - Çevirmeden sonra alt haznenin kenarlarında kalan kalıcı yığınlar sorunu ortadan kalktı: iki yönde de alt hazne aynı seviyeye kadar dolu.
+- **Volkan:** lav artık ağaçlara ulaşıyor. Yarık ağzından koni eteğine kadar yamaç yüzeyinin 2 hücre içinden geçen, kesintisiz bir magma damarı eklendi; damar ağaç hücrelerine 5 hücreden ve ilk ağaç gövdesine 9 sütundan fazla yaklaşmaz. Böylece ağacı damarın ısısı değil, eteğe ulaşan lav tutuşturur. Damar ağzın önündeki yamaç yüzünü de ısıtır; lav artık ağızda kabuk bağlayıp yarığı tıkamıyor. Sağ yamaca artık kum konmuyor: ısınan kum cama dönüp lavın önüne set çekiyor, eteğe kayıp ağaç gövdesine yığılıyordu. RNG sırası korunduğu için seed'ler aynı ağaç yerlerini verir.
+- **Dökümhane:** eğimli taş oluk geri geldi. Oluk potanın yarığından ilk kalıba iner; iki hücre kalın tabanı önceden 1350 °C'ye ısıtılır ve altında magma damarı vardır. Potadaki erimiş metalin yaklaşık yarısı oluktan kalıplara dökülüyor (320×180'de 1575 hücreden 810'u; serbest düşüşle 521'di).
+
 ## [0.10.1] - 2026-09-30
 
 0.10.0'ın bütün-dal incelemesinde bulunan hataların yaması.

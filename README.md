@@ -114,7 +114,7 @@ npm test        # tüm testler
 
 ## Ekran görüntüleri
 
-![Volkan sahnesi: yarıktan taşan lav yamaçta kabuk bağlar, magma odası ışıldar](docs/screenshots/strata-volcano.png)
+![Volkan sahnesi: yarıktan taşan lav yamaçtan inip ağaçları tutuşturur, magma odası ışıldar](docs/screenshots/strata-volcano.png)
 
 | Kum saati | Vaha | Mobil |
 | --- | --- | --- |

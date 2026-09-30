@@ -153,7 +153,7 @@ Eşiklerde histerezis vardır (ör. donma −1 °C, erime +1 °C), böylece hüc
 | Kar | `SNOW` | `K` | toz | 8 | Doğuş −8 °C, yalıtkan (K 0,01, C 1). +1 °C'de suya döner (gizli ısı 30, buzdan hızlı). Suyun üstünde yüzer. |
 | Metal | `METAL` | `M` | statik | — | Isıyı çok hızlı iletir (K 1,6, C 8; havaya kayıpla ~10 hücre menzil). 450 °C'den sonra kızarır, 1400 °C'de erir (gizli ısı 1200). |
 | Erimiş metal | `MOLTEN_METAL` | `E` | sıvı | 40 | Doğuş 1450 °C, K 0,8, C 4, dağılım 4 (çok akışkan). 1300 °C'de metale döner (gizli ısı 400). Lavdan ağırdır, lavın içinde batar. |
-| Magma kaynağı | `MAGMA` | — | statik | — | Seçicide yok; sahneler yerleştirir (volkan odası ve yarık damarı, Buzul bacası, Dökümhane kaidesi, Mağara lav cebi). Sabit 1200 °C ısı kaynağıdır. |
+| Magma kaynağı | `MAGMA` | — | statik | — | Seçicide yok; sahneler yerleştirir (volkan odası, yarık ve yamaç damarları, Buzul bacası, Dökümhane kaidesi ve oluk damarı, Mağara lav cebi). Sabit 1200 °C ısı kaynağıdır. |
 | Çoğaltıcı | `CLONER` | `X` | statik | — | **Mevcut (0.10.0).** Bkz. §4.5. |
 | Yutucu | `SINK` | `Y` | statik | — | **Mevcut (0.10.0).** Bkz. §4.5. |
 
@@ -181,12 +181,13 @@ Eşiklerde histerezis vardır (ör. donma −1 °C, erime +1 °C), böylece hüc
   - aşağı yönlü çoğaltıcı yalnızca alttaki üç komşuya üretir;
   - aşağı yönlü yutucu yalnızca üstteki üç komşudan yutar.
   Yön dünya koordinatındadır; dünya çevrilince alttaki kaynaklar üste geçer ve görevleri kendiliğinden değişir. Seçiciden boyanan kaynaklar yönsüzdür.
-- **Kum saati:** iki kapağın iç yüzünde de aynı aşağı yönlü, sınırsız kaynak sırası vardır: ortada kumu öğrenmiş 8 çoğaltıcı, iki yanda ortaya 12 hücre uzakta 3'er yutucu.
-  - Üstteki kapakta çoğaltıcılar hazneye kum üretir; yutucuların üstü kapak olduğu için boşta kalır.
-  - Alttaki kapakta yutucular biriken kumu yukarıdan yutar; çoğaltıcıların altı kapak olduğu için boşta kalır.
-  - Alt yığın yutuculara uzanana kadar büyür (~370 kum), bu yüzden boyunu yutucuların uzaklığı belirler.
-  - Kum sürekli akar, ters çevrilince de akmaya devam eder. Çevirmeden sonra alt haznenin kenarlarında yutuculara ulaşmayan eğimli yığınlar kalır.
-- **Volkandaki kullanım (mevcut):** iki çoğaltıcı hücre krater yarığının tabanında, yarığın altında bir magma damarı var. Yarık artık yamaca açık (0.9.0'da sağ ucu kapalıydı); lav sağ yamaçtan kabuk bağlayarak aşağı akar ve çoğaltıcı boşalan yeri ~2000 hücre boyunca doldurur.
+- **Kum saati** (0.11.0'da yeniden yerleştirildi): tüm kaynaklar sınırsız ve aşağı yönlüdür; şekil kaynaklarla birlikte orta satıra göre simetriktir.
+  - İki kapağın iç yüzünün ortasında kumu öğrenmiş 8 çoğaltıcı. Üstteki kapakta hazneye kum üretir; alttakinin altı kapak olduğu için boşta kalır.
+  - Yutucular dipte değildir. Alt haznenin üst kısmında, boğazdan inen akışın iki yanında duvara yaslı cam raflar vardır; her rafın üstünde 3 yutucu. Raf boğazdan hazne yüksekliğinin ~%30'u kadar aşağıdadır; küçük haznede sığana kadar aşağı iner.
+  - Alt hazne raf seviyesine kadar dolar (400×225'te ~6000 kum, ~3000 tick), fazlası yutulur; hazne tamamen dolup boğazı tıkamaz.
+  - Üst haznedeki aynı raf yutucunun tavanıdır, bu yüzden oradaki yutucu boşta kalır.
+  - Kum sürekli akar; ters çevrilince görevler yer değiştirir ve akış sürer. İki yönde de alt hazne raf seviyesine kadar dolu kalır.
+- **Volkandaki kullanım (mevcut):** iki çoğaltıcı hücre krater yarığının tabanında, yarığın altında bir magma damarı var. Yarık yamaca açık (0.9.0'da sağ ucu kapalıydı); çoğaltıcı boşalan yeri ~2000 hücre boyunca doldurur. 0.11.0'dan beri yarık ağzından koni eteğine kadar yamaç yüzeyinin 2 hücre içinden kesintisiz bir magma damarı geçer. Isınan yamaçta lav kabuk bağlamadan eteğe iner ve sağdaki ağaçları tutuşturur. Damar ağaçlara yaklaşmaz, ağacı damarın ısısı değil lav tutuşturur. Sağ yamaçta kum yoktur.
 - **Sınır:** basınç olmadığı için, dolu bir odanın altındaki çoğaltıcı lavı yukarı itemez; etrafında boş hücre yoksa üretim yapmaz. Basınç, planlanan alt proje 2'nin (Basınç ve patlama) konusu.
 
 ### 4.6 0.9.0 → 0.10.0 etkileşim değişiklikleri (Mevcut)
