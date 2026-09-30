@@ -29,6 +29,17 @@ const EMPTY = MAT.EMPTY;
 const STEAM = MAT.STEAM;
 const U32 = 4294967296;
 const DECAY = HEAT.PROGRESS_DECAY * PROGRESS_SCALE; // sayaç adımı cinsinden
+const K_AIR_OVER_C = CONDUCT[EMPTY] * INV_CAP[EMPTY]; // hava–hava iletimi (hızlı yol)
+
+// Eşik adayı penceresi (materyal başına önceden hesaplanır): T < CAND_LO ya da T >= CAND_HI olan hücre
+// kurala girebilir. CAND_LO = max(aşağı faz eşiği, kaynak sıcaklığı), CAND_HI = min(yukarı faz, tutuşma,
+// buharlaşma eşikleri). Uyku taramasında hücre başına 6 tablo yerine 2 okuma.
+const CAND_LO = new Float32Array(256);
+const CAND_HI = new Float32Array(256);
+for (let t = 0; t < 256; t++) {
+  CAND_LO[t] = DOWN_AT[t] > SOURCE_TEMP[t] ? DOWN_AT[t] : SOURCE_TEMP[t];
+  CAND_HI[t] = Math.min(UP_AT[t] + 1e-3, IGNITE_AT[t], EVAP_AT[t]);
+}
 
 // hot[y + 1]: iç satır y sıcak mı. hot[0] ve hot[height + 1] kenar satırlarıdır, hep 0.
 export function createHeatState(height) {
@@ -56,10 +67,7 @@ function markHotRows(world, a, hot, amb) {
       const T = a[i];
       const d = T - amb;
       const t = type[i];
-      if (
-        d > eps || d < -eps || SOURCE_TEMP[t] > T || T > UP_AT[t] || T < DOWN_AT[t] ||
-        T >= IGNITE_AT[t] || T >= EVAP_AT[t] || (HAS_PHASE[t] !== 0 && life[i] !== 0)
-      ) {
+      if (d > eps || d < -eps || T < CAND_LO[t] || T >= CAND_HI[t] || (life[i] !== 0 && HAS_PHASE[t] !== 0)) {
         flag = 1;
         break;
       }
@@ -151,6 +159,12 @@ export function stepHeat(world, rng, state) {
     for (let i = start; i < end; i++) {
       const t = type[i];
       const ti = a[i];
+      // Hızlı yol: kendisi ve dört komşusu hava (EMPTY = 0) olan hücre — tablo okuması ve min yok.
+      if (t === EMPTY && (type[i - 1] | type[i + 1] | type[i - stride] | type[i + stride]) === 0) {
+        const v = ti + K_AIR_OVER_C * (a[i - 1] + a[i + 1] + a[i - stride] + a[i + stride] - 4 * ti);
+        b[i] = v + (amb - v) * relax;
+        continue;
+      }
       const ki = CONDUCT[t];
       let kj = CONDUCT[type[i - 1]];
       let flux = (kj < ki ? kj : ki) * (a[i - 1] - ti);

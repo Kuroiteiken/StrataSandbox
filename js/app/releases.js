@@ -6,24 +6,29 @@
 // Sürüm yayınlanınca UNRELEASED maddeleri RELEASES'in başına taşınır ve UNRELEASED bir sonraki sürüme geçer.
 
 export const UNRELEASED = Object.freeze({
-  version: '0.10.0',
-  items: [
-    'Yeni sahneler: Buzul (donmuş göl ve karlı yamaçlar), Dökümhane (erimiş metal kalıplara dökülüyor) ve Mağara (yeraltı gölü ve kaplıca buharı). Volkan yeniden lav akıtıyor.',
-    'Ortam bölümü: sıcaklık kaydırıcısı (−40…60 °C), gün/gece döngüsü ve termal görünüm (T). Başlıkta ortam sıcaklığı ve imlecin altındaki materyalin sıcaklığı görünür.',
-    'Materyal seçici sekmelere ayrıldı: Toz, Sıvı, Gaz, Katı, Araç.',
-    'Isıt (H) ve Soğut (C) fırçaları: materyal koymadan sıcaklığı değiştirir; suyu kaynatmak, lavı dondurmak ya da metali eritmek için basılı tutun.',
-    'Yeni materyaller: Buz (B), Kar (K), Metal (M) ve Erimiş metal (E). Su 0 °C altında donar ve göl yüzeyden buz tutar; metal ısıyı hızla iletip kızarır ve 1400 °C’de erir.',
-    'Sıcaklık: her hücrenin bir sıcaklığı var ve ısı komşulara iletiliyor. Su kaynıyor, buhar soğuyunca yoğuşup yağıyor, lav dış yüzeyinden soğuyup taşa dönüyor, lavla uzun temas eden kum cama dönüşüyor.',
-    'Odun, yağ ve bitki yeterince ısınınca kendiliğinden tutuşuyor; sıcak ortamda açık su yavaşça buharlaşıyor.',
-    'Isı görselleri: 450 °C üstündeki taş, kum ve cam kızarıyor ve parlıyor; lav soğudukça koyulaşıyor, donmaya yaklaşan su açık maviye dönüyor.',
-    'Çoğaltıcı (X): üstüne dökülen materyali 1000 kez çoğaltıp duruyor. Yutucu (Y): değen materyali 1000 kez yutup duruyor.',
-    'Kum saati yenilendi: kavisli cam hazneler, odun çerçeve; üstte sınırsız çoğaltıcı, altta sınırsız yutucu olduğu için kum hiç durmadan akıyor.',
-    'Ters çevir (F): dünyayı baş aşağı çevirir, geri alınabilir.',
-    'Başlıkta sürüm rozeti ve bu Yenilikler listesi.',
-  ],
+  version: '0.11.0',
+  items: [],
 });
 
 export const RELEASES = Object.freeze([
+  {
+    version: '0.10.0',
+    date: '2026-09-30',
+    items: [
+      'Yeni sahneler: Buzul (donmuş göl ve karlı yamaçlar), Dökümhane (erimiş metal kalıplara dökülüyor) ve Mağara (yeraltı gölü ve kaplıca buharı). Volkan yeniden lav akıtıyor.',
+      'Ortam bölümü: sıcaklık kaydırıcısı (−40…60 °C), gün/gece döngüsü ve termal görünüm (T). Başlıkta ortam sıcaklığı ve imlecin altındaki materyalin sıcaklığı görünür.',
+      'Materyal seçici sekmelere ayrıldı: Toz, Sıvı, Gaz, Katı, Araç.',
+      'Isıt (H) ve Soğut (C) fırçaları: materyal koymadan sıcaklığı değiştirir; suyu kaynatmak, lavı dondurmak ya da metali eritmek için basılı tutun.',
+      'Yeni materyaller: Buz (B), Kar (K), Metal (M) ve Erimiş metal (E). Su 0 °C altında donar ve göl yüzeyden buz tutar; metal ısıyı hızla iletip kızarır ve 1400 °C’de erir.',
+      'Sıcaklık: her hücrenin bir sıcaklığı var ve ısı komşulara iletiliyor. Su kaynıyor, buhar soğuyunca yoğuşup yağıyor, lav dış yüzeyinden soğuyup taşa dönüyor, lavla uzun temas eden kum cama dönüşüyor.',
+      'Odun, yağ ve bitki yeterince ısınınca kendiliğinden tutuşuyor; sıcak ortamda açık su yavaşça buharlaşıyor.',
+      'Isı görselleri: 450 °C üstündeki taş, kum ve cam kızarıyor ve parlıyor; lav soğudukça koyulaşıyor, donmaya yaklaşan su açık maviye dönüyor.',
+      'Çoğaltıcı (X): üstüne dökülen materyali 1000 kez çoğaltıp duruyor. Yutucu (Y): değen materyali 1000 kez yutup duruyor.',
+      'Kum saati yenilendi: kavisli cam hazneler, odun çerçeve; üstte sınırsız çoğaltıcı, altta sınırsız yutucu olduğu için kum hiç durmadan akıyor.',
+      'Ters çevir (F): dünyayı baş aşağı çevirir, geri alınabilir.',
+      'Başlıkta sürüm rozeti ve bu Yenilikler listesi.',
+    ],
+  },
   {
     version: '0.9.0',
     date: '2026-09-30',

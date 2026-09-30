@@ -285,6 +285,21 @@ Bu değerler hedef değerlerdir. Kesin sabitler testlerle ayarlanır ve uygulama
 - Kar suyun üstünde yüzer, çünkü toz ancak kendinden az yoğun bir sıvının içine batabilir.
 - Erimiş metal lavın içinde batar.
 
+### 3.2a Uygulanan son değerler (0.10.0)
+
+Yukarıdaki tablo tasarım anındaki hedeflerdir. Uygulamada ölçümle şu değerlere ayarlandı (gerekçeler plan sapma tablosunda ve ledger'da):
+
+| Değer | Hedef | Uygulanan |
+|---|---|---|
+| Hava iletkenliği | 0,02 | 0,01 |
+| Kum → Cam | 1000 °C, gizli ısı 450, K 0,03 | 550 °C, gizli ısı 300, K 0,04 |
+| Taş → Lav | 1250 °C | 1500 °C |
+| Buhar → Su gizli ısısı | 300 | 600 |
+| Metal | K 0,24, C 1 | K 1,6, C 8, gizli ısı 1200 |
+| Erimiş metal | 1500 °C, C 1, dağılım 2 | 1450 °C, K 0,8, C 4, gizli ısı 400, dağılım 4, yayılma 0,9 |
+| Faz ilerlemesi | tamsayı | sabit noktalı (×16), stokastik yuvarlama; gizli ısı ≤ 4095 |
+| Erimiş metal görünümü | ayrı rampa | genel akkorluk rampası |
+
 ### 3.3 Yeni materyal kimlikleri
 
 | Materyal | Kimlik | Görünürlük |

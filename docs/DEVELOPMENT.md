@@ -726,7 +726,7 @@ Taze bağlamlı bir reviewer ajanı `f0956b6..34969c5` aralığını inceledi. C
 - Küçük kare başı allocation'lar (layout/arka plan anahtar string'leri, glow kaynak dizisi, `paintLine` kapanışı); per-cell döngüde değil.
 - "Benchmark seed'den bağımsız" ifadesi yalnızca yerleşim için doğru; tonlar ve RNG seed'e bağlı. `bench.js` sabit seed kullandığı için etkisiz.
 
-### Phase 13 — Sıcaklık sistemi ve yeni içerik (0.10.0)
+### Phase 13 — Sıcaklık sistemi ve yeni içerik (0.10.0) — tamamlandı
 
 Spec: `docs/superpowers/specs/2026-09-30-sicaklik-sistemi-design.md` · Plan: `docs/superpowers/plans/2026-09-30-sicaklik-sistemi.md` · Materyal belgesi: `docs/MATERIALS.md`
 
@@ -743,13 +743,24 @@ Spec: `docs/superpowers/specs/2026-09-30-sicaklik-sistemi-design.md` · Plan: `d
 - [x] Sekmeli seçici, Ortam bölümü, termal düğme, kısayollar, göstergeler
 - [x] Çoğaltıcı (`CLONER`) ve Yutucu (`SINK`) — Görev 3'te, kum saatiyle birlikte
 - [x] Buzul, Dökümhane ve Mağara sahneleri; volkan magması ve çoğaltıcısı
-- [ ] Performans, dokümanlar, 0.10.0 sürümü
+- [x] Performans, dokümanlar, 0.10.0 sürümü
 
 ---
 
 ## Manuel test checklist
 
 Her fazın sonunda ilgili maddeler işaretlenir. Tam tur Phase 12'de yapılır.
+
+**0.10.0 — Sıcaklık sistemi**
+
+- [ ] Ortam kaydırıcısı: −20 °C'de göl yüzeyden donuyor, +20 °C'de çözülüyor
+- [ ] Gün/gece açıkken gökyüzü kararıp aydınlanıyor, "Öğle · … °C" satırı güncelleniyor
+- [ ] Termal görünüm (`T`) açılıp kapanıyor
+- [ ] Isıt (`H`) ile su kaynıyor, metal kızarıp eriyor; Soğut (`C`) ile lav taşa dönüyor
+- [ ] Buzul, Dökümhane, Mağara sahneleri; volkanda lav sağ yamaçtan akıyor
+- [ ] Kum saati dakikalarca durmadan akıyor
+- [ ] Sekmeler ok tuşlarıyla geziliyor; mobilde sekme şeridi taşmıyor
+- [ ] Yenilikler diyaloğu tüm sürümleri listeliyor
 
 **Masaüstü (Chrome / Firefox / Safari)**
 
@@ -792,4 +803,5 @@ Benchmark sahnesi (Phase 7) ve `tools/bench.js` (Phase 10) hazır olduğunda dol
 | 2026-09-30 | Phase 10 | Win10 x64, Node 22.17 | 320×180 | 28 211 | 2,27 | 3,57 | |
 | 2026-09-30 | Phase 10 | Win10 x64, Node 22.17 | 200×200 | 19 917 | 1,78 | 3,78 | |
 | 2026-09-30 | Görev 5 | Win10 x64, Node 22.17 | 400×225 | 43 911 | 1,25–1,27 (ısısız aynı ölçüm 0,77) | 1,57–1,61 | ısı geçişi: aktif satır oranı %26, geçişin payı ~0,39 ms; hedef +0,6 ms içinde |
+| 2026-09-30 | Görev 14 | Win10 x64, Node 22.17 | 400×225 | 44 378 | 1,49–1,74 (eşleştirilmiş en iyi; aynı koşulda 0.9.0 0,85–1,03) | 2,7–4,1 | +0,64–0,71 ms; ısı geçişi ~0,62 ms (eşik adayı penceresi + hava hızlı yolu); makine gürültülü |
 | 2026-09-30 | Phase 10 | Chrome 154 (Playwright) | 320×207 | 32 466 | 3,0 | 4,5 | render medyanı 2,3 ms (glow: high) |

@@ -6,7 +6,7 @@ Bu belge, simülasyondaki tüm materyalleri ve aralarındaki etkileşimleri tek 
 - **Kural:** yeni bir materyal ya da etkileşim ekleyen, var olanı değiştiren her değişiklik bu belgeyi de günceller. `tests/docs-materials.test.js` bu testi 0.10.0 planının 1. görevinde ekliyor. Test, tanımlı her materyal anahtarının bu belgede geçtiğini doğrular.
 - **Durum etiketleri:**
   - **Mevcut:** yayında (0.9.0).
-  - **Planlandı (0.10.0):** tasarımı onaylı, uygulaması sürüyor. Ayrıntılar `docs/superpowers/specs/2026-09-30-sicaklik-sistemi-design.md` dosyasında.
+  - **Mevcut (0.10.0):** sıcaklık sistemi ve yeni materyaller (§4). Tasarım: `docs/superpowers/specs/2026-09-30-sicaklik-sistemi-design.md`.
   - **Değişecek:** mevcut davranışın 0.10.0'da nasıl değişeceği.
 
 ---
@@ -79,7 +79,9 @@ Yanan yağ akmaya devam eder ve suyla sönmez (söndürme olasılığı 0); suyu
 
 ---
 
-## 3. Etkileşimler (0.9.0)
+## 3. Etkileşimler (0.9.0'da böyleydi)
+
+> Bu tablo 0.9.0 davranışını tarih için korur. 0.10.0'da ısıya bağlı kurallar sıcaklık alanına taşındı; güncel hâli §4.6'da. Temas kuralları (ateş, yanma, bitki) değişmedi.
 
 Olasılıklar tick başına ve sahip hücrenin örneklemesi başına verilmiştir.
 
@@ -106,7 +108,7 @@ Bu reaksiyonlar üzerinden örnek zincirler:
 
 ---
 
-## 4. Planlandı (0.10.0): sıcaklık sistemi
+## 4. Sıcaklık sistemi (Mevcut, 0.10.0)
 
 Her hücrenin bir sıcaklığı (°C) olur ve ısı komşu hücrelere iletilir. Hava, ortam sıcaklığına yaklaşır. Ortam sıcaklığı bir kaydırıcıyla ayarlanır; isteğe bağlı gün/gece döngüsü eklenir.
 
@@ -180,7 +182,7 @@ Eşiklerde histerezis vardır (ör. donma −1 °C, erime +1 °C), böylece hüc
 - **Volkandaki kullanım (mevcut):** iki çoğaltıcı hücre krater yarığının tabanında, yarığın altında bir magma damarı var. Yarık artık yamaca açık (0.9.0'da sağ ucu kapalıydı); lav sağ yamaçtan kabuk bağlayarak aşağı akar ve çoğaltıcı boşalan yeri ~2000 hücre boyunca doldurur.
 - **Sınır:** basınç olmadığı için, dolu bir odanın altındaki çoğaltıcı lavı yukarı itemez; etrafında boş hücre yoksa üretim yapmaz. Basınç alt proje 2'de gelecek.
 
-### 4.6 Değişecek etkileşimler
+### 4.6 0.9.0 → 0.10.0 etkileşim değişiklikleri (Mevcut)
 
 | Mevcut kural (§3) | 0.10.0'da |
 |---|---|

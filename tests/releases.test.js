@@ -23,12 +23,13 @@ test('Yenilikler yeniden eskiye sıralı; her kaydın tarihi ve en az bir maddes
   }
 });
 
-test('Yenilikler bölümleri: önce geliştirmedeki sürüm, sonra yayınlanmış sürümlerin tamamı (yalnızca sonuncusu değil)', async () => {
+test('Yenilikler bölümleri: varsa önce geliştirmedeki sürüm, sonra yayınlanmış sürümlerin tamamı (yalnızca sonuncusu değil)', async () => {
   const { UNRELEASED, releaseSections } = await import('../js/app/releases.js');
   const sections = releaseSections();
-  assert.ok(UNRELEASED.items.length > 0, 'geliştirmedeki yenilikler listelenmeli');
   assert.ok(versionKey(UNRELEASED.version) > versionKey(APP_VERSION), 'geliştirme sürümü yayınlanmıştan yeni');
-  assert.equal(sections[0].title, `v${UNRELEASED.version} · geliştirmede`);
-  assert.equal(sections.length, RELEASES.length + 1, 'tüm yayınlanmış sürümler gösterilir');
-  assert.deepEqual(sections.slice(1).map((s) => s.title), RELEASES.map((r) => `v${r.version} · ${r.date}`));
+  const dev = UNRELEASED.items.length > 0 ? 1 : 0;
+  if (dev) assert.equal(sections[0].title, `v${UNRELEASED.version} · geliştirmede`);
+  assert.equal(sections.length, RELEASES.length + dev, 'tüm yayınlanmış sürümler gösterilir');
+  assert.deepEqual(sections.slice(dev).map((s) => s.title), RELEASES.map((r) => `v${r.version} · ${r.date}`));
+  assert.ok(RELEASES.length >= 2, 'geçmiş sürümler de listede');
 });

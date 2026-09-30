@@ -34,6 +34,8 @@ Burada yalnızca gerçekten önemli teknik kararlar tutulur. Her kayıt dört ba
 
 ## ADR-003 — v1'de per-cell sıcaklık alanı yok
 
+- **Durum:** Yerini ADR-014 aldı (0.10.0).
+
 - **Karar:** Reaksiyonlar temas tabanlı çalışır. Yerel ısı ve soğuma `life` sayaçlarında tutulur; örneğin lavaya dokunan kumun ısısı birikir. Tüm reaksiyonlar `heat`/`cool`/`ignite`/`transform` primitive'lerinden geçer.
 - **Neden:**
   - İstenen tüm reaksiyonlar temas tabanlı.
@@ -161,3 +163,51 @@ Burada yalnızca gerçekten önemli teknik kararlar tutulur. Her kayıt dört ba
   - Windows'ta `python -m http.server` `.js` dosyalarını `text/plain` sunabilir; bu durumda module'ler yüklenmez.
 - **Alternatif:** `npx serve` (ağdan paket indirir), Python sunucusu.
 - **Sonuç:** Reddedildi.
+
+## ADR-014 — Tam çözünürlüklü sıcaklık alanı, ayrı ısı geçişi
+
+- **Karar:** Her hücrede `Float32` sıcaklık (°C) tutulur ve parçacıkla birlikte taşınır. Tick'in 3. geçişi (`js/engine/heat.js`) şunları yapar:
+  - 4 komşulu, çift tamponlu (Jacobi) difüzyon; iletim `k = min(K_i, K_j)`
+  - havanın ortama yaklaşması, kenarın ortam sıcaklığında tutulması
+  - ısı kaynakları (ateş, yanma, magma)
+  - uyuyan satırlar
+  - faz, tutuşma ve buharlaşma kuralları (ADR-015)
+- **Neden:**
+  - Buz, kar ve metal ısı iletimi gerektiriyor.
+  - Çift tampon tarama yönü bias'ı üretmez; simetrik `k` enerjiyi korur.
+  - `K/C ≤ 0,25` kararlılığı derlemede doğrulanır.
+- **Alternatif:** 4×4 kaba ısı ızgarası; mevcut `life` sayaçlarını genişletmek.
+- **Sonuç:** Reddedildi. Kaba ızgara ince yapıları ve ısının maddeyle taşınmasını kaybeder. Sayaçlar iletimi hiç modellemez.
+- **Ölçüm:** 400×225 benchmark sahnesinde tick başına ~+0,64–0,71 ms. Isı geçişinin kendisi ~0,62 ms. Hedef +0,6 ms'ydi; ~0,1 ms aşıldı, karar kaydı DEVELOPMENT.md'de.
+- **Optimizasyonlar:**
+  - satır uykusu (±0,5 °C, bilinçli yaklaşıklık)
+  - materyal başına eşik adayı penceresi
+  - hava–hava hızlı yolu
+
+## ADR-015 — Faz geçişlerinde gizli ısı: `life` üzerinde sabit noktalı ilerleme
+
+- **Karar:** Eşiği aşan hücrenin sıcaklığı eşikte sabitlenir. Fazla ısı (ΔT·C) `life`'ta ilerleme olarak birikir: sabit noktalı (×16), kesir sim RNG'siyle stokastik yuvarlanır. İlerleme gizli ısıya ulaşınca hücre dönüşür; eşiğin gerisinde ilerleme yavaşça söner. Eşiklerde histerezis vardır (ör. donma −1, erime +1).
+- **Neden:**
+  - Buz bir anda erimez, su kaynar, göl yüzeyden donar, lav kademeli kabuk bağlar.
+  - Faz materyallerinde `life` başka bir iş için kullanılmıyor.
+  - Stokastik yuvarlama olmadan eşiğin az üstündeki küçük fazlalar sıfıra yuvarlanıyordu (1 °C'deki buz hiç erimiyordu).
+- **Alternatif:** Anlık eşik dönüşümü; ayrı bir entalpi alanı.
+- **Sonuç:** Reddedildi.
+  - Anlık dönüşüm titreşim üretir.
+  - Entalpi alanı ek bellek ve geçiş maliyeti getirir.
+- **Bilinen basitleştirme:** sönen ilerlemenin enerjisi geri verilmez.
+
+## ADR-016 — Kaynaklar: Çoğaltıcı ve Yutucu
+
+- **Karar:** İki reaktif statik materyal eklendi.
+  - **Çoğaltıcı:** ilk temas ettiği hareketli materyali öğrenir ve bitişik boş hücrelere kopyalar.
+  - **Yutucu:** değen hareketli materyali yok eder.
+  - Bütçe `life` alanındadır: 1000, `65535` sınırsız demektir.
+  - Sahneler kaynağı `sim.configureSource` ile kurar.
+- **Neden:**
+  - Kullanıcı sürekli akan kum saati ve uzun süre lav akıtan volkan istedi.
+  - Kopya yalnızca bitişik boş hücrelere yazıldığı için taşma olmaz.
+  - Statikler öğrenilmez, bu yüzden kap duvarları kopyalanmaz.
+- **Alternatif:** Sahneye özgü sabit "emitter" materyalleri.
+- **Sonuç:** Reddedildi. Genel kaynak her sahnede ve kullanıcı boyamasında işe yarıyor.
+- **Bilinen sınır:** basınç yok. Dolu bir odanın altındaki çoğaltıcının boş komşusu olmaz ve üretim yapmaz (alt proje 2).

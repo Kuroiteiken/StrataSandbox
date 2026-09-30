@@ -5,7 +5,13 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) yaklaşımını 
 
 ## [Unreleased]
 
-Hedef sürüm 0.10.0: sıcaklık sistemi, Buz, Kar, Metal, yeni sahneler ve kum saati iyileştirmesi. Tasarım: `docs/superpowers/specs/2026-09-30-sicaklik-sistemi-design.md`.
+## [0.10.0] - 2026-09-30
+
+Sıcaklık sistemi (alt proje 1/4): her hücrede sıcaklık ve ısı iletimi, ortam ve gün/gece, gizli ısılı faz geçişleri; Buz, Kar, Metal, Erimiş metal, Çoğaltıcı, Yutucu; Isıt/Soğut fırçaları; termal görünüm; Buzul, Dökümhane, Mağara sahneleri; sürekli akan kum saati; sekmeli seçici ve Yenilikler diyaloğu. Tasarım: `docs/superpowers/specs/2026-09-30-sicaklik-sistemi-design.md`.
+
+### Performance
+
+- Isı geçişi: satır uykusu, materyal başına eşik adayı penceresi ve hava–hava hızlı yolu. 400×225 benchmark sahnesinde tick başına ~+0,65 ms (ısı geçişi ~0,62 ms).
 
 ### Added
 

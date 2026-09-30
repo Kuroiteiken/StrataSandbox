@@ -43,8 +43,9 @@ Renderer.render(view, frameInfo)                                 ← state'i asl
 | --- | --- | --- |
 | `type` | `Uint8Array` | materyal id (0 = EMPTY/hava) |
 | `variant` | `Uint8Array` | parçacığa özgü kozmetik ton; parçacıkla birlikte taşınır |
-| `life` | `Uint16Array` | materyale göre anlamı değişen sayaç: ömür, yanma, ısı, soğuma, büyüme bütçesi |
-| `flags` | `Uint8Array` | bit0 = sıvının kalıcı akış yönü |
+| `life` | `Uint16Array` | materyale göre anlamı değişen sayaç: ömür, yanma, faz ilerlemesi, büyüme bütçesi, kaynak bütçesi |
+| `flags` | `Uint8Array` | bit0 = sıvının kalıcı akış yönü; bit1 = çoğaltıcı materyal öğrendi |
+| `temp` / `tempNext` | `Float32Array` | sıcaklık (°C), hava dahil her hücre; difüzyon için çift tampon (0.10.0, ADR-014) |
 | `stamp` | `Uint16Array` | update stamp; taşmada `fill(0)` yapılır ve saat 1'den başlar |
 
 **Koordinat ve boyut:**
@@ -55,9 +56,11 @@ Renderer.render(view, frameInfo)                                 ← state'i asl
 
 ## 3. Simulation tick (uygulandı — Phase 1–2)
 
-- **Geçişler:** Her tick iki taramadan oluşur.
+- **Geçişler:** Her tick üç taramadan oluşur.
   1. Aşağıdan yukarı: tozlar, sıvılar ve reaktif statikler.
   2. Yukarıdan aşağı: gazlar. Yalnızca birinci geçişte gaz görülen satırlar taranır.
+  3. Isı (`heat.js`, 0.10.0): çift tamponlu difüzyon, hava ve kaynaklar; ardından ayrı bir döngüde faz geçişleri, sıcaklıkla tutuşma ve buharlaşma. Sakin satırlar atlanır.
+- **Ortam:** `climate.js` ortam sıcaklığını ve gün/gece dalgasını yalnızca aritmetikle, tick'ten türeterek verir.
 - **Yatay yön:** tick paritesi XOR satır paritesi. Kalıcı sağa/sola akış bias'ı oluşmaz.
 - **Stamp kuralları:**
   - Yer değiştiren iki hücre de stamp'lenir.
@@ -103,7 +106,7 @@ Renderer.render(view, frameInfo)                                 ← state'i asl
 - **Tek sahip:** her etkileşim çiftini yalnızca bir taraf işler.
 - **Örnekleme:** sahip hücre tick başına 8 komşudan rastgele birini örnekler. Ateş 2 örnekler.
 - **Damga:** dönüştürülen ya da oluşturulan hücre damgalanır; aynı tick'te zincirleme olmaz.
-- **Sıcaklık:** per-cell sıcaklık alanı yoktur. Yerel ısı ve soğuma `life` sayaçlarında tutulur (ADR-003).
+- **Sıcaklık (0.10.0):** ısı alışverişi sıcaklık alanındadır (ADR-014). Bu tabloda yalnızca temas kuralları kalır; eşiğe bağlı dönüşümler aşağıdaki "Termal kurallar" tablosunda. 0.9.0'daki sayaç kuralları için `docs/MATERIALS.md` §3.
 
 | Etkileşim | Sahip | Sonuç |
 | --- | --- | --- |
@@ -113,24 +116,33 @@ Renderer.render(view, frameInfo)                                 ← state'i asl
 | Burning_* ↔ yanıcı | Burning_* | yangın yayılır; üstteki boşluğa ateş üretir (tick başına dünya geneli sınır) |
 | Burning_* ↔ Water | Burning_* | söner (Wood/Plant), Water → Steam. Yanan yağ sönmez. |
 | Burning_* (ömür) | Burning_* | Ash ya da boşluk |
-| Lava ↔ Water | Lava | Water → Steam; soğuma sayacı +25; 200'de Stone |
-| Lava ↔ hava | Lava | %10 olasılıkla soğuma +1 (kabuk) |
 | Lava ↔ yanıcı | Lava | tutuşturur |
-| Lava ↔ Sand | Lava | kum ısısı +16; 300'de Glass |
-| Sand (soğuma) | Sand | ısı tick başına −1 (RNG'siz) |
-| Steam (ömür) | Steam | %60 Water, aksi halde kaybolur |
-| Plant ↔ Water | Plant | su → Plant (bütçe − 1); tick başına dünya geneli sınır |
+| Plant ↔ Water | Plant | su → Plant (bütçe − 1); tick başına dünya geneli sınır; 5 °C altında yok |
+| Cloner ↔ hareketli / boş | Cloner | ilk hareketli materyali öğrenir; boş komşuya kopyalar (bütçe − 1) |
+| Sink ↔ hareketli | Sink | komşuyu boşaltır (bütçe − 1) |
+
+**Termal kurallar** (`heat.js`, eşikler materyal tablosunda; ayrıntı ve sayılar `docs/MATERIALS.md` §4):
+
+| Materyal | Eşik | Sonuç |
+| --- | --- | --- |
+| Water | ≤ −1 °C / ≥ 100 °C | Ice / Steam (buhar `emitSteam` ile 105 °C'de doğar); ≥ 35 °C ve üstü açıksa yavaş buharlaşma |
+| Steam | ≤ 95 °C | Water (%40'ı kaybolur) |
+| Ice, Snow | ≥ +1 °C | Water |
+| Lava | ≤ 750 °C | Stone |
+| Stone | ≥ 1500 °C | Lava |
+| Sand | ≥ 550 °C | Glass |
+| Metal / Molten Metal | ≥ 1400 °C / ≤ 1300 °C | Molten Metal / Metal |
+| Wood, Oil, Plant | ≥ 300 / 250 / 250 °C | tick başına 1/16 olasılıkla tutuşur |
 
 **`life` alanının anlamı materyale göre değişir:**
 
 | Materyal | `life` anlamı |
 | --- | --- |
 | Fire | kalan ömür |
-| Steam | yoğuşmaya kalan süre |
 | Burning_* | kalan yanma süresi |
-| Lava | soğuma sayacı |
-| Sand | ısı |
 | Plant | büyüme bütçesi |
+| Faz materyalleri (Water, Steam, Lava, Sand, Stone, Ice, Snow, Metal, Molten Metal) | faz ilerlemesi (sabit noktalı, ADR-015) |
+| Cloner, Sink | kalan bütçe (65535 = sınırsız) |
 
 ## 6. Renderer (uygulandı — Phase 4, 8)
 

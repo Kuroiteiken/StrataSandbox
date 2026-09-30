@@ -3,23 +3,29 @@
 Tarayıcıda çalışan, grid tabanlı bir **materyal ve fizik sandbox'ı**. Kum, su, yağ, lava, ateş, buhar, bitki ve daha fazlasını simülasyon alanına çizip birbirleriyle nasıl etkileştiklerini izleyebilirsin. Simülasyon gerçek bir cellular automaton'dur: her hücre her tick'te fizik kurallarına göre güncellenir.
 
 - **Canlı sürüm:** <https://kuroiteiken.github.io/StrataSandbox/>
-- **Durum:** v0.9.0. Tüm fazlar tamamlandı; gerçek cihaz ve tarayıcı testleri sonrası v1.0.0 olacak. Ayrıntılar: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+- **Durum:** v0.10.0 — sıcaklık sistemi, yeni materyaller ve sahneler. Uygulamadaki sürüm rozetine tıklayınca tüm sürümlerin yenilikleri listelenir. Ayrıntılar: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md), tüm materyaller ve etkileşimler: [docs/MATERIALS.md](docs/MATERIALS.md).
 
 ## Özellikler
 
-- **Materyaller:**
+- **Materyaller** (seçicide sekmeler: Toz, Sıvı, Gaz, Katı, Araç):
   - Sand, Water, Stone, Wood, Fire, Steam, Oil, Lava, Plant, Glass
-  - Eraser
+  - Ice, Snow, Metal, Molten Metal
+  - Cloner (üstüne dökülen materyali 1000 kez çoğaltır), Sink (değen materyali 1000 kez yutar)
+  - Araçlar: Eraser, Isıt, Soğut
+- **Ortam ve sıcaklık:**
+  - Her hücrenin bir sıcaklığı var ve ısı komşulara iletilir: su kaynar ve donar, lav dış yüzeyinden kabuk bağlar, metal ısıyı hızla iletip kızarır.
+  - Ortam sıcaklığı kaydırıcısı (−40…60 °C) ve isteğe bağlı gün/gece döngüsü.
+  - Termal görünüm (`T`) ve imlecin altında sıcaklık göstergesi.
 - **Fizik:**
   - Yoğunluk tabanlı yer değiştirme: kum suda batar, yağ suda yüzer.
   - Viskoz sıvılar.
   - Yükselen gazlar.
 - **Reaksiyonlar:**
-  - Lava + Sand → Glass
+  - Lava + Sand → Glass (ısıyla)
   - Lava + Water → Steam ve soğuyan lava → Stone
-  - Fire → Wood, Plant ve Oil'i tutuşturur
-  - Plant, su yakınında büyür
-- **Sahneler:** Volkan, Kum saati, Vaha, Kaos Lab (ve Boş). Seed tabanlıdır; aynı seed aynı başlangıç sahnesini üretir. URL ile paylaşılabilir: `?scene=oasis&seed=abc`.
+  - Fire → Wood, Plant ve Oil'i tutuşturur; yeterince ısınan yanıcılar kendiliğinden tutuşur
+  - Plant, su yakınında büyür (5 °C altında büyümez)
+- **Sahneler:** Volkan, Kum saati (sürekli akar), Vaha, Buzul, Dökümhane, Mağara, Kaos Lab (ve Boş). Seed tabanlıdır; aynı seed aynı başlangıç sahnesini üretir. URL ile paylaşılabilir: `?scene=oasis&seed=abc`.
 - **Kontroller:**
   - Brush: Circle, Square, Spray
   - Pause / Step
@@ -42,6 +48,11 @@ Tarayıcıda çalışan, grid tabanlı bir **materyal ve fizik sandbox'ı**. Kum
 | --- | --- |
 | `1` … `9`, `0` | Sand, Water, Stone, Fire, Wood, Steam, Oil, Lava, Plant, Eraser |
 | `G` | Glass |
+| `B` `K` `M` `E` | Ice, Snow, Metal, Molten Metal |
+| `X` `Y` | Cloner, Sink |
+| `H` `C` | Isıt / Soğut fırçası |
+| `T` | Termal görünüm |
+| `F` | Dünyayı ters çevir |
 | `Space` | Pause / Play |
 | `.` | Tek tick ilerlet (Step) |
 | `[` / `]` | Brush küçült / büyüt |
@@ -109,10 +120,15 @@ npm test        # tüm testler
 | --- | --- | --- |
 | ![Kum saati: kum dar boğazdan gerçek fizikle akar](docs/screenshots/strata-hourglass.png) | ![Vaha: kum tepeleri, gölet ve palmiyeler](docs/screenshots/strata-oasis.png) | ![Mobil görünüm](docs/screenshots/strata-mobile.png) |
 
+| Buzul | Dökümhane | Mağara |
+| --- | --- | --- |
+| ![Buzul: karlı yamaçlar, donmuş göl, magma ısıtmalı baca](docs/screenshots/strata-glacier.png) | ![Dökümhane: erimiş metal kalıplara dökülüyor](docs/screenshots/strata-foundry.png) | ![Mağara: yeraltı gölü ve lav cebi](docs/screenshots/strata-cave.png) |
+
 ## Bilinen sınırlamalar
 
 - **Basınç yok:** Sıvılar yalnızca yerel kurallarla akar. U şeklindeki bir boruda iki kol eşitlenmez (cellular automaton sınırlaması).
-- **Sıcaklık alanı yok (v1):** Isı etkileşimleri temas tabanlıdır (ADR-003). Buz, kar ve metal gibi materyaller eklenirken yeniden değerlendirilecek.
+- **Konveksiyon yok:** Sıcak hava yükselmez, rüzgâr yoktur; ısı yalnızca iletimle yayılır (ADR-014).
+- **Basınç yok (0.10.0):** Dolu bir odanın altındaki çoğaltıcı lavı yukarı itemez; patlama ve basınç sonraki alt projede.
 - **Undo tek seviyelidir:** Dünyayı son çizimden önceki ana döndürür. Çizimden sonra geçen simülasyon süresi de geri alınır (ADR-010).
 - **Grid boyutu açılışta seçilir:** Ekran döndürülünce ya da pencere büyütülünce dünya korunur ama kenarlarda boşluk kalabilir. Yeni boyut için sayfayı yenilemek gerekir.
 - **Aynı seed farklı grid boyutunda farklı sahne üretir:** Birebir aynılık (sahne, seed, genişlik, yükseklik) dörtlüsüyle garanti edilir.
@@ -136,9 +152,17 @@ Fazlar ve durumları [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)'de tutulur:
 - Phase 11 — GitHub Pages
 - Phase 12 — Final QA
 
-**v1 sonrası fikirler:**
+- Phase 13 — Sıcaklık sistemi, yeni materyaller ve sahneler (0.10.0)
 
-- Yeni materyaller: Acid, Salt, Ice, Snow, Metal, Gunpowder, Smoke, Electricity
+**Sıradaki alt projeler:**
+
+- Basınç ve patlama: Barut, Duman, Metan, buhar patlaması, volkan patlaması
+- Kimya: Asit, Tuz, Tuzlu su
+- Toprak ve yaşam: Toprak, Çamur, Tohum
+
+**Diğer fikirler:**
+
+- Electricity
 - Dünyayı kaydetme/yükleme ve URL ile sahne paylaşımı
 - Özel simülasyon boyutları
 - Tam ekran
