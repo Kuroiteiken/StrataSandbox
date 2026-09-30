@@ -2,7 +2,7 @@
 // Zamanlama: fixed timestep (ADR-006). Tick sırası: iki geçiş + stamp (ADR-007).
 import { World } from './world.js';
 import { Rng, hashSeed } from './rng.js';
-import { MAT, KIND, MATERIALS } from './materials.js';
+import { MAT, KIND, MATERIALS, spawnTemp } from './materials.js';
 import { stepPowder, stepLiquid, stepGas } from './kernels.js';
 import { react, createReactionState, beginReactionTick, initialLife, isMover, SOURCE_INFINITE, CLONER_LEARNED } from './reactions.js';
 import { footprint, lineCells, SPRAY_DENSITY } from './brush.js';
@@ -69,6 +69,13 @@ export class Simulation {
       variant: w.variant,
       life: w.life,
       flags: w.flags,
+      // Sıcaklık tamponu her tick yer değiştirir: düz alan değil getter.
+      get temp() {
+        return w.temp;
+      },
+      get ambient() {
+        return w.ambient;
+      },
       counts: w.counts, // materyal başına hücre sayısı (salt-okunur; ör. renderer animasyon kararı)
       get tick() {
         return sim.tick;
@@ -211,7 +218,7 @@ export class Simulation {
     if (!def || def.internal) return false;
     const i = w.index(x, y);
     const h = spawnHash(i, this._spawnSalt());
-    w.set(i, material, h & 255, initialLife(material, h >>> 9), (h >>> 8) & 1);
+    w.set(i, material, h & 255, initialLife(material, h >>> 9), (h >>> 8) & 1, spawnTemp(material, w.ambient));
     this.version++;
     return true;
   }
@@ -243,7 +250,7 @@ export class Simulation {
     const w = this.world;
     if (!w.inBounds(x, y)) return null;
     const i = w.index(x, y);
-    return { material: w.type[i], life: w.life[i], variant: w.variant[i] };
+    return { material: w.type[i], life: w.life[i], variant: w.variant[i], temp: w.temp[i] };
   }
 
   clear() {
@@ -323,13 +330,13 @@ export class Simulation {
     const current = w.type[i];
     if (material === EMPTY) {
       if (current === EMPTY) return 0;
-      w.set(i, EMPTY, 0, 0, 0);
+      w.set(i, EMPTY, 0, 0, 0, w.ambient);
       return 1;
     }
     if (current === material) return 0;
     if (!replace && current !== EMPTY && KIND_OF[current] !== GAS) return 0;
     const h = spawnHash(i, this._spawnSalt());
-    w.set(i, material, h & 255, initialLife(material, h >>> 9), (h >>> 8) & 1);
+    w.set(i, material, h & 255, initialLife(material, h >>> 9), (h >>> 8) & 1, spawnTemp(material, w.ambient));
     return 1;
   }
 
@@ -369,6 +376,7 @@ export class Simulation {
     w.variant.set(snap.variant);
     w.life.set(snap.life);
     w.flags.set(snap.flags);
+    w.temp.set(snap.temp);
     w.counts.set(snap.counts);
     this.rng.setState(snap.rng);
     this.tick = snap.tick;
@@ -387,6 +395,7 @@ export class Simulation {
       variant: new Uint8Array(size),
       life: new Uint16Array(size),
       flags: new Uint8Array(size),
+      temp: new Float32Array(size),
       counts: new Uint32Array(256),
       rng: new Uint32Array(4),
       tick: 0,
@@ -401,6 +410,7 @@ export class Simulation {
     snap.variant.set(w.variant);
     snap.life.set(w.life);
     snap.flags.set(w.flags);
+    snap.temp.set(w.temp);
     snap.counts.set(w.counts);
     snap.rng.set(this.rng.getState());
     snap.tick = this.tick;

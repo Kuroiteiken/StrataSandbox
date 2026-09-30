@@ -3,6 +3,7 @@
 // check'i gereksiz kılar. Tüm yazmalar bu sınıftaki primitive'lerden geçer
 // (ileride active-chunk işaretlemesi için tek nokta — ADR-005).
 import { MAT, MATERIALS } from './materials.js';
+import { DEFAULT_AMBIENT, TEMP_MIN, TEMP_MAX } from './climate.js';
 
 const STAMP_MAX = 65535;
 
@@ -22,6 +23,9 @@ export class World {
     this.flags = new Uint8Array(this.size);
     this.stamp = new Uint16Array(this.size);
     this.counts = new Uint32Array(256);
+    this.temp = new Float32Array(this.size); // °C; hava dahil her hücre (ADR-014)
+    this.tempNext = new Float32Array(this.size); // difüzyon hedef tamponu (heat.js)
+    this.ambient = DEFAULT_AMBIENT; // bu tick'in ortam sıcaklığı (Simulation yazar)
 
     // 8 komşu için index farkları (reaksiyon örneklemesi): üst sıra, yanlar, alt sıra.
     const st = this.stride;
@@ -53,13 +57,15 @@ export class World {
     this.moves = 0;
   }
 
-  set(i, type, variant, life, flags) {
+  // temp verilmezse ortam sıcaklığı yazılır (çağıranlar doğuş sıcaklığını spawnTemp ile verir).
+  set(i, type, variant, life, flags, temp = this.ambient) {
     this.counts[this.type[i]]--;
     this.counts[type]++;
     this.type[i] = type;
     this.variant[i] = variant;
     this.life[i] = life;
     this.flags[i] = flags;
+    this.temp[i] = temp;
     this.stamp[i] = this.clock;
   }
 
@@ -75,7 +81,7 @@ export class World {
   }
 
   swap(a, b) {
-    const { type, variant, life, flags, stamp } = this;
+    const { type, variant, life, flags, temp, stamp } = this;
     let t = type[a];
     type[a] = type[b];
     type[b] = t;
@@ -88,6 +94,9 @@ export class World {
     t = flags[a];
     flags[a] = flags[b];
     flags[b] = t;
+    t = temp[a]; // ısı maddeyle birlikte taşınır
+    temp[a] = temp[b];
+    temp[b] = t;
     stamp[a] = this.clock;
     stamp[b] = this.clock;
     this.moves++;
@@ -97,7 +106,7 @@ export class World {
   // Damgalar aynalanmaz: çevirme tick'ler arasında yapılır ve bir sonraki tick yeni saatle başlar.
   flipVertical() {
     const { width, height, stride } = this;
-    const arrays = [this.type, this.variant, this.life, this.flags];
+    const arrays = [this.type, this.variant, this.life, this.flags, this.temp];
     for (let top = 1, bottom = height; top < bottom; top++, bottom--) {
       const a = top * stride + 1;
       const b = bottom * stride + 1;
@@ -117,6 +126,8 @@ export class World {
     this.variant.fill(0);
     this.life.fill(0);
     this.flags.fill(0);
+    this.temp.fill(this.ambient);
+    this.tempNext.fill(this.ambient);
     this.stamp.fill(0);
     for (let x = 0; x < stride; x++) {
       this.type[x] = MAT.WALL;
@@ -131,6 +142,13 @@ export class World {
     this.counts[MAT.WALL] = this.size - width * height;
   }
 
+  // Difüzyon tamponlarını yer değiştirir (heat.js); world.temp her zaman güncel alandır.
+  swapTempBuffers() {
+    const t = this.temp;
+    this.temp = this.tempNext;
+    this.tempNext = t;
+  }
+
   // Debug/test için değişmezler: kenar bütünlüğü, tanımlı tipler, sayaç tutarlılığı.
   checkInvariants() {
     const problems = [];
@@ -140,6 +158,8 @@ export class World {
       const t = type[i];
       actual[t]++;
       if (!MATERIALS.defs[t]) problems.push(`tanımsız materyal ${t} @${i}`);
+      const T = this.temp[i];
+      if (!(T >= TEMP_MIN && T <= TEMP_MAX)) problems.push(`sıcaklık geçersiz @${i}: ${T}`);
       const x = i % stride;
       const y = (i - x) / stride;
       const border = x === 0 || y === 0 || x === width + 1 || y === height + 1;

@@ -77,9 +77,11 @@ export function runTicks(sim, n) {
   for (let i = 0; i < n; i++) sim.step();
 }
 
-// FNV-1a: dünyanın tüm hücre durumunu (tip, ton, life, flags) özetler.
+// FNV-1a: dünyanın tüm hücre durumunu (tip, ton, life, flags, sıcaklık bitleri) özetler.
 export function hashView(sim) {
   const { type, variant, life, flags } = sim.view;
+  const temp = sim.view.temp;
+  const tb = new Uint32Array(temp.buffer, temp.byteOffset, temp.length);
   let h = 0x811c9dc5;
   const mix = (v) => {
     h ^= v & 0xff;
@@ -91,6 +93,10 @@ export function hashView(sim) {
     mix(life[i]);
     mix(life[i] >>> 8);
     mix(flags[i]);
+    mix(tb[i]);
+    mix(tb[i] >>> 8);
+    mix(tb[i] >>> 16);
+    mix(tb[i] >>> 24);
   }
   return h >>> 0;
 }

@@ -9,11 +9,14 @@ import { Simulation } from '../js/engine/simulation.js';
 import { getScene } from '../js/scenes/index.js';
 
 function hashState(view) {
+  const tb = new Uint32Array(view.temp.buffer, view.temp.byteOffset, view.temp.length);
   let h = 0x811c9dc5;
   for (let i = 0; i < view.type.length; i++) {
     h ^= view.type[i];
     h = Math.imul(h, 0x01000193);
     h ^= view.life[i] & 0xff;
+    h = Math.imul(h, 0x01000193);
+    h ^= tb[i] & 0xff;
     h = Math.imul(h, 0x01000193);
   }
   return (h >>> 0).toString(16);

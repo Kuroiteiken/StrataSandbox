@@ -48,6 +48,7 @@ export const MAT = Object.freeze({
 //   burn:      yanan durumlar için { emit: üstüne ateş üretme, douse: suyla sönme, ash: kül bırakma,
 //              extinguishTo: sönünce olacağı materyal }
 //   hidden:    materyal seçicide gösterilmez (programatik olarak yazılabilir)
+//   temp:      doğuş sıcaklığı °C (yoksa ortam sıcaklığı)
 //   cools:     life (ısı) her tick 1 azalır; tarama döngüsünde satır içi yapılır (react() çağrısı yok)
 export const MATERIAL_DEFS = [
   { id: MAT.EMPTY, key: 'EMPTY', name: 'Empty', kind: KIND.NONE, density: 5, color: null },
@@ -132,6 +133,7 @@ export function compileMaterials(defs) {
   const DOUSE = new Uint8Array(256);
   const ASH_CHANCE = new Uint8Array(256);
   const EXTINGUISH_TO = new Uint8Array(256);
+  const SPAWN_TEMP = new Float32Array(256).fill(NaN);
   const DISPLACE = new Uint8Array(256 * 256);
   const byId = new Array(256).fill(null);
   const byKey = {};
@@ -167,6 +169,10 @@ export function compileMaterials(defs) {
       ASH_CHANCE[def.id] = toByte(def.burn.ash);
       EXTINGUISH_TO[def.id] = def.burn.extinguishTo;
     }
+    if (def.temp !== undefined && def.temp !== null) {
+      if (!Number.isFinite(def.temp)) throw new RangeError(`Geçersiz doğuş sıcaklığı (${def.key})`);
+      SPAWN_TEMP[def.id] = def.temp;
+    }
     if (def.flammable && !def.burnsInto) throw new Error(`Yanıcı materyalin burnsInto değeri yok (${def.key})`);
     if (def.kind === KIND.GAS) gasIds.push(def.id);
   }
@@ -194,6 +200,7 @@ export function compileMaterials(defs) {
     DOUSE,
     ASH_CHANCE,
     EXTINGUISH_TO,
+    SPAWN_TEMP,
     DISPLACE,
     GAS_IDS: Object.freeze(gasIds),
     defs: byId,
@@ -203,3 +210,9 @@ export function compileMaterials(defs) {
 }
 
 export const MATERIALS = compileMaterials(MATERIAL_DEFS);
+
+// Materyalin doğuş sıcaklığı; tanımsızsa (NaN) ortam sıcaklığı.
+export function spawnTemp(t, ambient) {
+  const s = MATERIALS.SPAWN_TEMP[t];
+  return s === s ? s : ambient;
+}

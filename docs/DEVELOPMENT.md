@@ -733,7 +733,7 @@ Spec: `docs/superpowers/specs/2026-09-30-sicaklik-sistemi-design.md` · Plan: `d
 - [x] Sürüm rozeti ve Yenilikler diyaloğu
 - [x] Ters çevirme (`flipVertical`, düğme, `F`)
 - [x] Kum saati yenilemesi
-- [ ] Sıcaklık alanı veri modeli
+- [x] Sıcaklık alanı veri modeli
 - [ ] Isı geçişi (difüzyon, hava, kaynaklar, uyuyan satırlar)
 - [ ] Isı görselleri ve termal görünüm
 - [ ] Faz geçişleri ve sayaç hilelerinin taşınması

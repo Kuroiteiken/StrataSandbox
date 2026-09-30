@@ -15,6 +15,7 @@ Hedef sürüm 0.10.0: sıcaklık sistemi, Buz, Kar, Metal, yeni sahneler ve kum 
 - **Çoğaltıcı** (`X`): üstüne dökülen ilk hareketli materyali (toz, sıvı, gaz) öğrenir ve bitişik boş hücrelere kopyalar. Hücre başına 1000 kopya üretip durur, öğrendiği materyalin rengine bürünür. Statik materyalleri öğrenmez.
 - **Yutucu** (`Y`): değen hareketli materyali yutar; hücre başına 1000 birim, sonra durur ve grileşir.
 - Sınırsız kaynak modu (bütçe 65535) ve sahneler için `sim.configureSource(x, y, { learn, budget })` API'si.
+- Sıcaklık alanı (`world.temp`, °C): her hücrenin bir sıcaklığı var ve sıcaklık parçacıkla birlikte taşınıyor. Undo ve ters çevirme sıcaklığı da kapsıyor. Sönen ateş geride sıcak hava bırakıyor, yutucunun boşalttığı yer ortam sıcaklığına dönüyor.
 - `docs/MATERIALS.md`: tüm materyallerin ve etkileşimlerinin (mevcut ve planlanan) başvuru belgesi. Tür, yoğunluk, kısayol, olasılıklar ve 0.10.0'da değişecek kurallar burada tutulur.
 
 ### Changed

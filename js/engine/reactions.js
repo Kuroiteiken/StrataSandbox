@@ -4,7 +4,7 @@
 // - Sıcaklık alanı yok: yerel ısı/soğuma `life` sayaçlarında tutulur.
 // - Dönüştürülen/oluşturulan hücre damgalanır (world.transform/set) → aynı tick'te zincirleme yok.
 // react() true dönerse hücre artık aynı materyal değildir; çağıran hareketi atlar.
-import { MAT, KIND, MATERIALS } from './materials.js';
+import { MAT, KIND, MATERIALS, spawnTemp } from './materials.js';
 
 const { FLAMMABILITY, BURNS_INTO, LIFE_MIN, LIFE_SPAN, EMIT, DOUSE, ASH_CHANCE, EXTINGUISH_TO } = MATERIALS;
 const { EMPTY, SAND, WATER, LAVA, STEAM, FIRE, STONE, GLASS, PLANT, ASH } = MAT;
@@ -51,8 +51,9 @@ function become(world, rng, i, t) {
   world.transform(i, t, initialLife(t, rng.nextU32()));
 }
 
+// Hücre boşalır; sıcaklığı korunur (sönen ateş geride sıcak hava bırakır).
 function vanish(world, i) {
-  world.set(i, EMPTY, 0, 0, 0);
+  world.set(i, EMPTY, 0, 0, 0, world.temp[i]);
 }
 
 function ignite(world, rng, j, nt) {
@@ -145,7 +146,7 @@ function reactBurning(world, rng, i, t, state) {
   if (state.fireBudget > 0 && roll(rng, EMIT[t])) {
     const j = i - world.stride + ((rng.nextU32() % 3) - 1);
     if (world.type[j] === EMPTY) {
-      world.set(j, FIRE, rng.nextU32() & 255, initialLife(FIRE, rng.nextU32()), 0);
+      world.set(j, FIRE, rng.nextU32() & 255, initialLife(FIRE, rng.nextU32()), 0, spawnTemp(FIRE, world.ambient));
       state.fireBudget--;
     }
   }
@@ -205,7 +206,7 @@ function reactCloner(world, rng, i, state) {
   }
   if (nt !== EMPTY || world.life[i] === 0 || state.cloneBudget <= 0) return false;
   const m = world.variant[i];
-  world.set(j, m, rng.nextU32() & 255, initialLife(m, rng.nextU32()), rng.nextU32() & 1);
+  world.set(j, m, rng.nextU32() & 255, initialLife(m, rng.nextU32()), rng.nextU32() & 1, spawnTemp(m, world.ambient));
   spend(world, i);
   state.cloneBudget--;
   return false;
@@ -214,7 +215,7 @@ function reactCloner(world, rng, i, state) {
 function reactSink(world, rng, i, state) {
   const j = sampleNeighbor(world, rng, i);
   if (!isMover(world.type[j]) || world.life[i] === 0 || state.sinkBudget <= 0) return false;
-  world.set(j, EMPTY, 0, 0, 0);
+  world.set(j, EMPTY, 0, 0, 0, world.ambient); // yutulan madde ısısıyla birlikte yok olur
   spend(world, i);
   state.sinkBudget--;
   return false;
