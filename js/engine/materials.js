@@ -30,6 +30,12 @@ export const MAT = Object.freeze({
   // Kaynaklar (0.10.0): üstüne konan hareketli materyali bütçesi kadar çoğaltır / yutar.
   CLONER: 21,
   SINK: 22,
+  // Sıcaklık sistemi (0.10.0)
+  ICE: 16,
+  SNOW: 17,
+  METAL: 18,
+  MOLTEN_METAL: 19,
+  MAGMA: 20, // gizli, sabit ısı kaynağı (sahneler yerleştirir)
 });
 
 // Ortak alanlar:
@@ -65,7 +71,7 @@ export const MATERIAL_DEFS = [
   { id: MAT.SAND, key: 'SAND', name: 'Sand', kind: KIND.POWDER, density: 20, color: '#d9bb82', conduct: 0.04, capacity: 3, phase: { up: { at: 550, into: MAT.GLASS, latent: 300 } } },
   { id: MAT.STONE, key: 'STONE', name: 'Stone', kind: KIND.STATIC, density: 255, color: '#6e6964', conduct: 0.06, capacity: 4, phase: { up: { at: 1500, into: MAT.LAVA, latent: 800 } } },
   { id: MAT.WATER, key: 'WATER', name: 'Water', kind: KIND.LIQUID, density: 10, color: '#3f7fc2', dispersion: 5, spread: 1, drag: 0.5, conduct: 0.08, capacity: 4,
-    phase: { up: { at: 100, into: MAT.STEAM, latent: 1500 } }, evaporatesAt: 35 },
+    phase: { up: { at: 100, into: MAT.STEAM, latent: 1500 }, down: { at: -1, into: MAT.ICE, latent: 300 } }, evaporatesAt: 35 },
   {
     id: MAT.OIL, key: 'OIL', name: 'Oil', kind: KIND.LIQUID, density: 8, color: '#6a5424',
     dispersion: 2, spread: 0.6, drag: 0.6, flammable: 1, burnsInto: MAT.BURNING_OIL, conduct: 0.03, capacity: 3, ignitesAt: 250,
@@ -98,6 +104,28 @@ export const MATERIAL_DEFS = [
   // Kaynaklar: life = kalan bütçe (65535 = sınırsız); çoğaltıcının öğrendiği materyal variant'ta (reactions.js).
   { id: MAT.CLONER, key: 'CLONER', name: 'Cloner', kind: KIND.STATIC, density: 255, color: '#6a5a86', reactive: true, life: [1000, 1000], conduct: 0.06, capacity: 4 },
   { id: MAT.SINK, key: 'SINK', name: 'Sink', kind: KIND.STATIC, density: 255, color: '#1b1626', reactive: true, life: [1000, 1000], conduct: 0.06, capacity: 4 },
+  // Soğuk ve metal (0.10.0). Metal K/C 0,2: havaya kayıpla iletim menzili ~10 hücre (plan sapma tablosu).
+  {
+    id: MAT.ICE, key: 'ICE', name: 'Ice', kind: KIND.STATIC, density: 255, color: '#bfe3f2',
+    temp: -15, conduct: 0.12, capacity: 3, phase: { up: { at: 1, into: MAT.WATER, latent: 300 } },
+  },
+  {
+    id: MAT.SNOW, key: 'SNOW', name: 'Snow', kind: KIND.POWDER, density: 8, color: '#eef3f7',
+    temp: -8, conduct: 0.01, capacity: 1, phase: { up: { at: 1, into: MAT.WATER, latent: 30 } },
+  },
+  {
+    id: MAT.METAL, key: 'METAL', name: 'Metal', kind: KIND.STATIC, density: 255, color: '#8d98a3',
+    conduct: 1.6, capacity: 8, phase: { up: { at: 1400, into: MAT.MOLTEN_METAL, latent: 1200 } },
+  },
+  {
+    id: MAT.MOLTEN_METAL, key: 'MOLTEN_METAL', name: 'Molten Metal', kind: KIND.LIQUID, density: 40, color: '#ffb347',
+    dispersion: 2, spread: 0.5, drag: 0.8, temp: 1450, conduct: 0.8, capacity: 4,
+    phase: { down: { at: 1300, into: MAT.METAL, latent: 400 } },
+  },
+  {
+    id: MAT.MAGMA, key: 'MAGMA', name: 'Magma', kind: KIND.STATIC, density: 255, color: '#ff5a1a',
+    hidden: true, temp: 1200, source: 1200, conduct: 0.06, capacity: 4,
+  },
 ];
 
 const VALID_KINDS = new Set(Object.values(KIND));
@@ -128,15 +156,20 @@ function displaceChance(mover, target) {
   }
 }
 
+// Faz ilerlemesi sabit noktalıdır: 1 enerji birimi (kapasite × °C) = PROGRESS_SCALE sayaç adımı.
+// Böylece eşiğin çok az üstündeki ısı fazlası da birikir (heat.js kesri stokastik yuvarlar).
+export const PROGRESS_SCALE = 16;
+const MAX_LATENT = Math.floor(65535 / PROGRESS_SCALE); // life Uint16
+
 function compilePhaseEdge(def, edge, name, AT, INTO, LATENT, VANISH, targets) {
   if (!edge) return;
   const { at, into, latent, vanish = 0 } = edge;
   if (!Number.isFinite(at)) throw new RangeError(`Geçersiz faz eşiği (${def.key}.${name})`);
-  if (!Number.isInteger(latent) || latent < 1 || latent > 65534) throw new RangeError(`Gizli ısı 1..65534 olmalı (${def.key}.${name})`);
+  if (!Number.isInteger(latent) || latent < 1 || latent > MAX_LATENT) throw new RangeError(`Gizli ısı 1..${MAX_LATENT} olmalı (${def.key}.${name})`);
   if (!(vanish >= 0 && vanish <= 1)) throw new RangeError(`Geçersiz vanish (${def.key}.${name})`);
   AT[def.id] = at;
   INTO[def.id] = into;
-  LATENT[def.id] = latent;
+  LATENT[def.id] = latent * PROGRESS_SCALE;
   VANISH[def.id] = toByte(vanish);
   targets.push([`${def.key}.${name}`, into]);
 }

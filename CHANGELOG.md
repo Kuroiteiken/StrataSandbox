@@ -20,6 +20,7 @@ Hedef sürüm 0.10.0: sıcaklık sistemi, Buz, Kar, Metal, yeni sahneler ve kum 
 - `sim.setAmbient` ve `sim.setTemp` API'leri. Ortam ayarı dünyayı anında değiştirmez, undo noktası oluşturmaz.
 - Isı görselleri: 450 °C üstündeki her materyal akkorlaşır (koyu kırmızı → sarı-beyaz) ve parlar. Lav soğudukça koyulaşır; donma noktasına yaklaşan su açık maviye kayar.
 - Termal görünüm (`renderer.setViewMode('thermal')`): sıcaklık rampası (−40 mavi → 1200+ beyaz). Hava ve madde ayrı tonlarda gösterilir.
+- Yeni materyaller: **Buz** (`B`, 1 °C'de erir; su −1 °C'de donar ve göl yüzeyden buz tutar), **Kar** (`K`, hafif toz, suda yüzer, çabuk erir), **Metal** (`M`, ısıyı çok hızlı iletir, kızarır, 1400 °C'de erir), **Erimiş metal** (`E`, lavdan ağır, soğuyunca metal olur) ve sahneler için gizli **Magma kaynağı** (sabit 1200 °C).
 - `docs/MATERIALS.md`: tüm materyallerin ve etkileşimlerinin (mevcut ve planlanan) başvuru belgesi. Tür, yoğunluk, kısayol, olasılıklar ve 0.10.0'da değişecek kurallar burada tutulur.
 
 ### Changed
@@ -32,6 +33,7 @@ Hedef sürüm 0.10.0: sıcaklık sistemi, Buz, Kar, Metal, yeni sahneler ve kum 
 
 ### Fixed
 
+- Faz geçişlerinde eşiğin çok az üstündeki ısı fazlası sıfıra yuvarlanıyordu; buz 1 °C'de hiç erimiyor, göl hiç donmuyordu. İlerleme artık sabit noktalı ve stokastik yuvarlanıyor.
 - Çizim sürerken Temizle ya da ters çevirme yapılırsa, çizimin undo noktası bekleyen snapshot'ın üzerine yazılabiliyordu.
 
 ### Removed

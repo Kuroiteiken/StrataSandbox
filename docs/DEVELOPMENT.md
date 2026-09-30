@@ -737,7 +737,7 @@ Spec: `docs/superpowers/specs/2026-09-30-sicaklik-sistemi-design.md` · Plan: `d
 - [x] Isı geçişi (difüzyon, hava, kaynaklar, uyuyan satırlar)
 - [x] Isı görselleri ve termal görünüm
 - [x] Faz geçişleri ve sayaç hilelerinin taşınması
-- [ ] Buz, Kar, Metal, Erimiş metal, Magma
+- [x] Buz, Kar, Metal, Erimiş metal, Magma
 - [ ] Gün/gece döngüsü, sahne ortamları, gökyüzü
 - [ ] Isıt ve Soğut fırçaları
 - [ ] Sekmeli seçici, Ortam bölümü, termal düğme, kısayollar, göstergeler

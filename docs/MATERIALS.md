@@ -134,6 +134,8 @@ Her hücrenin bir sıcaklığı (°C) olur ve ısı komşu hücrelere iletilir. 
 
 ### 4.2 Faz geçişi ve gizli ısı
 
+> Uygulama notu: ilerleme sayacı sabit noktalıdır (1 enerji birimi = 16 adım) ve kesir stokastik yuvarlanır. Böylece eşiğin çok az üstünde bekleyen hücre (ör. 2 °C havadaki buz) de sonunda dönüşür. Gizli ısı en fazla 4095 olabilir.
+
 Eşiği aşan bir hücrenin sıcaklığı eşikte sabitlenir. Fazla ısı `life` sayacında birikir. Sayaç materyalin gizli ısısına ulaşınca hücre dönüşür. Sonuçları:
 
 - buz bir anda erimez
@@ -142,14 +144,14 @@ Eşiği aşan bir hücrenin sıcaklığı eşikte sabitlenir. Fazla ısı `life`
 
 Eşiklerde histerezis vardır (ör. donma −1 °C, erime +1 °C), böylece hücreler iki faz arasında titreşmez.
 
-### 4.3 Yeni materyaller
+### 4.3 Yeni materyaller — Mevcut (0.10.0 geliştirme, Görev 8)
 
 | Materyal | Anahtar | Kısayol | Tür | Yoğunluk | Davranış |
 |---|---|---|---|---|---|
-| Buz | `ICE` | `B` | statik | — | Doğuş −15 °C; +1 °C'de suya döner. Su −1 °C'de buza döner. |
-| Kar | `SNOW` | `K` | toz | 8 | Doğuş −8 °C, yalıtkan. +1 °C'de suya döner. Suyun üstünde yüzer. |
-| Metal | `METAL` | `M` | statik | — | Isıyı çok hızlı iletir (K 1,6, C 8). 450 °C'den sonra kızarır, 1400 °C'de erir. |
-| Erimiş metal | `MOLTEN_METAL` | `E` | sıvı | 40 | Doğuş 1450 °C. 1300 °C'de metale döner. Lavdan ağırdır, lavın içinde batar. |
+| Buz | `ICE` | `B` | statik | — | Doğuş −15 °C, K 0,12, C 3. +1 °C'de suya döner (gizli ısı 300). Su −1 °C'de buza döner; göl yüzeyden donar. |
+| Kar | `SNOW` | `K` | toz | 8 | Doğuş −8 °C, yalıtkan (K 0,01, C 1). +1 °C'de suya döner (gizli ısı 30, buzdan hızlı). Suyun üstünde yüzer. |
+| Metal | `METAL` | `M` | statik | — | Isıyı çok hızlı iletir (K 1,6, C 8; havaya kayıpla ~10 hücre menzil). 450 °C'den sonra kızarır, 1400 °C'de erir (gizli ısı 1200). |
+| Erimiş metal | `MOLTEN_METAL` | `E` | sıvı | 40 | Doğuş 1450 °C, K 0,8, C 4. 1300 °C'de metale döner (gizli ısı 400). Lavdan ağırdır, lavın içinde batar. |
 | Magma kaynağı | `MAGMA` | — | statik | — | Seçicide yok; sahneler yerleştirir. Sabit 1200 °C ısı kaynağıdır. |
 | Çoğaltıcı | `CLONER` | `X` | statik | — | **Mevcut (0.10.0 geliştirme).** Bkz. §4.5. |
 | Yutucu | `SINK` | `Y` | statik | — | **Mevcut (0.10.0 geliştirme).** Bkz. §4.5. |

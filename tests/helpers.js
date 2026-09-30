@@ -21,6 +21,11 @@ export const CHAR_TO_MAT = {
   a: MAT.ASH,
   C: MAT.CLONER,
   V: MAT.SINK,
+  I: MAT.ICE,
+  '*': MAT.SNOW,
+  M: MAT.METAL,
+  m: MAT.MOLTEN_METAL,
+  X: MAT.MAGMA,
 };
 const MAT_TO_CHAR = Object.fromEntries(Object.entries(CHAR_TO_MAT).map(([c, m]) => [m, c]));
 

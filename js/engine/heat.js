@@ -9,7 +9,7 @@
 // - Uyuyan satırlar: satırda ve iki komşusunda ortamdan SLEEP_EPS'ten fazla sapan ya da eşik
 //   adayı hücre yoksa satır hedef tampona olduğu gibi kopyalanır (bilinçli yaklaşıklık: ±SLEEP_EPS).
 // Yalnızca aritmetik (Math.sin/exp/pow yok) ve sim RNG'si: deterministik.
-import { MAT, MATERIALS } from './materials.js';
+import { MAT, MATERIALS, PROGRESS_SCALE } from './materials.js';
 import { emitSteam, initialLife } from './reactions.js';
 
 export const HEAT = Object.freeze({
@@ -28,6 +28,7 @@ const {
 const EMPTY = MAT.EMPTY;
 const STEAM = MAT.STEAM;
 const U32 = 4294967296;
+const DECAY = HEAT.PROGRESS_DECAY * PROGRESS_SCALE; // sayaç adımı cinsinden
 
 // hot[y + 1]: iç satır y sıcak mı. hot[0] ve hot[height + 1] kenar satırlarıdır, hep 0.
 export function createHeatState(height) {
@@ -69,9 +70,13 @@ function markHotRows(world, a, hot, amb) {
 
 const rowActive = (state, y) => !state.sleep || state.hot[y] !== 0 || state.hot[y + 1] !== 0 || state.hot[y + 2] !== 0;
 
-// Eşiği aşan ısıyı ilerleme sayacına ekler; latent'e ulaştıysa true.
-function addProgress(life, i, energy, latent) {
-  const v = life[i] + Math.round(energy);
+// Eşiği aşan ısıyı ilerleme sayacına ekler (sabit noktalı; kesir sim RNG'siyle stokastik yuvarlanır,
+// böylece çok küçük fazlalar da beklenen değerde birikir); latent'e ulaştıysa true.
+function addProgress(life, rng, i, energy, latent) {
+  const q = energy * PROGRESS_SCALE;
+  let add = q | 0;
+  if (rng.nextU32() < (q - add) * U32) add++;
+  const v = life[i] + add;
   if (v >= latent) return true;
   life[i] = v > 65535 ? 65535 : v;
   return false;
@@ -100,15 +105,15 @@ function applyThermalRules(world, rng, state) {
       if (HAS_PHASE[t] !== 0) {
         if (T > UP_AT[t]) {
           temp[i] = UP_AT[t];
-          if (addProgress(life, i, (T - UP_AT[t]) * CAP[t], UP_LATENT[t])) transition(world, rng, i, UP_INTO[t], UP_VANISH[t]);
+          if (addProgress(life, rng, i, (T - UP_AT[t]) * CAP[t], UP_LATENT[t])) transition(world, rng, i, UP_INTO[t], UP_VANISH[t]);
           continue;
         }
         if (T < DOWN_AT[t]) {
           temp[i] = DOWN_AT[t];
-          if (addProgress(life, i, (DOWN_AT[t] - T) * CAP[t], DOWN_LATENT[t])) transition(world, rng, i, DOWN_INTO[t], DOWN_VANISH[t]);
+          if (addProgress(life, rng, i, (DOWN_AT[t] - T) * CAP[t], DOWN_LATENT[t])) transition(world, rng, i, DOWN_INTO[t], DOWN_VANISH[t]);
           continue;
         }
-        if (life[i] !== 0) life[i] = life[i] > HEAT.PROGRESS_DECAY ? life[i] - HEAT.PROGRESS_DECAY : 0;
+        if (life[i] !== 0) life[i] = life[i] > DECAY ? life[i] - DECAY : 0;
       }
       if (T >= IGNITE_AT[t]) {
         if (rng.nextU32() < ignite) {
