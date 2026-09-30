@@ -41,7 +41,7 @@ Tarayıcıda çalışan, grid tabanlı bir **materyal ve fizik sandbox'ı**. Kum
 > Planlanan kısayollar. Uygulandıkça bu tablo güncellenir.
 
 | Tuş | İşlev |
-|---|---|
+| --- | --- |
 | `1` … `9`, `0` | Sand, Water, Stone, Fire, Wood, Steam, Oil, Lava, Plant, Eraser |
 | `G` | Glass |
 | `Space` | Pause / Play |

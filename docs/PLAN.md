@@ -161,7 +161,7 @@ renderer.capture();                          // → Promise<Blob> (PNG)
 - Tüm kurallar en fazla 1 hücre uzağa bakar. Bu, assert ile doğrulanır.
 
 | Array | Tip | İçerik |
-|---|---|---|
+| --- | --- | --- |
 | `type` | Uint8Array | materyal id (0 = EMPTY/hava) |
 | `variant` | Uint8Array | parçacığa özgü kozmetik ton tohumu; parçacıkla birlikte taşınır |
 | `life` | Uint16Array | anlamı materyale göre değişen sayaç: fire ömrü, yanma ilerlemesi, kum ısısı, lava soğuması, plant büyüme bütçesi, steam yoğuşma zamanlayıcısı |
@@ -185,7 +185,7 @@ renderer.capture();                          // → Promise<Blob> (PNG)
 EMPTY'yi "hava" kabul edip iç referans yoğunluğunu **5** yapıyorum. Böylece "gaz < hava < sıvı" sıralaması tek kuralla çalışıyor. Senin verdiğin oranlar aynen korunuyor.
 
 | Materyal | Tür | Yoğunluk | Not |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Steam | gaz | 2 | yükselir, sürüklenir, yoğuşur |
 | Fire | gaz | 3 | ömürlü, titrer, tutuşturur |
 | EMPTY (hava) | — | 5 | referans |
@@ -227,7 +227,7 @@ Görsel yön: jeolojik katmanlar, koyu toprak tonları ve pirinç vurgular.
 ## B. Temel Teknik Kararlar
 
 | # | Konu | Karar | Kısa gerekçe |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | B1 | Vanilla mı Vite mı | **Vanilla JS + native ES modules, build yok** | Yaklaşık 25 modül HTTP/2 üzerinde sorun olmaz. Çalışan kod kaynak kodla aynıdır, bu da debug'ı kolaylaştırır. 0 dependency. HMR ve minify bu ölçekte belirgin fayda sağlamaz. `package.json` yalnızca `node --test` ve dev script'leri içindir. TypeScript kullanılmaz; gerekirse JSDoc tipleri eklenir. |
 | B2 | Grid | **Sabit iç grid (Seçenek B)** | Ayrıntılar aşağıda. |
 | B3 | Temperature | **v1'de per-cell temperature yok** | Ayrıntılar aşağıda. |
@@ -276,7 +276,7 @@ Görsel yön: jeolojik katmanlar, koyu toprak tonları ve pirinç vurgular.
 - **Komşu örnekleme:** sahip hücre her tick 8 komşusundan **rastgele birini** örnekler. Bu, sabit sıradan kaynaklanan bias'ı önler ve daha ucuzdur.
 
 | Etkileşim | Sahip | Sonuç |
-|---|---|---|
+| --- | --- | --- |
 | Fire ↔ Wood/Plant/Oil | Fire | hedef → BURNING_* (olasılık = yanıcılık) |
 | Fire ↔ Water | Fire | Water → Steam, Fire söner |
 | BURNING_* ↔ yanıcı / boşluk | BURNING_* | yangın yayılır; üstteki boşluğa Fire üretir (üst sınırlı) |
@@ -751,7 +751,7 @@ Bu roadmap Phase 0'da `docs/DEVELOPMENT.md`'ye taşınacak.
 - Sonuçlar benchmark log tablosunda karşılaştırılır.
 
 | Sistem | Yöntem |
-|---|---|
+| --- | --- |
 | Physics | ASCII fixture'lı deterministik testler; korunum, bias ve stamp invariant'ları |
 | Reactions | izole senaryolar, oran ve sınır testleri, 10k tick stabilite |
 | Renderer | saf parçalar Node'da (LUT, endianness, ölçek, `clientToCell`); view hash'i değişmezliği; MCP ekran görüntüsü |
@@ -770,7 +770,7 @@ Bu roadmap Phase 0'da `docs/DEVELOPMENT.md`'ye taşınacak.
 ## E. Teknik Riskler
 
 | Risk | Mitigation |
-|---|---|
+| --- | --- |
 | Directional bias | tick XOR satır paritesi, rastgele köşegen seçimi, kalıcı sıvı yönü, bias testi |
 | Double update | stamp; stamp'li hedefle swap yok; transform/spawn edilen hücre de stamp'lenir |
 | Reaksiyonların çift işlenmesi / oran bias'ı | tek sahip tablosu, rastgele tek komşu örnekleme |

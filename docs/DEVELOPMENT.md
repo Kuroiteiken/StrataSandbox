@@ -9,7 +9,7 @@ Bu dosya projenin canlı geliştirme takibidir.
 ## Kurallar
 
 | İşaret | Anlamı |
-|---|---|
+| --- | --- |
 | `[ ]` | Başlanmadı |
 | `[~]` | Devam ediyor |
 | `[x]` | Tamamlandı. Kod bitti ve test edildi. Test edilmeden `[x]` yapılmaz. |
@@ -149,29 +149,51 @@ node tools/check-paths.js  # path büyük/küçük harf + root-absolute kontrol�
 
 ### Phase 3 — Reaction System
 
-- [ ] `reactions.js`: `ignite`, `heat`, `cool`, `transform`, `spawnAbove`, rastgele tek komşu örnekleme
-- [ ] Fire: ömür, sönme, tutuşturma, Water → Steam
-- [ ] BURNING_WOOD:
-  - [ ] yanma süresi, kararma
-  - [ ] Fire üretimi (üst sınırlı), yayılma
-  - [ ] suyla sönme
-  - [ ] sonunda EMPTY ya da Ash
-- [ ] BURNING_PLANT, BURNING_OIL
-- [ ] Lava:
-  - [ ] Water → Steam, soğuma sayacı → Stone
-  - [ ] yanıcıları tutuşturma
-  - [ ] izole lavanın yavaş soğuması
-- [ ] Sand ısı birikimi → Glass
-- [ ] Steam yoğuşma → Water
-- [ ] Plant: su tüketerek büyüme, miras bütçe, global tick üst sınırı
-- [ ] Ash
-- [ ] **Test:**
-  - [ ] Her reaksiyon izole senaryoda doğru sonucu verir
-  - [ ] Plant büyümesi sınırlıdır
-  - [ ] Steam kapalı kutuda yoğuşur
-  - [ ] Kaynaksız Fire temizlenir
-  - [ ] 10k tick lava+su stabilitesi
-  - [ ] Hiçbir reaksiyon çift sayılmaz (oran testi)
+- [x] `reactions.js`:
+  - [x] tek sahip kuralı; tick başına rastgele tek komşu örneklemesi (ateş: 2)
+  - [x] `become`/`vanish`/`ignite`, `initialLife`, tick başına ateş ve büyüme bütçeleri
+- [x] Materyal tabloları: `REACTIVE`, `FLAMMABILITY`/`BURNS_INTO`, `LIFE_MIN`/`LIFE_SPAN`, `EMIT`/`DOUSE`/`ASH_CHANCE`/`EXTINGUISH_TO`, gaz `RISE`
+- [x] Fire:
+  - [x] ömür 10–26 tick
+  - [x] tutuşturma
+  - [x] Water → Steam ve sönme
+  - [x] `rise` 0.65 (yakıtın yanında oyalanır)
+- [x] BURNING_WOOD:
+  - [x] yanma süresi 300–600 tick
+  - [x] üstüne ateş üretme (tick başına dünya geneli 400 sınırı)
+  - [x] yayılma
+  - [x] suyla sönme → Wood
+  - [x] sonunda %30 Ash, aksi halde boşluk
+- [x] BURNING_PLANT (hızlı yanma), BURNING_OIL (akan yanan sıvı, ateşi besler)
+- [x] Lava:
+  - [x] Water → Steam + soğuma sayacı → Stone
+  - [x] yanıcıları tutuşturma
+  - [x] havayla temas edince yavaş kabuk bağlama
+- [x] Sand ısınması → Glass
+  - [x] lava kumu ısıtır, kum her tick 1 soğur (plandan sapma, bkz. karar notları)
+- [x] Steam yoğuşma: ömür 240–480; %60 Water, aksi halde kaybolur
+- [x] Plant:
+  - [x] suyu tüketerek büyüme (bitki + su korunur)
+  - [x] miras bütçe (12)
+  - [x] tick başına en fazla 24 büyüme
+- [x] Ash (hafif toz)
+- [x] Spawn anında materyale göre `life` başlatma (Phase 2'den devreden)
+- [x] **Test** (`tests/reactions.test.js`; suite 142/142; mutasyonlarla doğrulandı):
+  - [x] Her reaksiyon izole senaryoda doğru sonucu verir:
+    - [x] ateş sönmesi, odun tutuşması, tükenme, söndürme
+    - [x] bitki ve yağ yangını
+    - [x] lava + su, lava + odun
+    - [x] kum → cam (kısa temasta cam yok), soğuma
+    - [x] lava kabuğu; lava gölü sıvı kalır
+  - [x] Plant büyümesi hem suyla (korunum) hem bütçeyle sınırlı; susuz büyüme yok
+  - [x] Steam kapalı kutuda yoğuşur (bir kısmı su olarak döner)
+  - [x] Kaynaksız Fire temizlenir
+  - [x] 10k tick lava + su stabilitesi (parçacık sayısı artmaz, değişmezler temiz)
+  - [x] Tek ateş tick başına en fazla 1 su buharlaştırır
+  - [x] Yangın bir tick'te birden fazla sıra zincirlenmez (transform damgası)
+  - [x] Reaksiyonlar deterministik
+  - [x] Tarayıcı: kütük yanıp küle dönüyor, buhar yoğuşuyor, değişmezler temiz
+  - [x] Performans (Node, demo): medyan 0,73 ms/tick, p95 1,15 ms
 
 ### Phase 4 — Renderer
 
@@ -368,6 +390,24 @@ Uygulama sırasında plandan sapan ya da planın cevaplamadığı kararlar. Kal�
   - Gözlem: Playwright'ın açtığı pencere örtülü/arka planda olduğunda Chrome rAF'i ~1 Hz'e düşürüyor (ana thread boşta; saniyede 211 `setTimeout`).
   - Karar: fizik maliyeti Node'da ölçülüyor. Gerçek FPS ölçümü Phase 10 benchmark'ı ve manuel testle yapılacak.
 
+- **2026-09-30 · Phase 3 — Kum ısınmasının sahibi lava.**
+  - Karar: kumu lava ısıtıyor; kum yalnızca ucuz bir soğuma adımı yapıyor (tick başına −1, RNG'siz).
+  - Plandaki hali: kumun kendisi lavayı yoklayacaktı.
+  - Neden: büyük kum yığınlarının her tick rastgele komşu örneklemesi pahalı; lava hücreleri çok daha az. Tek sahip ilkesi korunuyor: ısıtma lavada, soğuma kumda (ayrı etkileşimler).
+  - Yanlışsa maliyeti: oranların yeniden ayarlanması.
+- **2026-09-30 · Phase 3 — Ateş tick başına 2 komşu örnekliyor; `rise` 0.65.**
+  - Neden: tek örnekle, yağın hemen üstündeki bir kıvılcım yağı yalnızca 11/40 oranında tutuşturuyordu ("kolay tutuşmalı" gereksinimi karşılanmıyordu). Şimdi oran 27/40; fırça ise çok hücre bırakıyor.
+  - Etkisi: ateş ilk kaynattığı suda söndüğü için "tick başına en fazla 1 buhar" özelliği korunuyor.
+- **2026-09-30 · Phase 3 — Yanan yağ suyla sönmüyor.**
+  - Karar: `douse: 0`.
+  - Neden: yağ suyun üstünde yüzer ve yanmaya devam eder.
+- **2026-09-30 · Phase 3 — Lava kabuk bağlıyor.**
+  - Karar: havayla temas eden lava yavaşça soğuyor (tick başına örneklenen komşu hava ise %10 olasılıkla +1). Hava görmeyen lava gölü sıvı kalıyor.
+  - Plandaki "izole lava yavaş soğur" maddesinin fiziksel karşılığı.
+- **2026-09-30 · Phase 3 — Phase 2 testleri reaksiyonlara uyarlandı.**
+  - "Sand lavanın üstünde kalır" testi artık cama dönüşmeye izin veriyor.
+  - "Reaksiyonsuz karışım" testi reaktif lava ve buharı çıkarıp Ash ekliyor.
+
 ### Phase 0–1 bağımsız inceleme (2026-09-30)
 
 Taze bağlamlı bir reviewer ajanı `ade40c2..f0956b6` aralığını inceledi. Critical bulgu çıkmadı.
@@ -453,5 +493,5 @@ Her fazın sonunda ilgili maddeler işaretlenir. Tam tur Phase 12'de yapılır.
 Benchmark sahnesi (Phase 7) ve `tools/bench.js` (Phase 10) hazır olduğunda doldurulacak.
 
 | Tarih | Commit | Makine / tarayıcı | Grid | Parçacık | ms/tick (median) | ms/tick (p95) | Not |
-|---|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- | --- |
 | — | — | — | — | — | — | — | — |

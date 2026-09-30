@@ -4,6 +4,7 @@ import { World } from './world.js';
 import { Rng } from './rng.js';
 import { MAT, KIND, MATERIALS } from './materials.js';
 import { stepPowder, stepLiquid, stepGas } from './kernels.js';
+import { react, createReactionState, beginReactionTick, initialLife } from './reactions.js';
 
 export const SPEEDS = Object.freeze([0.5, 1, 2, 4]);
 
@@ -14,7 +15,7 @@ const MAX_TICKS_PER_FRAME = 8;
 // Böylece 50 ms @ 60 TPS gibi değerler kayan nokta hatası olmadan tam sayı çıkar.
 const TICK_UNIT = 1000;
 
-const { KIND: KIND_OF, GAS_IDS } = MATERIALS;
+const { KIND: KIND_OF, GAS_IDS, REACTIVE } = MATERIALS;
 const EMPTY = MAT.EMPTY;
 const POWDER = KIND.POWDER;
 const LIQUID = KIND.LIQUID;
@@ -45,6 +46,7 @@ export class Simulation {
     this.physicsMs = 0;
     this._acc = 0;
     this._now = now;
+    this._reactions = createReactionState();
 
     const sim = this;
     const w = this.world;
@@ -122,8 +124,10 @@ export class Simulation {
     const clock = w.clock;
     const rng = this.rng;
     const parity = this.tick & 1;
+    const rs = this._reactions;
+    beginReactionTick(rs);
 
-    // Geçiş 1 — aşağıdan yukarı: tozlar ve sıvılar (düşen her şey).
+    // Geçiş 1 — aşağıdan yukarı: reaktif hücreler (statikler dahil), tozlar ve sıvılar.
     for (let y = height - 1; y >= 0; y--) {
       const rowStart = (y + 1) * stride + 1;
       const leftToRight = ((y ^ parity) & 1) === 0; // tick XOR satır paritesi
@@ -132,6 +136,8 @@ export class Simulation {
         const t = type[i];
         if (t === EMPTY || stamp[i] === clock) continue;
         const kind = KIND_OF[t];
+        if (kind === GAS) continue; // gazlar geçiş 2'de
+        if (REACTIVE[t] !== 0 && react(w, rng, i, t, rs)) continue;
         if (kind === POWDER) stepPowder(w, rng, i, t);
         else if (kind === LIQUID) stepLiquid(w, rng, i, t);
       }
@@ -146,7 +152,9 @@ export class Simulation {
           const i = leftToRight ? rowStart + n : rowStart + width - 1 - n;
           const t = type[i];
           if (t === EMPTY || stamp[i] === clock) continue;
-          if (KIND_OF[t] === GAS) stepGas(w, rng, i, t);
+          if (KIND_OF[t] !== GAS) continue;
+          if (REACTIVE[t] !== 0 && react(w, rng, i, t, rs)) continue;
+          stepGas(w, rng, i, t);
         }
       }
     }
@@ -178,7 +186,7 @@ export class Simulation {
     if (!def || def.internal) return false;
     const i = w.index(x, y);
     const h = spawnHash(i, this.version);
-    w.set(i, material, h & 255, 0, (h >>> 8) & 1);
+    w.set(i, material, h & 255, initialLife(material, h >>> 9), (h >>> 8) & 1);
     this.version++;
     return true;
   }

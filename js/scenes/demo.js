@@ -35,6 +35,7 @@ export function buildDemo(sim) {
   rect(sim, X(0.78), Y(0.3), X(0.9), Y(0.42), MAT.OIL); // sağ rafta yağ
   rect(sim, X(0.84), Y(0.86), X(0.94), Y(0.97), MAT.LAVA); // köşede lava
   rect(sim, X(0.34), Y(0.9), X(0.66), Y(0.95), MAT.STEAM); // havuzun dibinde buhar
+  rect(sim, X(0.1), Y(0.93), X(0.18), Y(0.94), MAT.FIRE); // kütüğü tutuşturan kıvılcımlar
 }
 
 // Demo sırasında sürekli akıtılan kaynaklar.

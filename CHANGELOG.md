@@ -5,6 +5,22 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) yaklaşımını 
 
 ## [Unreleased]
 
+### Added — Phase 3 (Reaction System)
+
+- `js/engine/reactions.js`:
+  - Tek sahip kuralı ve tick başına rastgele komşu örneklemesi.
+  - Ayarlanabilir oranlar (`RATES`), tick başına ateş ve büyüme bütçeleri.
+- Yeni iç materyaller: **Burning Wood**, **Burning Plant**, **Burning Oil** (akan yanan sıvı), **Ash**.
+- Reaksiyonlar:
+  - Fire → Wood/Plant/Oil'i tutuşturur, suyu buharlaştırıp söner.
+  - Yanan materyaller alev üretir, yayılır, suyla söner (yağ hariç), sonunda küle ya da boşluğa döner.
+  - Lava → suyu buharlaştırır ve soğuyarak taşa döner, yanıcıları tutuşturur, kumu ısıtıp cama dönüştürür. Havayla temas eden yüzeyi yavaşça kabuk bağlar.
+  - Steam → ömrü bitince çoğunlukla suya yoğuşur.
+  - Plant → suyu tüketerek, miras bütçeyle sınırlı büyür.
+- Materyal başına spawn ömrü (`life: [min, max]`). Boyanan ateş ve buhar ömürle başlar.
+- Gaz `rise` parametresi: ateş yakıtın yanında oyalanır.
+- Testler: `tests/reactions.test.js` (toplam 142).
+
 ### Added — Phase 2 (Temel materyaller)
 
 - Yeni materyaller:

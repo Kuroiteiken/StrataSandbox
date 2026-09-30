@@ -2,7 +2,7 @@
 // materials.js'in derlenmiş tablolarından okunur. Hot path: allocation yok.
 import { MAT, KIND, MATERIALS } from './materials.js';
 
-const { DISPLACE, KIND: KIND_OF, DISPERSION, SPREAD, DRIFT } = MATERIALS;
+const { DISPLACE, KIND: KIND_OF, DISPERSION, SPREAD, DRIFT, RISE } = MATERIALS;
 const EMPTY = MAT.EMPTY;
 const STATIC = KIND.STATIC;
 
@@ -84,6 +84,8 @@ export function stepLiquid(world, rng, i, t) {
 
 // Gazlar ikinci (yukarıdan aşağı) geçişte güncellenir.
 export function stepGas(world, rng, i, t) {
+  const rise = RISE[t];
+  if (rise < 255 && (rng.nextU32() & 255) >= rise) return; // bu tick yerinde oyalan
   const above = i - world.stride;
   const d = rng.bit() === 1 ? 1 : -1;
   const drift = DRIFT[t];

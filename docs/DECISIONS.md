@@ -50,6 +50,9 @@ Burada yalnızca gerçekten önemli teknik kararlar tutulur. Her kayıt dört ba
   - Sabit komşu sırası yön ve oran bias'ı üretir.
 - **Alternatif:** Her iki tarafın da kontrol etmesi, sabit komşu sırası.
 - **Sonuç:** Reddedildi.
+- **Uygulamadaki bilinçli istisnalar (Phase 3):**
+  - Ateş tick başına 2 komşu örnekler. Kısa ömürlü ve hareketli olduğu için tek örnekle yakıtı çoğu zaman tutuşturamıyordu.
+  - Kum ısınmasını lava yönetir; kum yalnızca soğur. Büyük kum yığınlarında örnekleme maliyetini önler. Tablo: ARCHITECTURE.md §5.
 
 ### ADR-005 — v1'de full-grid update; active chunk ölçüme göre
 

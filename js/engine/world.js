@@ -23,6 +23,10 @@ export class World {
     this.stamp = new Uint16Array(this.size);
     this.counts = new Uint32Array(256);
 
+    // 8 komşu için index farkları (reaksiyon örneklemesi): üst sıra, yanlar, alt sıra.
+    const st = this.stride;
+    this.neighborOffsets = Int32Array.of(-st - 1, -st, -st + 1, -1, 1, st - 1, st, st + 1);
+
     this.clock = 1; // güncel update stamp değeri
     this.moves = 0; // bu tick'teki yer değiştirme sayısı (istatistik)
     this.clear();

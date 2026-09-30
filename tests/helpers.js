@@ -15,6 +15,10 @@ export const CHAR_TO_MAT = {
   W: MAT.WOOD,
   G: MAT.GLASS,
   P: MAT.PLANT,
+  B: MAT.BURNING_WOOD,
+  b: MAT.BURNING_PLANT,
+  O: MAT.BURNING_OIL,
+  a: MAT.ASH,
 };
 const MAT_TO_CHAR = Object.fromEntries(Object.entries(CHAR_TO_MAT).map(([c, m]) => [m, c]));
 

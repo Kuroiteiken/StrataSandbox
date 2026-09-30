@@ -98,7 +98,7 @@ test('Sand yağın içinden dibe batar', () => {
   assert.ok([0, 1, 2].some((x) => cellType(sim, x, 3) === MAT.SAND), toAscii(sim));
 });
 
-test('Sand lavanın üstünde kalır', () => {
+test('Sand lavanın üstünde kalır (batmaz; zamanla cama dönüşebilir)', () => {
   const sim = makeSim(`
     .S.
     ...
@@ -106,7 +106,9 @@ test('Sand lavanın üstünde kalır', () => {
     LLL
   `);
   runTicks(sim, 200);
-  assert.equal(cellType(sim, 1, 1), MAT.SAND, toAscii(sim));
+  const top = cellType(sim, 1, 1);
+  assert.ok(top === MAT.SAND || top === MAT.GLASS, toAscii(sim));
+  for (let y = 2; y < 4; y++) for (let x = 0; x < 3; x++) assert.notEqual(cellType(sim, x, y), MAT.SAND);
 });
 
 test('Lava havada normal hızla (tick başına bir hücre) düşer', () => {
@@ -328,11 +330,12 @@ test('Wood, Glass ve Plant akan su ve kum altında yerinden oynamaz', () => {
   assert.equal(cellType(sim, 4, 2), MAT.PLANT);
 });
 
-test('Reaksiyonsuz karışık kutuda her materyalin miktarı korunur', () => {
+test('Birbiriyle reaksiyona girmeyen karışık kutuda her materyalin miktarı korunur', () => {
   const W = 30;
   const H = 20;
   const sim = new Simulation({ width: W, height: H, seed: 'mix', debug: true });
-  const mats = [MAT.SAND, MAT.WATER, MAT.OIL, MAT.LAVA, MAT.STEAM];
+  // Lava ve buhar reaksiyona girdiği için (Phase 3) karışımda yok.
+  const mats = [MAT.SAND, MAT.WATER, MAT.OIL, MAT.ASH];
   const expected = new Map(mats.map((m) => [m, 0]));
   for (let y = 0; y < 12; y++) {
     for (let x = 0; x < W; x++) {

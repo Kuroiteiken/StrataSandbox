@@ -22,6 +22,11 @@ export const MAT = Object.freeze({
   WOOD: 9,
   GLASS: 10,
   PLANT: 11,
+  // Paletten seçilmeyen (hidden) durumlar; reaksiyonlarla oluşur.
+  BURNING_WOOD: 12,
+  BURNING_PLANT: 13,
+  BURNING_OIL: 14,
+  ASH: 15,
 });
 
 // Ortak alanlar:
@@ -33,19 +38,46 @@ export const MAT = Object.freeze({
 //   drag:       içinden geçen ağır parçacığı yavaşlatma (0 = direnç yok, 1 = geçilmez)
 // Gaz alanları:
 //   drift: yükselirken köşegeni önce deneme olasılığı (yatay sürüklenme)
+//   rise:  tick başına hareket etme olasılığı (varsayılan 1; ateş yakıtın yanında oyalanır)
+// Reaksiyon alanları:
+//   life:      [min, max] spawn ömrü/sayacı (ateş ömrü, buhar yoğuşma süresi, yanma süresi, bitki bütçesi)
+//   flammable: ateş/yanan komşu örneklediğinde tutuşma olasılığı; burnsInto: tutuşunca olacağı materyal
+//   burn:      yanan durumlar için { emit: üstüne ateş üretme, douse: suyla sönme, ash: kül bırakma,
+//              extinguishTo: sönünce olacağı materyal }
+//   hidden:    materyal seçicide gösterilmez (programatik olarak yazılabilir)
 export const MATERIAL_DEFS = [
   { id: MAT.EMPTY, key: 'EMPTY', name: 'Empty', kind: KIND.NONE, density: 5, color: null },
   { id: MAT.WALL, key: 'WALL', name: 'Wall', kind: KIND.STATIC, density: 255, color: '#000000', internal: true },
-  { id: MAT.SAND, key: 'SAND', name: 'Sand', kind: KIND.POWDER, density: 20, color: '#d9bb82' },
+  { id: MAT.SAND, key: 'SAND', name: 'Sand', kind: KIND.POWDER, density: 20, color: '#d9bb82', reactive: true },
   { id: MAT.STONE, key: 'STONE', name: 'Stone', kind: KIND.STATIC, density: 255, color: '#6e6964' },
   { id: MAT.WATER, key: 'WATER', name: 'Water', kind: KIND.LIQUID, density: 10, color: '#3f7fc2', dispersion: 5, spread: 1, drag: 0.5 },
-  { id: MAT.OIL, key: 'OIL', name: 'Oil', kind: KIND.LIQUID, density: 8, color: '#6a5424', dispersion: 2, spread: 0.6, drag: 0.6 },
-  { id: MAT.LAVA, key: 'LAVA', name: 'Lava', kind: KIND.LIQUID, density: 30, color: '#e4531e', dispersion: 1, spread: 0.2, drag: 0.9 },
-  { id: MAT.STEAM, key: 'STEAM', name: 'Steam', kind: KIND.GAS, density: 2, color: '#c8d2da', drift: 0.45 },
-  { id: MAT.FIRE, key: 'FIRE', name: 'Fire', kind: KIND.GAS, density: 3, color: '#ff8a2a', drift: 0.3 },
-  { id: MAT.WOOD, key: 'WOOD', name: 'Wood', kind: KIND.STATIC, density: 255, color: '#7a5232' },
+  {
+    id: MAT.OIL, key: 'OIL', name: 'Oil', kind: KIND.LIQUID, density: 8, color: '#6a5424',
+    dispersion: 2, spread: 0.6, drag: 0.6, flammable: 1, burnsInto: MAT.BURNING_OIL,
+  },
+  { id: MAT.LAVA, key: 'LAVA', name: 'Lava', kind: KIND.LIQUID, density: 30, color: '#e4531e', dispersion: 1, spread: 0.2, drag: 0.9, reactive: true },
+  { id: MAT.STEAM, key: 'STEAM', name: 'Steam', kind: KIND.GAS, density: 2, color: '#c8d2da', drift: 0.45, life: [240, 480], reactive: true },
+  { id: MAT.FIRE, key: 'FIRE', name: 'Fire', kind: KIND.GAS, density: 3, color: '#ff8a2a', drift: 0.3, rise: 0.65, life: [10, 26], reactive: true },
+  { id: MAT.WOOD, key: 'WOOD', name: 'Wood', kind: KIND.STATIC, density: 255, color: '#7a5232', flammable: 0.25, burnsInto: MAT.BURNING_WOOD },
   { id: MAT.GLASS, key: 'GLASS', name: 'Glass', kind: KIND.STATIC, density: 255, color: '#a9d6d4' },
-  { id: MAT.PLANT, key: 'PLANT', name: 'Plant', kind: KIND.STATIC, density: 255, color: '#4c9a3a' },
+  {
+    id: MAT.PLANT, key: 'PLANT', name: 'Plant', kind: KIND.STATIC, density: 255, color: '#4c9a3a',
+    life: [12, 12], flammable: 0.5, burnsInto: MAT.BURNING_PLANT, reactive: true,
+  },
+  {
+    id: MAT.BURNING_WOOD, key: 'BURNING_WOOD', name: 'Burning Wood', kind: KIND.STATIC, density: 255, color: '#9a4a1e',
+    hidden: true, reactive: true, life: [300, 600], burn: { emit: 0.12, douse: 0.5, ash: 0.3, extinguishTo: MAT.WOOD },
+  },
+  {
+    id: MAT.BURNING_PLANT, key: 'BURNING_PLANT', name: 'Burning Plant', kind: KIND.STATIC, density: 255, color: '#c8682a',
+    hidden: true, reactive: true, life: [30, 60], burn: { emit: 0.3, douse: 0.7, ash: 0.05, extinguishTo: MAT.PLANT },
+  },
+  {
+    id: MAT.BURNING_OIL, key: 'BURNING_OIL', name: 'Burning Oil', kind: KIND.LIQUID, density: 8, color: '#f06a1c',
+    dispersion: 2, spread: 0.6, drag: 0.6, hidden: true, reactive: true, life: [120, 240],
+    burn: { emit: 0.35, douse: 0, ash: 0, extinguishTo: MAT.OIL },
+  },
+  { id: MAT.ASH, key: 'ASH', name: 'Ash', kind: KIND.POWDER, density: 12, color: '#8c8680', hidden: true },
 ];
 
 const VALID_KINDS = new Set(Object.values(KIND));
@@ -82,6 +114,16 @@ export function compileMaterials(defs) {
   const DISPERSION = new Uint8Array(256);
   const SPREAD = new Uint8Array(256);
   const DRIFT = new Uint8Array(256);
+  const RISE = new Uint8Array(256);
+  const REACTIVE = new Uint8Array(256);
+  const FLAMMABILITY = new Uint8Array(256);
+  const BURNS_INTO = new Uint8Array(256);
+  const LIFE_MIN = new Uint16Array(256);
+  const LIFE_SPAN = new Uint16Array(256);
+  const EMIT = new Uint8Array(256);
+  const DOUSE = new Uint8Array(256);
+  const ASH_CHANCE = new Uint8Array(256);
+  const EXTINGUISH_TO = new Uint8Array(256);
   const DISPLACE = new Uint8Array(256 * 256);
   const byId = new Array(256).fill(null);
   const byKey = {};
@@ -100,6 +142,23 @@ export function compileMaterials(defs) {
     DISPERSION[def.id] = def.dispersion ?? 0;
     SPREAD[def.id] = toByte(def.spread ?? 0);
     DRIFT[def.id] = toByte(def.drift ?? 0);
+    RISE[def.id] = toByte(def.rise ?? 1);
+    REACTIVE[def.id] = def.reactive ? 1 : 0;
+    FLAMMABILITY[def.id] = toByte(def.flammable ?? 0);
+    BURNS_INTO[def.id] = def.burnsInto ?? 0;
+    if (def.life) {
+      const [min, max] = def.life;
+      if (!(min >= 0 && max >= min && max <= 65535)) throw new RangeError(`Geçersiz life aralığı (${def.key})`);
+      LIFE_MIN[def.id] = min;
+      LIFE_SPAN[def.id] = max - min;
+    }
+    if (def.burn) {
+      EMIT[def.id] = toByte(def.burn.emit);
+      DOUSE[def.id] = toByte(def.burn.douse);
+      ASH_CHANCE[def.id] = toByte(def.burn.ash);
+      EXTINGUISH_TO[def.id] = def.burn.extinguishTo;
+    }
+    if (def.flammable && !def.burnsInto) throw new Error(`Yanıcı materyalin burnsInto değeri yok (${def.key})`);
     if (def.kind === KIND.GAS) gasIds.push(def.id);
   }
 
@@ -115,6 +174,16 @@ export function compileMaterials(defs) {
     DISPERSION,
     SPREAD,
     DRIFT,
+    RISE,
+    REACTIVE,
+    FLAMMABILITY,
+    BURNS_INTO,
+    LIFE_MIN,
+    LIFE_SPAN,
+    EMIT,
+    DOUSE,
+    ASH_CHANCE,
+    EXTINGUISH_TO,
     DISPLACE,
     GAS_IDS: Object.freeze(gasIds),
     defs: byId,

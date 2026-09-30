@@ -23,7 +23,7 @@ Renderer.render(view, frameInfo)                                 ← state'i asl
 **Katman sınırları:**
 
 | Katman | Klasör | Kural |
-|---|---|---|
+| --- | --- | --- |
 | Physics engine | `js/engine/` | `window`/`document` kullanmaz. Node testleri import ederek bunu doğrular. `Math.random` kullanılmaz. |
 | Render engine | `js/render/` | `sim.view`'ı yalnızca okur. Fizik kuralı içermez. |
 | Uygulama | `js/app/`, `js/main.js` | Engine içindeki array'lere doğrudan erişmez; yalnızca `Simulation` API'sini kullanır. |
@@ -40,7 +40,7 @@ Renderer.render(view, frameInfo)                                 ← state'i asl
   - Tüm kurallar en fazla 1 hücre uzağa bakar.
 
 | Array | Tip | İçerik |
-|---|---|---|
+| --- | --- | --- |
 | `type` | `Uint8Array` | materyal id (0 = EMPTY/hava) |
 | `variant` | `Uint8Array` | parçacığa özgü kozmetik ton; parçacıkla birlikte taşınır |
 | `life` | `Uint16Array` | materyale göre anlamı değişen sayaç: ömür, yanma, ısı, soğuma, büyüme bütçesi |
@@ -93,13 +93,44 @@ Renderer.render(view, frameInfo)                                 ← state'i asl
 - **Yoğunluk sırası:** Steam 2 < Fire 3 < hava 5 < Oil 8 < Water 10 < Sand 20 < Lava 30. Statikler 255'tir.
 
 | Faz sırası | gaz / hava | < sıvı | < toz | < statik |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | Kural | gazlar havaya ya da daha ağır gaza doğru yükselir | sıvılar tozu itemez | toz sıvıya olasılıksal batar | statikler asla yer değiştirmez |
 
-## 5. Reaksiyon sistemi (planlandı — Phase 3)
+## 5. Reaksiyon sistemi (uygulandı — Phase 3)
 
-- **Tek sahip kuralı:** her etkileşim çiftini yalnızca bir taraf işler. Sahip hücre, her tick 8 komşusundan rastgele birini örnekler.
-- **Sıcaklık:** v1'de per-cell sıcaklık alanı yoktur. Yerel ısı ve soğuma `life` sayaçlarında tutulur (ADR-003).
+- **Kod:** `js/engine/reactions.js`.
+- **Çağrı:** Reaktif hücreler (`REACTIVE`) kendi geçişlerinde önce `react()`'i çalıştırır. `react()` true dönerse hücre dönüşmüştür ve hareket atlanır.
+- **Tek sahip:** her etkileşim çiftini yalnızca bir taraf işler.
+- **Örnekleme:** sahip hücre tick başına 8 komşudan rastgele birini örnekler. Ateş 2 örnekler.
+- **Damga:** dönüştürülen ya da oluşturulan hücre damgalanır; aynı tick'te zincirleme olmaz.
+- **Sıcaklık:** per-cell sıcaklık alanı yoktur. Yerel ısı ve soğuma `life` sayaçlarında tutulur (ADR-003).
+
+| Etkileşim | Sahip | Sonuç |
+| --- | --- | --- |
+| Fire ↔ Wood/Plant/Oil | Fire | hedef → Burning_* (olasılık = yanıcılık) |
+| Fire ↔ Water | Fire | Water → Steam, Fire söner |
+| Fire (ömür) | Fire | ömür bitince söner |
+| Burning_* ↔ yanıcı | Burning_* | yangın yayılır; üstteki boşluğa ateş üretir (tick başına dünya geneli sınır) |
+| Burning_* ↔ Water | Burning_* | söner (Wood/Plant), Water → Steam. Yanan yağ sönmez. |
+| Burning_* (ömür) | Burning_* | Ash ya da boşluk |
+| Lava ↔ Water | Lava | Water → Steam; soğuma sayacı +25; 200'de Stone |
+| Lava ↔ hava | Lava | %10 olasılıkla soğuma +1 (kabuk) |
+| Lava ↔ yanıcı | Lava | tutuşturur |
+| Lava ↔ Sand | Lava | kum ısısı +16; 300'de Glass |
+| Sand (soğuma) | Sand | ısı tick başına −1 (RNG'siz) |
+| Steam (ömür) | Steam | %60 Water, aksi halde kaybolur |
+| Plant ↔ Water | Plant | su → Plant (bütçe − 1); tick başına dünya geneli sınır |
+
+**`life` alanının anlamı materyale göre değişir:**
+
+| Materyal | `life` anlamı |
+| --- | --- |
+| Fire | kalan ömür |
+| Steam | yoğuşmaya kalan süre |
+| Burning_* | kalan yanma süresi |
+| Lava | soğuma sayacı |
+| Sand | ısı |
+| Plant | büyüme bütçesi |
 
 ## 6. Renderer (planlandı — Phase 4, 8)
 
