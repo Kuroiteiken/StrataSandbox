@@ -4,6 +4,8 @@ import { Simulation } from './engine/simulation.js';
 import { Renderer } from './render/renderer.js';
 import { chooseGridSize } from './render/layout.js';
 import { createLoop } from './app/loop.js';
+import { attachPointer } from './app/pointer.js';
+import { MAT } from './engine/materials.js';
 import { buildDemo, demoSources } from './scenes/demo.js';
 
 const DEMO_POUR_TICKS = 1800; // geçici demo: ilk ~30 sn akıt
@@ -31,6 +33,20 @@ const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 renderer.setReducedMotion(reducedMotion.matches);
 reducedMotion.addEventListener('change', (e) => renderer.setReducedMotion(e.matches));
 
+// Fırça durumu (Phase 6'da panel ve kısayollarla değiştirilecek).
+const brush = { material: MAT.SAND, size: 6, shape: 'circle', replace: false };
+
+attachPointer(canvas, {
+  renderer,
+  sim,
+  getBrush: () => brush,
+  onCursor(cell, pointerType) {
+    // Touch'ta önizleme gereksiz (parmak zaten altını kapatır).
+    const visible = cell !== null && pointerType !== 'touch';
+    renderer.setBrushPreview({ x: cell?.x, y: cell?.y, shape: brush.shape, size: brush.size, visible });
+  },
+});
+
 const resize = () => {
   const rect = viewport.getBoundingClientRect();
   renderer.resize(rect.width, rect.height, Math.min(window.devicePixelRatio || 1, MAX_DPR));
@@ -52,4 +68,4 @@ const loop = createLoop({
 });
 loop.start();
 
-if (debug) window.__strata = { sim, renderer, loop, grid };
+if (debug) window.__strata = { sim, renderer, loop, grid, brush };

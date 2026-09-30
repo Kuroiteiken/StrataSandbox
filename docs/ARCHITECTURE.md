@@ -155,12 +155,27 @@ Renderer.render(view, frameInfo)                                 ← state'i asl
   5. glow (Phase 8)
 - **Grid boyutu:** açılışta bir kez seçilir. Resize yalnızca sunumu değiştirir.
 
-## 7. Input (planlandı — Phase 5)
+## 7. Input (uygulandı — Phase 5)
 
-- **Olaylar:** Pointer Events kullanılır (mouse, touch, stylus).
-- **Çizgi:** pointer örnekleri arasında 4-connected interpolasyon yapılır.
-- **Basılı tutma:** pointer hareketsizken basılı tutulursa brush tick başına yeniden uygulanır.
-- **Undo:** snapshot tabanlıdır (ADR-010).
+- **Fırça geometrisi** (`engine/brush.js`, saf):
+  - `footprint(shape, size)`: `(dx, dy)` çiftleri; cache'li.
+  - `footprintOutline`: önizleme ana hattı.
+  - `lineCells`: boşluksuz 8-komşulu Bresenham.
+- **Boyama API'si** (`Simulation`):
+  - `paintAt` ve `paintLine(x0, y0, x1, y1, { material, size, shape, replace })`.
+  - Varsayılan: yalnızca boş ve gaz hücrelere yazar. `replace` her şeye yazar; `EMPTY` silgidir. WALL korunur.
+  - Spray, footprint hücrelerini `inputRng` ile seyreltir; fizik RNG'si tüketilmez.
+- **Basılı tutma:** `setHold` ve `releaseHold`. Fırça tick sonunda yeniden uygulanır; akış refresh rate'ten bağımsızdır.
+- **Undo** (ADR-010):
+  - `beginStroke` bekleyen bir snapshot alır.
+  - `endStroke`: stroke boyama yaptıysa bu snapshot undo noktası olur.
+  - `undo` dünyayı, sayaçları, RNG'yi ve tick'i geri yükler.
+  - İki önceden ayrılmış tampon kullanılır; Clear da geri alınabilir.
+- **Pointer** (`app/pointer.js`):
+  - Pointer Events ve capture; coalesced örneklerle çizgi.
+  - Sağ tık silgi, Shift replace.
+  - Tek pointer çizer.
+  - `onCursor` önizlemeyi günceller (touch'ta gizli).
 
 ## 8. Sahneler (planlandı — Phase 7)
 

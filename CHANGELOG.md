@@ -5,6 +5,18 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) yaklaşımını 
 
 ## [Unreleased]
 
+### Added — Phase 5 (Input / Brush / Undo)
+
+- Fırça: Circle, Square, Spray (boyut 1–16).
+  - Hızlı harekette boşluksuz çizgi (coalesced pointer olayları + Bresenham).
+  - Basılı tutunca materyal akmaya devam eder.
+  - Sağ tık geçici silgi, Shift ile üzerine yazma (replace).
+  - Mouse, touch ve stylus (Pointer Events, pointer capture, `pointercancel`).
+- Fırça önizlemesi: footprint ana hattı, spray için kesikli; touch'ta gizli.
+- Tek seviyeli undo (stroke başında snapshot; Clear da geri alınabilir). Boş stroke undo noktasını silmez.
+- Spray ayrı bir input RNG'si kullanır; fizik dizisini etkilemez.
+- Testler: brush, paint, pointer ve genişletilmiş renderer (toplam 207).
+
 ### Added — Phase 4 (Renderer)
 
 - Dinamik renkler:

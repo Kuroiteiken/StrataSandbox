@@ -5,6 +5,7 @@ import { Rng } from './rng.js';
 import { MAT, KIND, MATERIALS } from './materials.js';
 import { stepPowder, stepLiquid, stepGas } from './kernels.js';
 import { react, createReactionState, beginReactionTick, initialLife } from './reactions.js';
+import { footprint, lineCells, SPRAY_DENSITY } from './brush.js';
 
 export const SPEEDS = Object.freeze([0.5, 1, 2, 4]);
 
@@ -38,6 +39,7 @@ export class Simulation {
     this.world = new World(width, height); // engine-içi; uygulama katmanı kullanmaz
     this.seed = String(seed);
     this.rng = new Rng(this.seed, 'sim');
+    this.inputRng = new Rng(this.seed, 'input'); // spray; fizik dizisini etkilemez
     this.debug = debug;
     this.tick = 0;
     this.speed = 1;
@@ -47,6 +49,13 @@ export class Simulation {
     this._acc = 0;
     this._now = now;
     this._reactions = createReactionState();
+
+    this._hold = null; // basılı tutma: { x, y, brush } — tick başına yeniden uygulanır
+    this._strokeDirty = false;
+    // Undo: iki önceden ayrılmış snapshot (ADR-010). Biri undo noktası, diğeri bekleyen stroke.
+    this._snapshots = [];
+    this._undo = null;
+    this._pending = null;
 
     const sim = this;
     const w = this.world;
@@ -160,6 +169,13 @@ export class Simulation {
       }
     }
 
+    // Basılı tutma tick sonunda uygulanır: kaynak hücre bu tick boşaldıysa hemen yeniden dolar
+    // (kesintisiz akış); yeni hücreler bir sonraki tick hareket eder.
+    if (this._hold) {
+      const h = this._hold;
+      this.paintLine(h.x, h.y, h.x, h.y, h.brush);
+    }
+
     this.tick++;
     this.version++;
     if (this.debug) this._assertInvariants();
@@ -200,8 +216,132 @@ export class Simulation {
   }
 
   clear() {
+    // Clear da geri alınabilir: mevcut dünya undo noktası olur.
+    const snap = this._spareSnapshot();
+    this._capture(snap);
+    this._undo = snap;
     this.world.clear();
     this.version++;
+  }
+
+  // ---- Boyama (fırça) ----
+
+  paintAt(x, y, brush) {
+    return this.paintLine(x, y, x, y, brush);
+  }
+
+  // Fırçayı (x0,y0)→(x1,y1) çizgisi boyunca boşluksuz uygular; boyanan hücre sayısını döner.
+  // brush = { material, size, shape: 'circle'|'square'|'spray', replace }
+  // Varsayılan: yalnızca boş ve gaz hücrelere yazar; replace tümüne; EMPTY (silgi) her şeyi siler.
+  paintLine(x0, y0, x1, y1, brush) {
+    const material = brush.material;
+    const def = MATERIALS.defs[material];
+    if (!def || def.internal) return 0;
+    if (![x0, y0, x1, y1].every(Number.isFinite)) return 0;
+    const fp = footprint(brush.shape, brush.size);
+    const spray = brush.shape === 'spray';
+    const replace = Boolean(brush.replace);
+    let painted = 0;
+    lineCells(Math.floor(x0), Math.floor(y0), Math.floor(x1), Math.floor(y1), (cx, cy) => {
+      for (let k = 0; k < fp.length; k += 2) {
+        painted += this._paintCell(cx + fp[k], cy + fp[k + 1], material, replace, spray);
+      }
+    });
+    if (painted > 0) {
+      this.version++;
+      this._strokeDirty = true;
+    }
+    return painted;
+  }
+
+  _paintCell(x, y, material, replace, spray) {
+    const w = this.world;
+    if (!w.inBounds(x, y)) return 0;
+    if (spray && !this.inputRng.chance(SPRAY_DENSITY)) return 0;
+    const i = w.index(x, y);
+    const current = w.type[i];
+    if (material === EMPTY) {
+      if (current === EMPTY) return 0;
+      w.set(i, EMPTY, 0, 0, 0);
+      return 1;
+    }
+    if (current === material) return 0;
+    if (!replace && current !== EMPTY && KIND_OF[current] !== GAS) return 0;
+    const h = spawnHash(i, this.version);
+    w.set(i, material, h & 255, initialLife(material, h >>> 9), (h >>> 8) & 1);
+    return 1;
+  }
+
+  setHold(x, y, brush) {
+    this._hold = { x, y, brush: { ...brush } };
+  }
+
+  releaseHold() {
+    this._hold = null;
+  }
+
+  // ---- Undo (tek seviye, snapshot) ----
+
+  get canUndo() {
+    return this._undo !== null;
+  }
+
+  beginStroke() {
+    const snap = this._spareSnapshot();
+    this._capture(snap);
+    this._pending = snap;
+    this._strokeDirty = false;
+  }
+
+  // Yalnızca gerçekten bir şey değiştiren stroke undo noktası olur.
+  endStroke() {
+    if (this._pending && this._strokeDirty) this._undo = this._pending;
+    this._pending = null;
+    this._strokeDirty = false;
+  }
+
+  undo() {
+    const snap = this._undo;
+    if (!snap) return false;
+    const w = this.world;
+    w.type.set(snap.type);
+    w.variant.set(snap.variant);
+    w.life.set(snap.life);
+    w.flags.set(snap.flags);
+    w.counts.set(snap.counts);
+    this.rng.setState(snap.rng);
+    this.tick = snap.tick;
+    this._undo = null;
+    this.version++;
+    return true;
+  }
+
+  // Undo noktası olmayan tampon (gerekirse bir kez ayrılır; sonra hep yeniden kullanılır).
+  _spareSnapshot() {
+    for (const snap of this._snapshots) if (snap !== this._undo) return snap;
+    const size = this.world.size;
+    const snap = {
+      type: new Uint8Array(size),
+      variant: new Uint8Array(size),
+      life: new Uint16Array(size),
+      flags: new Uint8Array(size),
+      counts: new Uint32Array(256),
+      rng: new Uint32Array(4),
+      tick: 0,
+    };
+    this._snapshots.push(snap);
+    return snap;
+  }
+
+  _capture(snap) {
+    const w = this.world;
+    snap.type.set(w.type);
+    snap.variant.set(w.variant);
+    snap.life.set(w.life);
+    snap.flags.set(w.flags);
+    snap.counts.set(w.counts);
+    snap.rng.set(this.rng.getState());
+    snap.tick = this.tick;
   }
 
   getStats() {

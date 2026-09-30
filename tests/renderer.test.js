@@ -6,6 +6,8 @@ import { MAT } from '../js/engine/materials.js';
 import { Simulation } from '../js/engine/simulation.js';
 
 let puts;
+let strokes;
+let dashes;
 
 function fakeContext() {
   return {
@@ -20,7 +22,16 @@ function fakeContext() {
     lineTo() {},
     closePath() {},
     fill() {},
-    stroke() {},
+    stroke() {
+      strokes++;
+    },
+    save() {},
+    restore() {},
+    rect() {},
+    clip() {},
+    setLineDash(d) {
+      dashes.push(d.length);
+    },
     createLinearGradient: () => ({ addColorStop() {} }),
     createImageData: (w, h) => ({ width: w, height: h, data: new Uint8ClampedArray(w * h * 4) }),
     putImageData() {
@@ -41,6 +52,8 @@ function fakeCanvas(width = 0, height = 0) {
 
 beforeEach(() => {
   puts = 0;
+  strokes = 0;
+  dashes = [];
   globalThis.document = { createElement: () => fakeCanvas() };
 });
 
@@ -108,4 +121,41 @@ test('renderer simülasyon durumunu değiştirmez', () => {
   const snapshot = [sim.view.type.slice(), sim.view.life.slice(), sim.view.variant.slice(), sim.view.flags.slice()];
   for (let k = 0; k < 5; k++) renderer.render(sim.view);
   assert.deepEqual([sim.view.type, sim.view.life, sim.view.variant, sim.view.flags], snapshot);
+});
+
+test('fırça önizlemesi görünürken çizilir, gizliyken çizilmez', () => {
+  const { renderer } = setup();
+  const sim = new Simulation({ width: 100, height: 50 });
+  renderer.render(sim.view); // arka plan cache'lenir
+  strokes = 0;
+  renderer.setBrushPreview({ x: 10, y: 10, shape: 'circle', size: 7, visible: true });
+  renderer.render(sim.view);
+  assert.equal(strokes, 1);
+  renderer.setBrushPreview({ x: 10, y: 10, shape: 'circle', size: 7, visible: false });
+  strokes = 0;
+  renderer.render(sim.view);
+  assert.equal(strokes, 0);
+});
+
+test('spray önizlemesi kesikli çizgiyle çizilir', () => {
+  const { renderer } = setup();
+  const sim = new Simulation({ width: 100, height: 50 });
+  renderer.setBrushPreview({ x: 10, y: 10, shape: 'spray', size: 9, visible: true });
+  renderer.render(sim.view);
+  assert.ok(dashes.some((n) => n > 0), 'kesikli çizgi yok');
+});
+
+test('fırça önizlemesi simülasyonu değiştirmez ve tamponu yeniden doldurmaz', () => {
+  const { renderer } = setup();
+  const sim = new Simulation({ width: 100, height: 50 });
+  sim.setCell(3, 3, MAT.STONE);
+  renderer.render(sim.view);
+  const before = puts;
+  const type = sim.view.type.slice();
+  for (let k = 0; k < 5; k++) {
+    renderer.setBrushPreview({ x: k * 5, y: 7, shape: 'square', size: 4, visible: true });
+    renderer.render(sim.view);
+  }
+  assert.equal(puts, before);
+  assert.deepEqual(sim.view.type, type);
 });

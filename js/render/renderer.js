@@ -6,10 +6,14 @@ import { buildPalette, buildRamps, ANIMATED_IDS } from './palette.js';
 import { fillPixels } from './pixels.js';
 import { paintBackground } from './background.js';
 import { computeLayout, pointToCell } from './layout.js';
+import { footprintOutline } from '../engine/brush.js';
 
 export { computeLayout } from './layout.js';
 
 const BACKGROUND_RES = 0.5; // arka plan yarım çözünürlükte çizilip yumuşak büyütülür (bellek)
+const PREVIEW_COLOR = 'rgba(240, 196, 106, 0.85)';
+const SPRAY_DASH = [3, 3];
+const NO_DASH = [];
 
 export class Renderer {
   constructor(canvas, { seed = 'strata', frameColor = '#0e0c0a' } = {}) {
@@ -36,9 +40,22 @@ export class Renderer {
     this.background = null;
     this._backgroundKey = '';
     this.lastRenderMs = 0;
+    this.preview = { x: 0, y: 0, shape: 'circle', size: 1, visible: false };
+    this.dpr = 1;
+  }
+
+  // Fırça önizlemesi: yalnızca çizim katmanı; simülasyonu değiştirmez.
+  setBrushPreview({ x, y, shape, size, visible }) {
+    const p = this.preview;
+    p.x = x;
+    p.y = y;
+    p.shape = shape;
+    p.size = size;
+    p.visible = Boolean(visible) && Number.isInteger(x) && Number.isInteger(y);
   }
 
   resize(cssW, cssH, dpr) {
+    this.dpr = dpr > 0 ? dpr : 1;
     const w = Math.max(0, Math.round(cssW * dpr));
     const h = Math.max(0, Math.round(cssH * dpr));
     if (this.canvas.width !== w) this.canvas.width = w;
@@ -105,6 +122,29 @@ export class Renderer {
     return false;
   }
 
+  _drawPreview() {
+    const { ctx, layout: l, preview: p } = this;
+    const segs = footprintOutline(p.shape, p.size);
+    const cw = l.drawW / this.gridW;
+    const ch = l.drawH / this.gridH;
+    const ox = l.offsetX + p.x * cw;
+    const oy = l.offsetY + p.y * ch;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(l.offsetX, l.offsetY, l.drawW, l.drawH);
+    ctx.clip();
+    ctx.beginPath();
+    for (let k = 0; k < segs.length; k += 4) {
+      ctx.moveTo(ox + segs[k] * cw, oy + segs[k + 1] * ch);
+      ctx.lineTo(ox + segs[k + 2] * cw, oy + segs[k + 3] * ch);
+    }
+    ctx.setLineDash(p.shape === 'spray' ? SPRAY_DASH : NO_DASH);
+    ctx.strokeStyle = PREVIEW_COLOR;
+    ctx.lineWidth = Math.max(1, Math.round(this.dpr));
+    ctx.stroke();
+    ctx.restore();
+  }
+
   render(view) {
     const start = performance.now();
     this.frame++;
@@ -128,6 +168,7 @@ export class Renderer {
       ctx.drawImage(this.background, l.offsetX, l.offsetY, l.drawW, l.drawH);
       ctx.imageSmoothingEnabled = false; // canvas resize bu ayarı sıfırlar; her karede set edilir
       ctx.drawImage(this.buffer, l.offsetX, l.offsetY, l.drawW, l.drawH);
+      if (this.preview.visible) this._drawPreview();
     }
     this.lastRenderMs = performance.now() - start;
   }

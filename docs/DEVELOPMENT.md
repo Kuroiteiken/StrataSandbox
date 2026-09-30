@@ -238,23 +238,57 @@ node tools/check-paths.js  # path büyük/küçük harf + root-absolute kontrol�
 
 ### Phase 5 — Input / Brush / Undo
 
-- [ ] `brush.js`: Circle/Square/Spray, `(dx,dy)` cache'i, kırpma, 4-connected interpolasyon
-- [ ] `pointer.js`:
-  - [ ] Pointer Events, capture, coalesced
-  - [ ] `pointercancel` stroke'u bitirir
-  - [ ] context menu kapalı, sağ tık Eraser
-- [ ] Hemen uygulanan `paintLine` ve basılı tutmada `setHold`
-- [ ] Replace modu (Shift + UI toggle); WALL korumalı
-- [ ] Spray (`inputRng`)
-- [ ] Snapshot undo; Clear geri alınabilir
-- [ ] Brush preview; touch'ta gizli
-- [ ] **Test:**
-  - [ ] footprint
-  - [ ] çizgide boşluk yok
-  - [ ] undo hash eşitliği
-  - [ ] allocation yok
-  - [ ] replace ve WALL koruması
-- [ ] **Manuel test:** mouse, touch, stylus
+- [x] `engine/brush.js`:
+  - [x] Circle/Square/Spray footprint'leri (boyut = çap, 1–16, kırpılır)
+  - [x] `(dx,dy)` cache'i
+  - [x] ana hat (`footprintOutline`)
+  - [x] boşluksuz 8-komşulu Bresenham (`lineCells`)
+- [x] `Simulation`:
+  - [x] `paintAt`/`paintLine`
+    - [x] varsayılan olarak yalnızca boş ve gaz hücrelere yazar
+    - [x] `replace` modu
+    - [x] EMPTY silgi
+    - [x] WALL korumalı, dünya dışı atlanır
+  - [x] spray (`inputRng`, fizik RNG'si tüketilmez)
+- [x] Basılı tutma: `setHold`/`releaseHold`, tick sonunda uygulanır (kesintisiz akış)
+- [x] Snapshot undo:
+  - [x] iki önceden ayrılmış tampon (type/variant/life/flags/counts + RNG + tick)
+  - [x] boş stroke undo noktasını silmez
+  - [x] Clear geri alınabilir
+  - [x] tek seviye
+- [x] `app/pointer.js`:
+  - [x] Pointer Events, pointer capture
+  - [x] `getCoalescedEvents`
+  - [x] `pointercancel` stroke'u bitirir
+  - [x] context menu kapalı, sağ tık silgi, Shift replace
+  - [x] ikinci pointer yok sayılır
+  - [x] sürükleme kenara sabitlenir
+- [x] Brush preview (`renderer.setBrushPreview`):
+  - [x] footprint ana hattı; spray kesikli
+  - [x] touch'ta gizli
+  - [x] tamponu yeniden doldurmaz
+- [x] **Test** (`brush`, `paint`, `pointer`, `renderer`; suite 207/207; mutasyonlarla doğrulandı):
+  - [x] footprint simetrisi, alanı ≈ π·(boyut/2)², kapalı ana hat
+  - [x] Çizgide boşluk yok; tek hücrelik çapraz taş çizgi suyu geçirmez
+  - [x] Undo sonrası hash ve sonraki 50 tick referansla birebir aynı
+  - [x] Tekrarlanan stroke'larda yeni tampon ayrılmıyor
+  - [x] Replace kapalıyken dolu hücre korunuyor; WALL boyanamıyor; kenarda çerçeve bozulmuyor
+  - [x] Spray deterministik ve fizik RNG'sinden bağımsız
+  - [x] Pointer (sahte olaylar):
+    - [x] çizgi
+    - [x] coalesced
+    - [x] sağ tık, Shift
+    - [x] hold
+    - [x] cancel
+    - [x] ikinci pointer
+    - [x] kenar
+    - [x] detach
+  - [x] Tarayıcı (Playwright, gerçek fare):
+    - [x] tek hamlelik çapraz sürükleme boşluksuz 81 hücre bıraktı
+    - [x] sağ tık siliyor
+    - [x] undo geri alıyor
+    - [x] önizleme görünür
+- [ ] **Manuel test:** touch ve stylus (gerçek cihaz) → Phase 9/12 checklist'i
 
 ### Phase 6 — UI ve uygulama katmanı
 
@@ -440,6 +474,18 @@ Uygulama sırasında plandan sapan ya da planın cevaplamadığı kararlar. Kal�
   - En küçük grid 64×48.
 - **2026-09-30 · Phase 4 — Arka plan yarım çözünürlükte.**
   - Karar: arka plan yarım çözünürlükte çizilip yumuşak büyütülüyor (bellek). Sim tamponu her zaman keskin (smoothing kapalı).
+
+- **2026-09-30 · Phase 5 — 8-komşulu çizgi.**
+  - Karar: çizgi interpolasyonu 4-komşulu değil, 8-komşulu Bresenham.
+  - Neden: köşe sızıntısı kuralı ince çapraz duvarları zaten geçirmez yapıyor. "Tek hücrelik çapraz taş çizgi suyu geçirmez" testiyle doğrulandı. 8-komşulu çizgi daha az hücre boyar ve görsel olarak daha temiz.
+- **2026-09-30 · Phase 5 — Basılı tutma tick sonunda.**
+  - Karar: basılı tutma tick başında değil sonunda uygulanıyor.
+  - Neden: tick başında uygulanınca kaynak hücre henüz boşalmamış oluyordu ve akış iki tick'te bir tane veriyordu (noktalı akış). Hold testi kırmızıydı.
+- **2026-09-30 · Phase 5 — İki snapshot tamponu.**
+  - Karar: undo için iki tampon kullanılıyor; bekleyen stroke kopyası, stroke gerçekten boyama yaptıysa undo noktası oluyor. Bellek sabit (yaklaşık 2 × 5 bayt × hücre).
+  - İnceleme bulgusu #7 kapandı: `counts` da snapshot'a dahil.
+- **2026-09-30 · Phase 5 — Fırça boyutu = çap.**
+  - Karar: boyut çap (1–16); çift boyutlarda merkez iki hücre arasında.
 
 ### Phase 0–1 bağımsız inceleme (2026-09-30)
 
