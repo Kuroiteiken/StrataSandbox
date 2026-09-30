@@ -57,6 +57,7 @@
   - Uygulanan maddelerin durumu "Planlandı" → "Mevcut" olur.
   - `docs/MATERIALS.md` o görevin commit'ine eklenir.
   - `tests/docs-materials.test.js` (Görev 1) her materyal anahtarının belgede geçtiğini doğrular.
+- **Uygulama içi Yenilikler** (kullanıcı isteği, 2026-09-30): `js/app/releases.js` → `UNRELEASED.items`, kullanıcıya görünen her değişiklikte kısa bir Türkçe maddeyle güncellenir. Site her push'ta yayına çıktığı için bu maddeler de o commit'e girer. Diyalog geliştirmedeki sürümü ve yayınlanmış sürümlerin tamamını gösterir (`releaseSections()`). Görev 14'te `UNRELEASED` maddeleri `RELEASES`'e 0.10.0 olarak taşınır.
 
 ### Spec'ten bilinçli sayısal sapmalar
 

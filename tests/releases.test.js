@@ -22,3 +22,13 @@ test('Yenilikler yeniden eskiye sıralı; her kaydın tarihi ve en az bir maddes
     assert.ok(r.items.length > 0 && r.items.every((s) => typeof s === 'string' && s.length > 0));
   }
 });
+
+test('Yenilikler bölümleri: önce geliştirmedeki sürüm, sonra yayınlanmış sürümlerin tamamı (yalnızca sonuncusu değil)', async () => {
+  const { UNRELEASED, releaseSections } = await import('../js/app/releases.js');
+  const sections = releaseSections();
+  assert.ok(UNRELEASED.items.length > 0, 'geliştirmedeki yenilikler listelenmeli');
+  assert.ok(versionKey(UNRELEASED.version) > versionKey(APP_VERSION), 'geliştirme sürümü yayınlanmıştan yeni');
+  assert.equal(sections[0].title, `v${UNRELEASED.version} · geliştirmede`);
+  assert.equal(sections.length, RELEASES.length + 1, 'tüm yayınlanmış sürümler gösterilir');
+  assert.deepEqual(sections.slice(1).map((s) => s.title), RELEASES.map((r) => `v${r.version} · ${r.date}`));
+});

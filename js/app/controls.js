@@ -5,7 +5,7 @@ import { PICKER } from './catalog.js';
 import { SHADES, packRGBA } from '../render/palette.js';
 import { getScene } from '../scenes/index.js';
 import { APP_VERSION } from '../config.js';
-import { RELEASES, WHATS_NEW_COUNT } from './releases.js';
+import { releaseSections } from './releases.js';
 
 const SWATCH = 6; // numune dokusu (hücre); CSS ile büyütülür
 
@@ -122,13 +122,13 @@ export function createControls(doc, { palette, scenes, actions }) {
   badge.textContent = `v${APP_VERSION}`;
   badge.addEventListener('click', () => actions.whatsNew());
   const releaseList = $('whats-new-list');
-  for (const r of RELEASES.slice(0, WHATS_NEW_COUNT)) {
+  for (const section of releaseSections()) {
     const title = doc.createElement('h3');
     title.className = 'release-title';
-    title.textContent = `v${r.version} · ${r.date}`;
+    title.textContent = section.title;
     const items = doc.createElement('ul');
     items.className = 'release-items';
-    for (const text of r.items) {
+    for (const text of section.items) {
       const li = doc.createElement('li');
       li.textContent = text;
       items.append(li);

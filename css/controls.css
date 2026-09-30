@@ -478,6 +478,13 @@
   background: var(--brass-400);
 }
 
+/* Tüm sürümler listelenir; uzun liste diyalog içinde kayar. */
+.releases {
+  max-height: min(60vh, 520px);
+  overflow-y: auto;
+  padding-right: var(--space-2);
+}
+
 .release-title {
   margin: var(--space-3) 0 var(--space-1);
   font-family: var(--font-mono);

@@ -9,7 +9,7 @@ Hedef sürüm 0.10.0: sıcaklık sistemi, Buz, Kar, Metal, yeni sahneler ve kum 
 
 ### Added
 
-- Başlıkta sürüm rozeti. Rozete tıklanınca "Yenilikler" diyaloğu açılır ve son sürümlerin kullanıcıya dönük notlarını listeler. Görülmemiş sürümde rozette küçük bir işaret görünür.
+- Başlıkta sürüm rozeti. Rozete tıklanınca "Yenilikler" diyaloğu açılır: en üstte geliştirmedeki sürümün (0.10.0) yayında olan yenilikleri, altında yayınlanmış tüm sürümler listelenir. Görülmemiş sürümde rozette küçük bir işaret görünür.
 - Sürüm tutarlılığı testi: `APP_VERSION`, `package.json`, CHANGELOG ve Yenilikler aynı sürümü göstermek zorunda. `docs/MATERIALS.md` için senkron testi: her materyal belgede yer almak zorunda.
 - Ters çevirme (`F` ya da "Ters çevir" düğmesi): dünya dikey olarak aynalanır ve işlem geri alınabilir. Kum saatinde kum bitince yeniden akıtmak için kullanılır.
 - **Çoğaltıcı** (`X`): üstüne dökülen ilk hareketli materyali (toz, sıvı, gaz) öğrenir ve bitişik boş hücrelere kopyalar. Hücre başına 1000 kopya üretip durur, öğrendiği materyalin rengine bürünür. Statik materyalleri öğrenmez.
