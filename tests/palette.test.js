@@ -45,3 +45,12 @@ test('buildPalette bir materyal için birden fazla farklı ton üretir ve tonlar
     assert.ok(dr <= 40 && dg <= 40 && db <= 40, `ton ${s} temel renkten çok uzak`);
   }
 });
+
+test('akkorluk rampası tam boyda; termal LUT −40..1200 °C aralığını kapsar ve monoton', async () => {
+  const { buildRamps, RAMP_SIZE, THERMAL_LUT, thermalPosition } = await import('../js/render/palette.js');
+  assert.equal(buildRamps(true).incandescent.length, RAMP_SIZE);
+  assert.equal(THERMAL_LUT.length, 1241);
+  for (let k = 1; k < THERMAL_LUT.length; k++) assert.ok(THERMAL_LUT[k] >= THERMAL_LUT[k - 1]);
+  assert.equal(thermalPosition(-100), 0);
+  assert.equal(thermalPosition(5000), 1);
+});

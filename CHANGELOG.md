@@ -18,6 +18,8 @@ Hedef sürüm 0.10.0: sıcaklık sistemi, Buz, Kar, Metal, yeni sahneler ve kum 
 - Sıcaklık alanı (`world.temp`, °C): her hücrenin bir sıcaklığı var ve sıcaklık parçacıkla birlikte taşınıyor. Undo ve ters çevirme sıcaklığı da kapsıyor. Sönen ateş geride sıcak hava bırakıyor, yutucunun boşalttığı yer ortam sıcaklığına dönüyor.
 - Isı iletimi (`js/engine/heat.js`): tick'in yeni 3. geçişi. Çift tamponlu 4 komşulu difüzyon kullanır (yön bias'ı yok, enerji korunur). Hava ortam sıcaklığına yaklaşır; ateş ve yanan materyaller ısı kaynağıdır. Sakin satırlar atlanır (benchmark'ta tick başına ~+0,5 ms).
 - `sim.setAmbient` ve `sim.setTemp` API'leri. Ortam ayarı dünyayı anında değiştirmez, undo noktası oluşturmaz.
+- Isı görselleri: 450 °C üstündeki her materyal akkorlaşır (koyu kırmızı → sarı-beyaz) ve parlar. Lav soğudukça koyulaşır; donma noktasına yaklaşan su açık maviye kayar.
+- Termal görünüm (`renderer.setViewMode('thermal')`): sıcaklık rampası (−40 mavi → 1200+ beyaz). Hava ve madde ayrı tonlarda gösterilir.
 - `docs/MATERIALS.md`: tüm materyallerin ve etkileşimlerinin (mevcut ve planlanan) başvuru belgesi. Tür, yoğunluk, kısayol, olasılıklar ve 0.10.0'da değişecek kurallar burada tutulur.
 
 ### Changed

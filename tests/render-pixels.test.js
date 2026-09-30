@@ -4,7 +4,8 @@ import { MAT } from '../js/engine/materials.js';
 import { Simulation } from '../js/engine/simulation.js';
 import { buildPalette, buildRamps, SHADES } from '../js/render/palette.js';
 import { MATERIALS } from '../js/engine/materials.js';
-import { fillPixels } from '../js/render/pixels.js';
+import { fillPixels, fillThermal } from '../js/render/pixels.js';
+import { THERMAL_LUT } from '../js/render/palette.js';
 import { hashView } from './helpers.js';
 
 const LE = true;
@@ -30,12 +31,19 @@ function render(sim, frame = 0, reducedMotion = true) {
 
 function simWith(cells, w = 4, h = 3) {
   const sim = new Simulation({ width: w, height: h });
-  for (const [x, y, m, life] of cells) {
+  for (const [x, y, m, life, temp] of cells) {
     sim.setCell(x, y, m);
     if (life !== undefined) sim.world.life[sim.world.index(x, y)] = life;
+    if (temp !== undefined) sim.setTemp(x, y, temp);
   }
   return sim;
 }
+
+// Kozmetik tonu (variant) eşitler: karşılaştırma yalnızca sıcaklığa bağlı kalsın.
+const sameShade = (sim, ...cells) => {
+  for (const [x, y] of cells) sim.world.variant[sim.world.index(x, y)] = 0;
+  sim.version++;
+};
 
 test('pikseller hücrelerle birebir eşleşir; boş hücreler şeffaf', () => {
   const sim = simWith([[2, 1, MAT.SAND]]);
@@ -65,9 +73,45 @@ test('yanan odun yandıkça kararır (düşük life = kömürleşmiş)', () => {
 });
 
 test('ısınan kum soğuk kumdan daha kızıldır', () => {
-  const sim = simWith([[0, 0, MAT.SAND, 0], [1, 0, MAT.SAND, 280]]);
+  const sim = simWith([[0, 0, MAT.SAND, undefined, 20], [1, 0, MAT.SAND, undefined, 900]]);
   const out = render(sim);
   assert.ok(red(out[1]) - blue(out[1]) > red(out[0]) - blue(out[0]) + 20, 'ısınan kum kızarmalı');
+});
+
+test('akkorluk: 900 °C taş kızarır ve glow verir; 20 °C taş glow vermez; dönüş akkor hücre sayısı', () => {
+  const sim = simWith([[0, 0, MAT.STONE, undefined, 20], [1, 0, MAT.STONE, undefined, 900]]);
+  const out = new Uint32Array(12);
+  const glow = new Uint32Array(12);
+  const hot = fillPixels(sim.view, out, pal, ramps, 0, true, glow);
+  assert.equal(hot, 1);
+  assert.equal(glow[0], 0);
+  assert.ok(glow[1] >>> 24 > 0);
+  assert.ok(red(out[1]) > red(out[0]) + 60);
+});
+
+test('lav soğudukça koyulaşır', () => {
+  const sim = simWith([[0, 0, MAT.LAVA, undefined, 1150], [1, 0, MAT.LAVA, undefined, 780]]);
+  sameShade(sim, [0, 0], [1, 0]);
+  const out = render(sim);
+  assert.ok(luma(out[0]) > luma(out[1]) + 20, `sıcak=${luma(out[0])} soğuk=${luma(out[1])}`);
+});
+
+test('donma noktasına yaklaşan su daha açık görünür', () => {
+  const sim = simWith([[0, 0, MAT.WATER, undefined, 20], [1, 0, MAT.WATER, undefined, 0]]);
+  sameShade(sim, [0, 0], [1, 0]);
+  const out = render(sim);
+  assert.ok(luma(out[1]) > luma(out[0]) + 8);
+});
+
+test('termal görünüm: sıcak hücre soğuktan kırmızı, hava madde rampasından koyu', () => {
+  const sim = simWith([[0, 0, MAT.STONE, undefined, -30], [1, 0, MAT.STONE, undefined, 800]]);
+  sim.setTemp(2, 0, 800); // hava
+  const out = new Uint32Array(12);
+  fillThermal(sim.view, out, ramps);
+  assert.ok(red(out[1]) > red(out[0]) + 100, 'sıcak kırmızı');
+  assert.ok(blue(out[0]) > red(out[0]), 'soğuk mavi');
+  assert.ok(luma(out[1]) > luma(out[2]), 'hava daha koyu');
+  assert.equal(THERMAL_LUT.length, 1241);
 });
 
 test('lava hareketli modda kareler arasında canlanır, azaltılmış harekette sabit kalır', () => {

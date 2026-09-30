@@ -735,7 +735,7 @@ Spec: `docs/superpowers/specs/2026-09-30-sicaklik-sistemi-design.md` · Plan: `d
 - [x] Kum saati yenilemesi
 - [x] Sıcaklık alanı veri modeli
 - [x] Isı geçişi (difüzyon, hava, kaynaklar, uyuyan satırlar)
-- [ ] Isı görselleri ve termal görünüm
+- [x] Isı görselleri ve termal görünüm
 - [ ] Faz geçişleri ve sayaç hilelerinin taşınması
 - [ ] Buz, Kar, Metal, Erimiş metal, Magma
 - [ ] Gün/gece döngüsü, sahne ortamları, gökyüzü

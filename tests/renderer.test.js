@@ -211,3 +211,27 @@ test('glow yalnızca ışık yayan materyal varken ve kalite düşük değilken 
   assert.equal(lighterDraws, 0, 'düşük kalitede glow yok');
   assert.equal(renderer.quality, 'low');
 });
+
+test('termal görünümde glow çizilmez ve mod değişince tampon hemen yenilenir', () => {
+  const { renderer } = setup({ quality: 'high' });
+  const sim = new Simulation({ width: 100, height: 50 });
+  sim.setCell(5, 5, MAT.FIRE);
+  renderer.setViewMode('thermal');
+  renderer.render(sim.view);
+  assert.equal(lighterDraws, 0);
+  const before = puts;
+  renderer.setViewMode('normal');
+  renderer.render(sim.view);
+  assert.ok(puts > before);
+});
+
+test('yalnızca akkor (sıcak) taş varken de glow çizilir', () => {
+  const { renderer } = setup({ quality: 'high' });
+  const sim = new Simulation({ width: 100, height: 50 });
+  sim.setCell(5, 5, MAT.STONE);
+  sim.setTemp(5, 5, 1000);
+  renderer.render(sim.view); // ilk kare akkor sayısını öğrenir
+  sim.setTemp(5, 5, 1001);
+  renderer.render(sim.view);
+  assert.ok(lighterDraws > 0);
+});

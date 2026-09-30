@@ -3,7 +3,7 @@
 // → brush preview. Kalite: high (iki katman glow), medium (tek katman), low (glow yok).
 import { MATERIALS } from '../engine/materials.js';
 import { buildPalette, buildRamps, ANIMATED_IDS } from './palette.js';
-import { fillPixels } from './pixels.js';
+import { fillPixels, fillThermal } from './pixels.js';
 import { paintBackground } from './background.js';
 import { computeLayout, pointToCell } from './layout.js';
 import { footprintOutline } from '../engine/brush.js';
@@ -53,6 +53,8 @@ export class Renderer {
     this.glowImage = null;
     this.glowPixels = null;
     this._glowReady = false;
+    this.viewMode = 'normal'; // 'normal' | 'thermal'
+    this._hotCells = 0; // son doldurmadaki akkor hücre sayısı (glow kararı)
   }
 
   // Görsel kalite yalnızca dekoratif efektleri etkiler (fizik değişmez).
@@ -60,6 +62,13 @@ export class Renderer {
     if (!QUALITIES.has(level) || level === this.quality) return;
     this.quality = level;
     this.lastVersion = -1; // glow tamponunu hemen yeniden hesapla
+  }
+
+  // 'normal' | 'thermal'. Termal görünümde glow yok; mod değişince tampon hemen yenilenir.
+  setViewMode(mode) {
+    if ((mode !== 'normal' && mode !== 'thermal') || mode === this.viewMode) return;
+    this.viewMode = mode;
+    this.lastVersion = -1;
   }
 
   // Fırça önizlemesi: yalnızca çizim katmanı; simülasyonu değiştirmez.
@@ -135,7 +144,7 @@ export class Renderer {
   }
 
   _isAnimated(view) {
-    if (this.reducedMotion) return false;
+    if (this.viewMode === 'thermal' || this.reducedMotion) return false;
     return this._hasEmitters(view);
   }
 
@@ -166,9 +175,18 @@ export class Renderer {
 
   // Sim tamponunu (ve gerekiyorsa glow zincirini) durumdan yeniden üretir.
   _refresh(view) {
-    const wantGlow = this.quality !== 'low' && this._hasEmitters(view);
+    if (this.viewMode === 'thermal') {
+      fillThermal(view, this.pixels, this.ramps);
+      this.bufferCtx.putImageData(this.image, 0, 0);
+      this._glowReady = false;
+      this.lastView = view;
+      this.lastVersion = view.version;
+      return;
+    }
+    // Işık yayanlar (ateş, lav, yanma) ya da önceki karede akkor hücre varsa glow zinciri çalışır.
+    const wantGlow = this.quality !== 'low' && (this._hasEmitters(view) || this._hotCells > 0);
     if (wantGlow) this._ensureGlow(view.width, view.height);
-    fillPixels(view, this.pixels, this.palette, this.ramps, this.frame, this.reducedMotion, wantGlow ? this.glowPixels : null);
+    this._hotCells = fillPixels(view, this.pixels, this.palette, this.ramps, this.frame, this.reducedMotion, wantGlow ? this.glowPixels : null);
     this.bufferCtx.putImageData(this.image, 0, 0);
     if (wantGlow) {
       // Kademeli küçültme = ucuz, taşınabilir bulanıklık (ctx.filter gerekmez).

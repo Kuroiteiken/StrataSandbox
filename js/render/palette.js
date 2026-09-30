@@ -5,19 +5,17 @@ import { MAT } from '../engine/materials.js';
 
 export const SHADES = 32; // materyal başına ton sayısı (variant & 31)
 export const RAMP_SIZE = 64;
-export const HEAT_RAMP_SIZE = 32;
 
 export const IS_LITTLE_ENDIAN = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1;
 
 // Dinamik renk türleri (pixels.js kullanır).
-export const DYN = Object.freeze({ NONE: 0, FIRE: 1, LAVA: 2, BURN: 3, SAND: 4, CLONER: 5, SINK: 6 });
+export const DYN = Object.freeze({ NONE: 0, FIRE: 1, LAVA: 2, BURN: 3, CLONER: 5, SINK: 6 });
 export const DYNAMIC = new Uint8Array(256);
 DYNAMIC[MAT.FIRE] = DYN.FIRE;
 DYNAMIC[MAT.LAVA] = DYN.LAVA;
 DYNAMIC[MAT.BURNING_WOOD] = DYN.BURN;
 DYNAMIC[MAT.BURNING_PLANT] = DYN.BURN;
 DYNAMIC[MAT.BURNING_OIL] = DYN.BURN;
-DYNAMIC[MAT.SAND] = DYN.SAND;
 DYNAMIC[MAT.CLONER] = DYN.CLONER;
 DYNAMIC[MAT.SINK] = DYN.SINK;
 
@@ -87,9 +85,35 @@ export function buildRamps(littleEndian = IS_LITTLE_ENDIAN) {
     fire: g([[0, '#4a1004'], [0.3, '#b02a08'], [0.55, '#f0601a'], [0.8, '#ffae3a'], [1, '#fff2c4']]),
     lava: g([[0, '#6a1604'], [0.4, '#c8380c'], [0.75, '#f26a1e'], [1, '#ffb450']]),
     burn,
-    heat: gradient([[0, '#d9bb82'], [0.6, '#f0924a'], [1, '#ff6a2a']], HEAT_RAMP_SIZE, littleEndian),
+    // Akkorluk (450..1500 °C) ve donmaya yaklaşan su tonu (pixels.js).
+    incandescent: g([[0, '#5a1204'], [0.35, '#b3280a'], [0.65, '#f07a1e'], [0.85, '#ffc15a'], [1, '#fff1d0']]),
+    coldTint: packRGBA(196, 230, 250, 255, littleEndian),
+    // Termal görünüm: durak konumları THERMAL_STOPS ile aynı; hava rampası daha koyu.
+    thermal: gradient([[0, '#2a6cd6'], [0.25, '#4a4a52'], [0.45, '#c2301c'], [0.75, '#f08a24'], [1, '#fff6e0']], THERMAL_RAMP_SIZE, littleEndian),
+    thermalAir: gradient([[0, '#12305e'], [0.25, '#1a1a1f'], [0.45, '#5a160c'], [0.75, '#7a4210'], [1, '#8a8270']], THERMAL_RAMP_SIZE, littleEndian),
     spent: packRGBA(104, 98, 112, 255, littleEndian), // bütçesi bitmiş kaynak tonu
   };
+}
+
+// Termal görünüm: °C → rampa konumu (parçalı doğrusal; soğuk tarafta daha fazla ayrıntı).
+const THERMAL_STOPS = [[-40, 0], [20, 0.25], [100, 0.45], [600, 0.75], [1200, 1]];
+export function thermalPosition(T) {
+  if (!(T > THERMAL_STOPS[0][0])) return 0;
+  for (let k = 1; k < THERMAL_STOPS.length; k++) {
+    const [t1, p1] = THERMAL_STOPS[k];
+    if (T <= t1) {
+      const [t0, p0] = THERMAL_STOPS[k - 1];
+      return p0 + ((T - t0) / (t1 - t0)) * (p1 - p0);
+    }
+  }
+  return 1;
+}
+
+export const THERMAL_RAMP_SIZE = 256;
+// Hot loop için: indeks = round(°C) + 40 (−40..1200) → rampa indeksi.
+export const THERMAL_LUT = new Uint8Array(1241);
+for (let k = 0; k < THERMAL_LUT.length; k++) {
+  THERMAL_LUT[k] = Math.round(thermalPosition(k - 40) * (THERMAL_RAMP_SIZE - 1));
 }
 
 // Paketli rengin alfa baytını değiştirir (glow yoğunluğu).

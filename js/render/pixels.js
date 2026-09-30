@@ -1,13 +1,21 @@
 // Hücre durumunu piksel tamponuna çevirir (saf fonksiyon; DOM'suz, allocation yok).
 // Renderer bunu ImageData'nın Uint32 view'ına uygular. Simülasyon durumu yalnızca okunur.
-import { MATERIALS } from '../engine/materials.js';
-import { SHADES, RAMP_SIZE, HEAT_RAMP_SIZE, DYN, DYNAMIC, withAlpha } from './palette.js';
-import { RATES } from '../engine/reactions.js';
+import { MATERIALS, MAT } from '../engine/materials.js';
+import { SHADES, RAMP_SIZE, DYN, DYNAMIC, withAlpha, THERMAL_LUT } from './palette.js';
 
 const { LIFE_MIN, LIFE_SPAN } = MATERIALS;
 const SHADE_MASK = SHADES - 1;
 const RAMP_MAX = RAMP_SIZE - 1;
-const HEAT_MAX = HEAT_RAMP_SIZE - 1;
+const WATER = MAT.WATER;
+
+// Akkorluk: 450 °C'de başlar, 800 °C'de tam karışım; rampa 450..1500 °C.
+const INC_START = 450;
+const INC_FULL = 800;
+const INC_MAX = 1500;
+const COLD_START = 4; // bu sıcaklığın altındaki su açık maviye kayar
+// Lav rengi: 750 °C (katılaşma) koyu, 1150 °C (doğuş) parlak.
+const LAVA_COLD = 750;
+const LAVA_HOT = 1150;
 
 // Materyal başına en yüksek spawn ömrü (rampa normalizasyonu için).
 const MAX_LIFE = new Float32Array(256);
@@ -34,12 +42,14 @@ function mixPacked(a, b, f) {
   ) >>> 0;
 }
 
-// glow (isteğe bağlı): ışık yayan hücrelerin (ateş, lav, yanma) rengi, alfa = yoğunluk;
-// diğer hücreler 0. Renderer bunu bulanıklaştırıp 'lighter' ile ekler.
+// glow (isteğe bağlı): ışık yayan hücrelerin rengi, alfa = yoğunluk; diğerleri 0.
+// Renderer bunu bulanıklaştırıp 'lighter' ile ekler.
+// Dönüş: akkor (≥ INC_START) hücre sayısı; renderer glow zincirini bununla da açar.
 export function fillPixels(view, out, pal, ramps, frame, reducedMotion, glow = null) {
   const { type, variant, life, flags, width, height, stride } = view;
-  const { fire, lava, burn, heat, spent, littleEndian } = ramps;
-  const glassHeat = RATES.glassHeat;
+  const temp = view.temp;
+  const { fire, lava, burn, incandescent, coldTint, spent, littleEndian } = ramps;
+  let hotCells = 0;
   let o = 0;
   for (let y = 0; y < height; y++) {
     let i = (y + 1) * stride + 1;
@@ -60,11 +70,13 @@ export function fillPixels(view, out, pal, ramps, frame, reducedMotion, glow = n
           break;
         }
         case DYN.LAVA: {
+          const T = temp[i];
+          const heat = T >= LAVA_HOT ? 1 : T <= LAVA_COLD ? 0 : (T - LAVA_COLD) / (LAVA_HOT - LAVA_COLD);
           // Yavaş nabız: hücreye özgü faz + zamanla kayan dalga (üçgen dalga).
           const phase = reducedMotion ? variant[i] & 63 : ((variant[i] & 63) + (frame >> 2) + ((x + y * 3) >> 1)) & 63;
           const tri = phase < 32 ? phase : 63 - phase; // 0..31
-          out[o] = lava[clampRamp(14 + tri * 1.5)];
-          if (glow) g = withAlpha(out[o], 110 + tri * 2, littleEndian);
+          out[o] = lava[clampRamp(4 + heat * 30 + tri * 0.9)];
+          if (glow) g = withAlpha(out[o], (50 + heat * 90 + tri * 2) | 0, littleEndian);
           break;
         }
         case DYN.BURN: {
@@ -86,15 +98,40 @@ export function fillPixels(view, out, pal, ramps, frame, reducedMotion, glow = n
           out[o] = life[i] > 0 ? c : mixPacked(c, spent, 0.5);
           break;
         }
-        case DYN.SAND: {
-          const l = life[i];
-          out[o] = l === 0 ? pal[t * SHADES + (variant[i] & SHADE_MASK)] : heat[Math.min(HEAT_MAX, ((l * HEAT_MAX) / glassHeat) | 0)];
-          break;
+        default: {
+          let c = pal[t * SHADES + (variant[i] & SHADE_MASK)];
+          const T = temp[i];
+          if (T >= INC_START) {
+            hotCells++;
+            const f = T >= INC_FULL ? 1 : (T - INC_START) / (INC_FULL - INC_START);
+            const hot = incandescent[clampRamp((((T > INC_MAX ? INC_MAX : T) - INC_START) * RAMP_MAX) / (INC_MAX - INC_START))];
+            c = mixPacked(c, hot, f);
+            if (glow) g = withAlpha(hot, (f * 150) | 0, littleEndian);
+          } else if (t === WATER && T < COLD_START) {
+            const u = (COLD_START - (T < -1 ? -1 : T)) / (COLD_START + 1);
+            c = mixPacked(c, coldTint, u * 0.35);
+          }
+          out[o] = c;
         }
-        default:
-          out[o] = pal[t * SHADES + (variant[i] & SHADE_MASK)];
       }
       if (glow) glow[o] = g;
+    }
+  }
+  return hotCells;
+}
+
+// Termal görünüm: her hücre sıcaklık rampasıyla (hava daha koyu rampayla); karıştırma yok.
+export function fillThermal(view, out, ramps) {
+  const { type, width, height, stride } = view;
+  const temp = view.temp;
+  const { thermal, thermalAir } = ramps;
+  let o = 0;
+  for (let y = 0; y < height; y++) {
+    let i = (y + 1) * stride + 1;
+    for (let x = 0; x < width; x++, i++, o++) {
+      const T = temp[i];
+      const k = T <= -40 ? 0 : T >= 1200 ? 1240 : Math.round(T) + 40;
+      out[o] = (type[i] === 0 ? thermalAir : thermal)[THERMAL_LUT[k]];
     }
   }
 }
