@@ -119,7 +119,7 @@ export const MATERIAL_DEFS = [
   },
   {
     id: MAT.MOLTEN_METAL, key: 'MOLTEN_METAL', name: 'Molten Metal', kind: KIND.LIQUID, density: 40, color: '#ffb347',
-    dispersion: 2, spread: 0.5, drag: 0.8, temp: 1450, conduct: 0.8, capacity: 4,
+    dispersion: 4, spread: 0.9, drag: 0.8, temp: 1450, conduct: 0.8, capacity: 4,
     phase: { down: { at: 1300, into: MAT.METAL, latent: 400 } },
   },
   {

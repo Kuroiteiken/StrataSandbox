@@ -30,7 +30,7 @@ const present = (sim, ...mats) => mats.every((m) => countMaterial(sim, m) > 0);
 test('varsayılan sahne Volcano; sahne kaydı Volcano, Hourglass, Oasis, Chaos Lab, Benchmark ve Boş içerir', () => {
   assert.equal(DEFAULT_SCENE_ID, 'volcano');
   const ids = SCENES.map((s) => s.id);
-  for (const id of ['volcano', 'hourglass', 'oasis', 'chaos', 'benchmark', 'empty']) assert.ok(ids.includes(id), id);
+  for (const id of ['volcano', 'hourglass', 'oasis', 'glacier', 'foundry', 'cave', 'chaos', 'benchmark', 'empty']) assert.ok(ids.includes(id), id);
   assert.equal(getScene('benchmark').hidden, true, 'benchmark yalnızca debug seçicide');
 });
 
@@ -221,4 +221,92 @@ test('fillPolygon üçgenin içini doldurur, dışını doldurmaz', () => {
 test('her sahnenin ortam sıcaklığı −40..60 aralığında; Vaha ılık', () => {
   for (const s of SCENES) assert.ok(Number.isFinite(s.ambient) && s.ambient >= -40 && s.ambient <= 60, s.id);
   assert.equal(getScene('oasis').ambient, 30);
+});
+
+test('sahne sırası seçicide doğru', () => {
+  assert.deepEqual(SCENES.filter((s) => !s.hidden).map((s) => s.id), ['volcano', 'hourglass', 'oasis', 'glacier', 'foundry', 'cave', 'chaos', 'empty']);
+});
+
+test('Buzul: kar, buz, su, metal, magma ve taş içerir; gölün üstü buz, altı ılık su', () => {
+  for (const [w, h] of SIZES) {
+    const sim = load('glacier', 'g', w, h);
+    assert.ok(present(sim, MAT.SNOW, MAT.ICE, MAT.WATER, MAT.METAL, MAT.MAGMA, MAT.STONE), `${w}×${h}`);
+    assert.equal(sim.ambient, -15);
+  }
+  const sim = load('glacier', 'g', 320, 180);
+  const x = Math.round(0.49 * 319);
+  let firstLake = -1;
+  for (let y = 0; y < 180; y++) {
+    const m = cellType(sim, x, y);
+    if (m === MAT.ICE || m === MAT.WATER) {
+      firstLake = y;
+      break;
+    }
+  }
+  assert.equal(cellType(sim, x, firstLake), MAT.ICE, 'göl yüzeyi buz');
+  let water = null;
+  for (let y = firstLake; y < 180; y++) {
+    if (cellType(sim, x, y) === MAT.WATER) {
+      water = sim.getCell(x, y);
+      break;
+    }
+  }
+  assert.ok(water && water.temp > 0, 'buzun altında 0 °C üstü su');
+});
+
+test('Dökümhane: erimiş metal kalıplara akar ve katılaşır', () => {
+  const sim = load('foundry', 'f', 320, 180);
+  assert.ok(present(sim, MAT.MOLTEN_METAL, MAT.METAL, MAT.MAGMA, MAT.WATER, MAT.STONE));
+  const molten0 = countMaterial(sim, MAT.MOLTEN_METAL);
+  const metal0 = countMaterial(sim, MAT.METAL);
+  runTicks(sim, 4000);
+  assert.ok(countMaterial(sim, MAT.MOLTEN_METAL) < molten0 * 0.5, 'erimiş metal azalmalı');
+  assert.ok(countMaterial(sim, MAT.METAL) > metal0 + molten0 * 0.3, 'metal artmalı');
+  assert.deepEqual(sim.world.checkInvariants(), []);
+});
+
+test('Mağara: göl ve lav cebi arasındaki duvar kalır; ısınan göl kenarından buhar yükselir', () => {
+  const sim = load('cave', 'c', 320, 180);
+  assert.ok(present(sim, MAT.WATER, MAT.LAVA, MAT.MAGMA, MAT.WOOD, MAT.OIL, MAT.SAND, MAT.STONE));
+  let steamAt = -1;
+  for (let k = 0; k < 4000 && steamAt < 0; k++) {
+    sim.step();
+    if (countMaterial(sim, MAT.STEAM) > 0) steamAt = k;
+  }
+  assert.ok(steamAt >= 0, 'kaplıca buharı oluşmadı');
+  assert.ok(countMaterial(sim, MAT.MAGMA) > 0);
+});
+
+test('Volkan: magma kaynağı yerinde kalır ve magma odasındaki lav uzun süre sıvı kalır', () => {
+  const sim = load('volcano', 'v', 320, 180);
+  const magma = countMaterial(sim, MAT.MAGMA);
+  assert.ok(magma > 0);
+  runTicks(sim, 3000);
+  assert.equal(countMaterial(sim, MAT.MAGMA), magma);
+  assert.ok(countMaterial(sim, MAT.LAVA) > 0, 'lav tamamen katılaşmamalı');
+});
+
+test('Volkan: yarıktaki çoğaltıcı lavı öğrenir ve akan lavın yerini doldurarak bütçesini harcar', () => {
+  const sim = load('volcano', 'v', 320, 180);
+  const cloners = [];
+  for (let y = 0; y < 180; y++) for (let x = 0; x < 320; x++) if (cellType(sim, x, y) === MAT.CLONER) cloners.push([x, y]);
+  assert.equal(cloners.length, 2);
+  const budget = () => cloners.reduce((sum, [x, y]) => sum + sim.getCell(x, y).life, 0);
+  const start = budget();
+  runTicks(sim, 3000);
+  for (const [x, y] of cloners) assert.equal(sim.getCell(x, y).variant, MAT.LAVA, 'lavı öğrenmeli');
+  assert.ok(budget() < start, 'kopya üretmeli');
+});
+
+test('Volkan: yarık yamaca açılır, lav sağ yamaçtan aşağı akar', () => {
+  const sim = load('volcano', 'readme', 320, 180);
+  let riftY = -1;
+  for (let y = 0; y < 180 && riftY < 0; y++) for (let x = 0; x < 320; x++) if (cellType(sim, x, y) === MAT.CLONER) riftY = y;
+  let lowestRightLava = 0;
+  for (let t = 0; t < 1500; t += 20) {
+    runTicks(sim, 20);
+    for (let y = 0; y < 180; y++) for (let x = Math.floor(320 * 0.62); x < 320; x++) if (cellType(sim, x, y) === MAT.LAVA && y > lowestRightLava) lowestRightLava = y;
+  }
+  // Soğuk yamaçta kabuk bağlayarak ilerleyen bir lav dili: yarığın en az 12 satır altına iner.
+  assert.ok(lowestRightLava >= riftY + 12, `yarık ${riftY}, sağ yamaçtaki en alçak lav ${lowestRightLava}`);
 });

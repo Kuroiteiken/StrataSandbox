@@ -60,6 +60,8 @@ export function volcano(sim, rng) {
   const chamberY = Y(0.62);
   const chamberR = S(0.07);
   disk(sim, cxi, chamberY, chamberR, MAT.LAVA);
+  // Magma kaynağı: odanın alt yarısında sabit 1200 °C (oda lavı sıvı kalır; alt proje 2'de basınç).
+  disk(sim, cxi, chamberY + Math.max(1, Math.floor(chamberR / 2)), Math.max(1, Math.floor(chamberR / 3)), MAT.MAGMA);
   const vent = Math.max(1, S(0.015));
   rect(sim, cxi - vent, plateauY + 1, cxi + vent, chamberY, MAT.LAVA);
   // Çanak yalnızca taşın içine oyulur ve dış tarafta en az 2 hücrelik taş kenar bırakır;
@@ -76,11 +78,22 @@ export function volcano(sim, rng) {
       }
     }
   }
-  // Sağ kenardaki yarık: lav buradan sağ yamaçtan aşağı süzülür (sol kenar sağlam).
-  for (let x = cxi; x <= cxi + craterW + 4 && x < W; x++) {
+  // Sağ kenardaki yarık: lav buradan sağ yamaçtan aşağı süzülür (sol kenar sağlam). Yarık yamaç
+  // yüzeyine ulaşana kadar uzar (0.9.0'da sağ ucu tek sıra taşla kapalıydı; lav hiç çıkamıyordu).
+  let riftEnd = cxi;
+  for (let x = cxi; x < W - 1; x++) {
     sim.setCell(x, plateauY + 1, MAT.LAVA);
     sim.setCell(x, plateauY + 2, MAT.LAVA);
+    riftEnd = x;
+    if (x >= cxi + craterW + 4 && top[x + 1] > plateauY + 2) break; // sonraki sütunda yamaç yarığın altında
   }
+  // Magma damarı: yarığın tabanını alttan ısıtır; ince kanaldaki lav soğuk taşa değip hemen kabuk
+  // bağlamaz, yamaca akmaya devam eder (ağız kısmı açık kalsın diye son iki sütuna uzanmaz).
+  for (let x = cxi; x <= riftEnd - 2; x++) if (isStone(x, plateauY + 3)) sim.setCell(x, plateauY + 3, MAT.MAGMA);
+  // Çoğaltıcı: yarığın tabanında iki hücre. Çevresindeki lavı öğrenir; yarıktan lav aktıkça boşalan
+  // bitişik hücreleri doldurur (hücre başına 1000 kopya, sonra durur). Basınç olmadığı için dolu odanın
+  // dibine değil buraya konur: orada boş komşusu olmaz ve üretim yapamazdı (alt proje 2'de basınç).
+  for (const dx of [Math.max(2, vent + 1), Math.max(3, vent + 2)]) sim.setCell(cxi + dx, plateauY + 2, MAT.CLONER);
 
   // Yamaçlarda kum örtüsü (taşın hemen üstü, kraterden uzak).
   const sandDepth = Math.max(1, S(0.012));

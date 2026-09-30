@@ -26,6 +26,7 @@ Hedef sürüm 0.10.0: sıcaklık sistemi, Buz, Kar, Metal, yeni sahneler ve kum 
 - **Isıt** (`H`) ve **Soğut** (`C`) fırçaları: materyal koymadan fırçanın altındaki hücrelerin sıcaklığını her uygulamada 25 °C değiştirir. Basılı tutunca etki sürer, sınırlar −100…2500 °C. Geri alınabilir; sağ tık yine silgidir.
 - Görünür **Ortam** bölümü: sıcaklık kaydırıcısı (−40…60 °C), gün/gece döngüsü onay kutusu, anlık durum ("Öğle · 28 °C") ve termal görünüm düğmesi (`T`).
 - Başlıkta Ortam değeri; fare ve kalemde imlecin altındaki materyal ve sıcaklık ("Su · 12 °C").
+- Yeni sahneler: **Buzul** (−15 °C; karlı yamaçlar, donmuş göl ve altında ılık su, metal çubuk, magma ısıtmalı baca), **Dökümhane** (potadaki erimiş metal yarıktan basamaklı kalıplara dökülüp katılaşıyor, sonda su teknesi), **Mağara** (12 °C; tüneller, yeraltı gölü, lav cebinin ısıttığı kaplıca buharı, sarkıtlar, maden destekleri).
 - `docs/MATERIALS.md`: tüm materyallerin ve etkileşimlerinin (mevcut ve planlanan) başvuru belgesi. Tür, yoğunluk, kısayol, olasılıklar ve 0.10.0'da değişecek kurallar burada tutulur.
 
 ### Changed
@@ -39,6 +40,7 @@ Hedef sürüm 0.10.0: sıcaklık sistemi, Buz, Kar, Metal, yeni sahneler ve kum 
 
 ### Fixed
 
+- Volkan: krater yarığının sağ ucu tek sıra taşla kapalıydı; lav yamaca hiç çıkamıyordu. Yarık artık yamaca açık; altında magma damarı, tabanında iki çoğaltıcı var, lav sağ yamaçtan akıyor. Magma odasına sabit sıcaklıklı magma kaynağı eklendi.
 - Faz geçişlerinde eşiğin çok az üstündeki ısı fazlası sıfıra yuvarlanıyordu; buz 1 °C'de hiç erimiyor, göl hiç donmuyordu. İlerleme artık sabit noktalı ve stokastik yuvarlanıyor.
 - Çizim sürerken Temizle ya da ters çevirme yapılırsa, çizimin undo noktası bekleyen snapshot'ın üzerine yazılabiliyordu.
 

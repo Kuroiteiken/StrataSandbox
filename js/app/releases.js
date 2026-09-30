@@ -8,6 +8,7 @@
 export const UNRELEASED = Object.freeze({
   version: '0.10.0',
   items: [
+    'Yeni sahneler: Buzul (donmuş göl ve karlı yamaçlar), Dökümhane (erimiş metal kalıplara dökülüyor) ve Mağara (yeraltı gölü ve kaplıca buharı). Volkan yeniden lav akıtıyor.',
     'Ortam bölümü: sıcaklık kaydırıcısı (−40…60 °C), gün/gece döngüsü ve termal görünüm (T). Başlıkta ortam sıcaklığı ve imlecin altındaki materyalin sıcaklığı görünür.',
     'Materyal seçici sekmelere ayrıldı: Toz, Sıvı, Gaz, Katı, Araç.',
     'Isıt (H) ve Soğut (C) fırçaları: materyal koymadan sıcaklığı değiştirir; suyu kaynatmak, lavı dondurmak ya da metali eritmek için basılı tutun.',

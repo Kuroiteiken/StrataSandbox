@@ -742,7 +742,7 @@ Spec: `docs/superpowers/specs/2026-09-30-sicaklik-sistemi-design.md` · Plan: `d
 - [x] Isıt ve Soğut fırçaları
 - [x] Sekmeli seçici, Ortam bölümü, termal düğme, kısayollar, göstergeler
 - [x] Çoğaltıcı (`CLONER`) ve Yutucu (`SINK`) — Görev 3'te, kum saatiyle birlikte
-- [ ] Buzul, Dökümhane ve Mağara sahneleri; volkan magması ve çoğaltıcısı
+- [x] Buzul, Dökümhane ve Mağara sahneleri; volkan magması ve çoğaltıcısı
 - [ ] Performans, dokümanlar, 0.10.0 sürümü
 
 ---

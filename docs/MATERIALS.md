@@ -151,8 +151,8 @@ Eşiklerde histerezis vardır (ör. donma −1 °C, erime +1 °C), böylece hüc
 | Buz | `ICE` | `B` | statik | — | Doğuş −15 °C, K 0,12, C 3. +1 °C'de suya döner (gizli ısı 300). Su −1 °C'de buza döner; göl yüzeyden donar. |
 | Kar | `SNOW` | `K` | toz | 8 | Doğuş −8 °C, yalıtkan (K 0,01, C 1). +1 °C'de suya döner (gizli ısı 30, buzdan hızlı). Suyun üstünde yüzer. |
 | Metal | `METAL` | `M` | statik | — | Isıyı çok hızlı iletir (K 1,6, C 8; havaya kayıpla ~10 hücre menzil). 450 °C'den sonra kızarır, 1400 °C'de erir (gizli ısı 1200). |
-| Erimiş metal | `MOLTEN_METAL` | `E` | sıvı | 40 | Doğuş 1450 °C, K 0,8, C 4. 1300 °C'de metale döner (gizli ısı 400). Lavdan ağırdır, lavın içinde batar. |
-| Magma kaynağı | `MAGMA` | — | statik | — | Seçicide yok; sahneler yerleştirir. Sabit 1200 °C ısı kaynağıdır. |
+| Erimiş metal | `MOLTEN_METAL` | `E` | sıvı | 40 | Doğuş 1450 °C, K 0,8, C 4, dağılım 4 (çok akışkan). 1300 °C'de metale döner (gizli ısı 400). Lavdan ağırdır, lavın içinde batar. |
+| Magma kaynağı | `MAGMA` | — | statik | — | Seçicide yok; sahneler yerleştirir (volkan odası ve yarık damarı, Buzul bacası, Dökümhane kaidesi, Mağara lav cebi). Sabit 1200 °C ısı kaynağıdır. |
 | Çoğaltıcı | `CLONER` | `X` | statik | — | **Mevcut (0.10.0 geliştirme).** Bkz. §4.5. |
 | Yutucu | `SINK` | `Y` | statik | — | **Mevcut (0.10.0 geliştirme).** Bkz. §4.5. |
 
@@ -177,7 +177,7 @@ Eşiklerde histerezis vardır (ör. donma −1 °C, erime +1 °C), böylece hüc
   - Dünya genelinde tick başına en fazla 300 yutma olur.
   - Bütçesi biten yutucu grileşir.
 - **Kum saati:** üst haznenin tepesinde kumu öğrenmiş sınırsız çoğaltıcı sırası (8 hücre), alt haznenin dibinde sınırsız yutucu sırası (6 hücre; altta küçük ve sabit bir yığın kalır) vardır. Kum sürekli akar.
-- **Volkandaki kullanım:** çoğaltıcı krater tabanına, lavın taştığı yarığa yerleştirilir. Volkan böylece bütçe bitene kadar uzun süre lav akıtır.
+- **Volkandaki kullanım (mevcut):** iki çoğaltıcı hücre krater yarığının tabanında, yarığın altında bir magma damarı var. Yarık artık yamaca açık (0.9.0'da sağ ucu kapalıydı); lav sağ yamaçtan kabuk bağlayarak aşağı akar ve çoğaltıcı boşalan yeri ~2000 hücre boyunca doldurur.
 - **Sınır:** basınç olmadığı için, dolu bir odanın altındaki çoğaltıcı lavı yukarı itemez; etrafında boş hücre yoksa üretim yapmaz. Basınç alt proje 2'de gelecek.
 
 ### 4.6 Değişecek etkileşimler
