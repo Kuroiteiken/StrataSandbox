@@ -5,6 +5,14 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) yaklaşımını 
 
 ## [Unreleased]
 
+### Added — Phase 8 (Görsel efektler)
+
+- Ateş, lav ve yanan materyaller için glow (ısı ışıltısı): kademeli küçültmeyle bulanıklaştırılıp `lighter` ile eklenir.
+- Görsel kalite seviyeleri: Yüksek, Orta, Düşük ve **Otomatik**. Otomatik mod, kare iş süresine göre histerezisle yalnızca dekoratif efektleri azaltır; fizik değişmez.
+- Panelde "Görsel kalite" seçimi (tercih olarak saklanır).
+- `prefers-reduced-motion` çalışırken değişince anında uygulanıyor.
+- Testler: `tests/quality.test.js`, glow testleri (toplam 265).
+
 ### Added — Phase 7 (Procedural Scenes)
 
 - **Volkan** (varsayılan): kesik koni, krater ve magma odası. Sağ yarıktan taşan lav ağaçları tutuşturur. Yamaçlarda kum, solda göl ve kıyı bitkileri.

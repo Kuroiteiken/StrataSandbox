@@ -132,7 +132,7 @@ Renderer.render(view, frameInfo)                                 ← state'i asl
 | Sand | ısı |
 | Plant | büyüme bütçesi |
 
-## 6. Renderer (uygulandı — Phase 4; glow Phase 8)
+## 6. Renderer (uygulandı — Phase 4, 8)
 
 | Modül | Sorumluluk | DOM |
 | --- | --- | --- |
@@ -154,6 +154,11 @@ Renderer.render(view, frameInfo)                                 ← state'i asl
   4. brush preview (Phase 5)
   5. glow (Phase 8)
 - **Grid boyutu:** açılışta bir kez seçilir. Resize yalnızca sunumu değiştirir.
+- **Glow:**
+  - `fillPixels`, isteğe bağlı bir ışık tamponunu aynı döngüde doldurur (ateş, lav, yanma; alfa = yoğunluk).
+  - Renderer bu tamponu grid → ½ → ¼ çözünürlüğe bilinear küçültür (ucuz bulanıklık) ve `lighter` ile ekler.
+  - HIGH iki katman kullanır, MEDIUM tek katman, LOW hiç glow çizmez.
+- **Otomatik kalite** (`app/quality.js`): kare iş süresinin EMA'sına bakar. 12 ms'yi 2 sn aşarsa bir kademe düşer; 6 ms'nin altında 5 sn kalırsa yükselir. Fizik etkilenmez.
 
 ## 7. Input (uygulandı — Phase 5)
 

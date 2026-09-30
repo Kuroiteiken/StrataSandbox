@@ -1,6 +1,6 @@
 // Render engine. Simülasyon durumunu (sim.view) yalnızca okur; fizik kuralı içermez.
-// Katmanlar: cache'li arka plan → sim tamponu (ImageData, büyütülmüş) → (Phase 5) brush preview
-// → (Phase 8) glow.
+// Katmanlar: cache'li arka plan → sim tamponu (ImageData, büyütülmüş) → glow ('lighter')
+// → brush preview. Kalite: high (iki katman glow), medium (tek katman), low (glow yok).
 import { MATERIALS } from '../engine/materials.js';
 import { buildPalette, buildRamps, ANIMATED_IDS } from './palette.js';
 import { fillPixels } from './pixels.js';
@@ -14,6 +14,7 @@ const BACKGROUND_RES = 0.5; // arka plan yarım çözünürlükte çizilip yumu�
 const PREVIEW_COLOR = 'rgba(240, 196, 106, 0.85)';
 const SPRAY_DASH = [3, 3];
 const NO_DASH = [];
+const QUALITIES = new Set(['high', 'medium', 'low']);
 
 export class Renderer {
   constructor(canvas, { seed = 'strata', frameColor = '#0e0c0a' } = {}) {
@@ -42,6 +43,23 @@ export class Renderer {
     this.lastRenderMs = 0;
     this.preview = { x: 0, y: 0, shape: 'circle', size: 1, visible: false };
     this.dpr = 1;
+
+    this.quality = 'high';
+    this.glowW = 0;
+    this.glowH = 0;
+    this.glowSrc = null; // grid çözünürlüğünde ışık kaynakları
+    this.glowHalf = null; // yarım çözünürlük (dar hale)
+    this.glowQuarter = null; // çeyrek çözünürlük (geniş hale)
+    this.glowImage = null;
+    this.glowPixels = null;
+    this._glowReady = false;
+  }
+
+  // Görsel kalite yalnızca dekoratif efektleri etkiler (fizik değişmez).
+  setQuality(level) {
+    if (!QUALITIES.has(level) || level === this.quality) return;
+    this.quality = level;
+    this.lastVersion = -1; // glow tamponunu hemen yeniden hesapla
   }
 
   // Fırça önizlemesi: yalnızca çizim katmanı; simülasyonu değiştirmez.
@@ -117,9 +135,67 @@ export class Renderer {
   }
 
   _isAnimated(view) {
-    if (this.reducedMotion || !view.counts) return false;
+    if (this.reducedMotion) return false;
+    return this._hasEmitters(view);
+  }
+
+  // Işık yayan (ve canlanan) materyaller: ateş, lav, yanan materyaller.
+  _hasEmitters(view) {
+    if (!view.counts) return false;
     for (let k = 0; k < ANIMATED_IDS.length; k++) if (view.counts[ANIMATED_IDS[k]] > 0) return true;
     return false;
+  }
+
+  _ensureGlow(w, h) {
+    if (this.glowW === w && this.glowH === h && this.glowSrc) return;
+    for (const c of [this.glowSrc, this.glowHalf, this.glowQuarter]) if (c) c.width = 0;
+    const make = (cw, ch) => {
+      const c = document.createElement('canvas');
+      c.width = Math.max(1, cw);
+      c.height = Math.max(1, ch);
+      return c;
+    };
+    this.glowSrc = make(w, h);
+    this.glowHalf = make(Math.ceil(w / 2), Math.ceil(h / 2));
+    this.glowQuarter = make(Math.ceil(w / 4), Math.ceil(h / 4));
+    this.glowImage = this.glowSrc.getContext('2d').createImageData(w, h);
+    this.glowPixels = new Uint32Array(this.glowImage.data.buffer);
+    this.glowW = w;
+    this.glowH = h;
+  }
+
+  // Sim tamponunu (ve gerekiyorsa glow zincirini) durumdan yeniden üretir.
+  _refresh(view) {
+    const wantGlow = this.quality !== 'low' && this._hasEmitters(view);
+    if (wantGlow) this._ensureGlow(view.width, view.height);
+    fillPixels(view, this.pixels, this.palette, this.ramps, this.frame, this.reducedMotion, wantGlow ? this.glowPixels : null);
+    this.bufferCtx.putImageData(this.image, 0, 0);
+    if (wantGlow) {
+      // Kademeli küçültme = ucuz, taşınabilir bulanıklık (ctx.filter gerekmez).
+      this.glowSrc.getContext('2d').putImageData(this.glowImage, 0, 0);
+      for (const [src, dst] of [[this.glowSrc, this.glowHalf], [this.glowHalf, this.glowQuarter]]) {
+        const c = dst.getContext('2d');
+        c.clearRect(0, 0, dst.width, dst.height);
+        c.imageSmoothingEnabled = true;
+        c.drawImage(src, 0, 0, dst.width, dst.height);
+      }
+    }
+    this._glowReady = wantGlow;
+    this.lastView = view;
+    this.lastVersion = view.version;
+  }
+
+  _drawGlow(ctx, x, y, w, h) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.imageSmoothingEnabled = true;
+    ctx.globalAlpha = 0.9;
+    ctx.drawImage(this.glowQuarter, x, y, w, h);
+    if (this.quality === 'high') {
+      ctx.globalAlpha = 0.5;
+      ctx.drawImage(this.glowHalf, x, y, w, h);
+    }
+    ctx.restore();
   }
 
   _drawPreview() {
@@ -150,12 +226,7 @@ export class Renderer {
   capture(view) {
     this._ensureBuffer(view.width, view.height);
     this._ensureLayout();
-    if (view !== this.lastView || view.version !== this.lastVersion) {
-      fillPixels(view, this.pixels, this.palette, this.ramps, this.frame, this.reducedMotion);
-      this.bufferCtx.putImageData(this.image, 0, 0);
-      this.lastView = view;
-      this.lastVersion = view.version;
-    }
+    if (view !== this.lastView || view.version !== this.lastVersion) this._refresh(view);
     const w = Math.max(view.width, this.layout.drawW);
     const h = Math.max(view.height, this.layout.drawH);
     const out = document.createElement('canvas');
@@ -167,6 +238,7 @@ export class Renderer {
     ctx.drawImage(this.background, 0, 0, w, h);
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(this.buffer, 0, 0, w, h);
+    if (this._glowReady) this._drawGlow(ctx, 0, 0, w, h);
     return new Promise((resolve, reject) => {
       out.toBlob((blob) => {
         out.width = 0; // bellek
@@ -182,12 +254,7 @@ export class Renderer {
     this._ensureBuffer(view.width, view.height);
     this._ensureLayout();
 
-    if (view !== this.lastView || view.version !== this.lastVersion || this._isAnimated(view)) {
-      fillPixels(view, this.pixels, this.palette, this.ramps, this.frame, this.reducedMotion);
-      this.bufferCtx.putImageData(this.image, 0, 0);
-      this.lastView = view;
-      this.lastVersion = view.version;
-    }
+    if (view !== this.lastView || view.version !== this.lastVersion || this._isAnimated(view)) this._refresh(view);
 
     const { ctx, canvas } = this;
     const l = this.layout;
@@ -199,6 +266,7 @@ export class Renderer {
       ctx.drawImage(this.background, l.offsetX, l.offsetY, l.drawW, l.drawH);
       ctx.imageSmoothingEnabled = false; // canvas resize bu ayarı sıfırlar; her karede set edilir
       ctx.drawImage(this.buffer, l.offsetX, l.offsetY, l.drawW, l.drawH);
+      if (this._glowReady) this._drawGlow(ctx, l.offsetX, l.offsetY, l.drawW, l.drawH);
       if (this.preview.visible) this._drawPreview();
     }
     this.lastRenderMs = performance.now() - start;

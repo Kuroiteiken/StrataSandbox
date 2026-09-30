@@ -9,6 +9,7 @@ let puts;
 let strokes;
 let dashes;
 let draws;
+let lighterDraws;
 
 function fakeContext() {
   return {
@@ -17,8 +18,13 @@ function fakeContext() {
     strokeStyle: '',
     lineWidth: 1,
     fillRect() {},
+    clearRect() {},
+    globalCompositeOperation: 'source-over',
+    globalAlpha: 1,
+    filter: 'none',
     drawImage() {
       draws++;
+      if (this.globalCompositeOperation === 'lighter') lighterDraws++;
     },
     beginPath() {},
     moveTo() {},
@@ -28,8 +34,14 @@ function fakeContext() {
     stroke() {
       strokes++;
     },
-    save() {},
-    restore() {},
+    _stack: [],
+    save() {
+      this._stack.push([this.globalCompositeOperation, this.globalAlpha, this.imageSmoothingEnabled]);
+    },
+    restore() {
+      const top = this._stack.pop();
+      if (top) [this.globalCompositeOperation, this.globalAlpha, this.imageSmoothingEnabled] = top;
+    },
     rect() {},
     clip() {},
     setLineDash(d) {
@@ -59,14 +71,18 @@ beforeEach(() => {
   strokes = 0;
   dashes = [];
   draws = 0;
+  lighterDraws = 0;
   globalThis.document = { createElement: () => fakeCanvas() };
 });
 
 const { Renderer } = await import('../js/render/renderer.js');
 
-function setup() {
+// Yeniden doldurma sayımı (putImageData) glow zincirinden etkilenmesin diye varsayılan
+// kurulum glow'suz (low) kalitededir; glow testleri kaliteyi açıkça yükseltir.
+function setup({ quality = 'low' } = {}) {
   const canvas = fakeCanvas();
   const renderer = new Renderer(canvas);
+  renderer.setQuality(quality);
   renderer.resize(400, 200, 2); // 800×400 device px
   return { canvas, renderer };
 }
@@ -177,4 +193,21 @@ test('capture arka plan + simülasyonu PNG olarak döner, fırça önizlemesini 
   assert.equal(blob.type, 'image/png');
   assert.equal(strokes, 0, 'önizleme yakalamaya girmemeli');
   assert.equal(draws, 2, 'arka plan + sim tamponu');
+});
+
+test('glow yalnızca ışık yayan materyal varken ve kalite düşük değilken çizilir', () => {
+  const { renderer } = setup({ quality: 'high' });
+  const sim = new Simulation({ width: 100, height: 50 });
+  sim.setCell(3, 3, MAT.STONE);
+  renderer.render(sim.view);
+  assert.equal(lighterDraws, 0, 'ışık kaynağı yokken glow yok');
+  sim.setCell(10, 10, MAT.LAVA);
+  lighterDraws = 0;
+  renderer.render(sim.view);
+  assert.ok(lighterDraws >= 1, 'lav varken glow çizilmeli');
+  renderer.setQuality('low');
+  lighterDraws = 0;
+  renderer.render(sim.view);
+  assert.equal(lighterDraws, 0, 'düşük kalitede glow yok');
+  assert.equal(renderer.quality, 'low');
 });

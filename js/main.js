@@ -12,6 +12,7 @@ import { loadPrefs, safeLocalStorage, sanitizePrefs, isValidSeed } from './app/s
 import { attachStats, formatStats, createRateMeter } from './app/stats.js';
 import { materialLabel } from './app/catalog.js';
 import { SCENES } from './scenes/index.js';
+import { createQualityGovernor } from './app/quality.js';
 
 document.title = APP_NAME;
 for (const el of document.querySelectorAll('[data-app-name]')) el.textContent = APP_NAME;
@@ -41,7 +42,22 @@ const updatePreview = (visible = cursor !== null) => {
   renderer.setBrushPreview({ x: cursor?.x, y: cursor?.y, shape: app.state.brushShape, size: app.state.brushSize, visible });
 };
 
-const app = createApp({ sim, renderer, prefs, storage, doc: document, onStateChange: () => updatePreview() });
+// Uyarlanır kalite: yalnızca dekoratif efektler (glow) değişir, fizik değil.
+const quality = createQualityGovernor(prefs.quality);
+renderer.setQuality(quality.level);
+
+const app = createApp({
+  sim,
+  renderer,
+  prefs,
+  storage,
+  doc: document,
+  onStateChange: () => updatePreview(),
+  onQualityChange(mode) {
+    quality.setMode(mode);
+    renderer.setQuality(quality.level);
+  },
+});
 const pickableScenes = SCENES.filter((s) => debug || !s.hidden);
 app.bindControls(createControls(document, { palette: renderer.palette, scenes: pickableScenes, actions: app.actions }));
 app.load();
@@ -80,7 +96,7 @@ attachStats(document, () => {
     values.physicsMs = s.physicsMs.toFixed(2);
     values.renderMs = renderer.lastRenderMs.toFixed(2);
     values.activeCells = String(s.activeCells);
-    values.quality = app.state.quality;
+    values.quality = quality.mode === 'auto' ? `otomatik → ${quality.level}` : quality.level;
     values.cursorCell = cursor ? `${cursor.x}, ${cursor.y}` : '–';
     values.cursorMaterial = cursor ? materialLabel(sim.getCell(cursor.x, cursor.y)?.material) : '–';
   }
@@ -89,9 +105,12 @@ attachStats(document, () => {
 
 const loop = createLoop({
   onFrame(dt, now) {
-    sim.update(dt, PHYSICS_BUDGET_MS);
+    const ticks = sim.update(dt, PHYSICS_BUDGET_MS);
     renderer.render(sim.view);
     meter.sample(now, sim.tick);
+    const work = (ticks > 0 ? sim.physicsMs : 0) + renderer.lastRenderMs;
+    const level = quality.update(now, work);
+    if (level !== renderer.quality) renderer.setQuality(level);
   },
   onResume() {
     sim.resetTiming();
@@ -99,4 +118,4 @@ const loop = createLoop({
 });
 loop.start();
 
-if (debug) window.__strata = { sim, renderer, loop, grid, app };
+if (debug) window.__strata = { sim, renderer, loop, grid, app, quality };

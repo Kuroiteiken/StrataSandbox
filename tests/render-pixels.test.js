@@ -94,3 +94,28 @@ test('fillPixels simülasyon durumunu değiştirmez', () => {
   render(sim, 4, true);
   assert.equal(hashView(sim), before);
 });
+
+test('glow tamponu yalnızca ışık yayan materyallerde (ateş, lav, yanma) dolar', () => {
+  const sim = new Simulation({ width: 6, height: 1 });
+  const mats = [MAT.FIRE, MAT.LAVA, MAT.BURNING_WOOD, MAT.SAND, MAT.WATER, MAT.STONE];
+  mats.forEach((m, x) => sim.setCell(x, 0, m));
+  sim.world.life[sim.world.index(0, 0)] = 20;
+  sim.world.life[sim.world.index(2, 0)] = 400;
+  const out = new Uint32Array(6);
+  const glow = new Uint32Array(6);
+  fillPixels(sim.view, out, pal, ramps, 0, true, glow);
+  for (let x = 0; x < 3; x++) assert.ok(glow[x] >>> 24 > 0, `ışık yok: ${x}`);
+  for (let x = 3; x < 6; x++) assert.equal(glow[x], 0, `ışık yaymamalı: ${x}`);
+});
+
+test('sönmekte olan ateş taze ateşten daha az ışık yayar', () => {
+  const sim = new Simulation({ width: 2, height: 1 });
+  sim.setCell(0, 0, MAT.FIRE);
+  sim.setCell(1, 0, MAT.FIRE);
+  sim.world.life[sim.world.index(0, 0)] = 26;
+  sim.world.life[sim.world.index(1, 0)] = 2;
+  const out = new Uint32Array(2);
+  const glow = new Uint32Array(2);
+  fillPixels(sim.view, out, pal, ramps, 0, true, glow);
+  assert.ok(glow[0] >>> 24 > glow[1] >>> 24, 'alfa (yoğunluk) ömürle azalmalı');
+});

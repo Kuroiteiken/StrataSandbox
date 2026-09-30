@@ -374,15 +374,39 @@ node tools/check-paths.js  # path büyük/küçük harf + root-absolute kontrol�
 
 ### Phase 8 — Görsel efektler
 
-- [ ] `glow.js`: ışık kaynağı buffer'ı, küçült-büyüt blur, `lighter`
-- [ ] `ctx.filter` blur (geri okumayla doğrulanırsa, yalnızca HIGH)
-- [ ] HIGH/MEDIUM/LOW + auto (histerezis)
-- [ ] `prefers-reduced-motion`
-- [ ] **Test:**
-  - [ ] kalite başına render ms
-  - [ ] auto düşürme ve geri alma
-  - [ ] reduced motion
-  - [ ] fizik hash'i kaliteden bağımsız
+- [x] Glow:
+  - [x] `fillPixels` aynı döngüde ışık tamponunu dolduruyor: ateş, lav ve yanma; alfa = yoğunluk
+  - [x] renderer'da kademeli küçültme (grid → ½ → ¼) ile bulanıklık
+  - [x] `lighter` birleştirme
+  - [x] ışık kaynağı yoksa glow atlanıyor
+- [~] `ctx.filter` blur kullanılmadı: kademeli küçültme tüm tarayıcılarda aynı ve ucuz (bkz. karar notları)
+- [x] Kalite:
+  - [x] HIGH: iki katman glow (½ + ¼); MEDIUM: tek katman (¼); LOW: glow yok
+  - [x] `renderer.setQuality`
+- [x] Otomatik kalite (`app/quality.js`):
+  - [x] kare iş süresinin (fizik + render) EMA'sı
+  - [x] 12 ms'yi 2 sn aşarsa bir kademe düşer; 6 ms'nin altında 5 sn kalırsa geri yükselir
+  - [x] elle seçilen seviye sabit
+  - [x] yalnızca dekoru etkiler
+- [x] Panelde "Görsel kalite" seçimi (Otomatik / Yüksek / Orta / Düşük); tercih olarak saklanıyor
+- [x] `prefers-reduced-motion`:
+  - [x] ateş titremesi ve lav dalgası kapanıyor
+  - [x] canlanmayan dünyada tampon her karede yenilenmiyor
+  - [x] CSS geçişleri kapalı
+  - [x] tercih çalışırken değişince anında uygulanıyor
+- [x] **Test** (`quality`, `render-pixels`, `renderer`; suite 265/265):
+  - [x] Otomatik kalite:
+    - [x] tek kare sıçraması düşürmez
+    - [x] sürekli yükte düşer (histerezis)
+    - [x] yük azalınca daha temkinli yükselir
+    - [x] elle seçilen seviye sabit
+  - [x] Glow tamponu yalnızca ışık yayanlarda; sönük ateş daha az ışık yayar
+  - [x] Glow ışık kaynağı varken ve kalite düşük değilken çizilir
+  - [x] Fizik hash'i kaliteden bağımsız (renderer durumu yazmaz; ilgili testler)
+  - [x] Tarayıcı (Playwright):
+    - [x] glow görsel kontrolü (Volkan)
+    - [x] kalite seçimi
+    - [x] reduced motion emülasyonu açık ve kapalı
 
 ### Phase 9 — Mobil / Responsive / Accessibility
 
@@ -554,6 +578,14 @@ Uygulama sırasında plandan sapan ya da planın cevaplamadığı kararlar. Kal�
   - Karar: koni tepesi düzleştiriliyor (plato), çanak platonun altına oyuluyor, lav yalnızca sağ kenardaki yarıktan taşıyor.
 - **2026-09-30 · Phase 7 — Opsiyonel maddeler ertelendi.**
   - Karar: sınırlı ömürlü EMITTER ve kum saati "Flip" özelliği şimdilik yapılmadı. v1 için gerekli değil; roadmap'te fikir olarak duruyor.
+
+- **2026-09-30 · Phase 8 — `ctx.filter` blur kullanılmıyor.**
+  - Karar: glow kademeli küçültme (grid → ½ → ¼ çözünürlük, bilinear) ile yapılıyor.
+  - Neden: Safari'de `ctx.filter` güvenilir değil; kademeli küçültme her tarayıcıda aynı görünüyor ve ucuz. HIGH kalite ek bir ½ katman ekliyor.
+  - Yanlışsa maliyeti: gerekirse HIGH'a feature-detect'li `filter` katmanı eklenebilir.
+- **2026-09-30 · Phase 8 — Otomatik kalite ölçütü iş süresi.**
+  - Karar: ölçüt rAF aralığı değil, kare iş süresi (fizik + render).
+  - Neden: 30 Hz ekranlarda ya da arka plana düşürülen pencerede aralık yükten bağımsız olarak uzundur; yanlış düşüşe yol açardı.
 
 ### Phase 0–1 bağımsız inceleme (2026-09-30)
 

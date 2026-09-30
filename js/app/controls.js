@@ -76,6 +76,8 @@ export function createControls(doc, { palette, scenes, actions }) {
   const undo = $('btn-undo');
   undo.addEventListener('click', () => actions.undo());
   $('btn-clear').addEventListener('click', () => actions.clear());
+  const quality = $('quality-select');
+  quality.addEventListener('change', () => actions.setQuality(quality.value));
 
   // Sahne ve seed
   const sceneSelect = $('scene-select');
@@ -120,6 +122,7 @@ export function createControls(doc, { palette, scenes, actions }) {
       play.firstChild.textContent = state.paused ? 'Devam et ' : 'Duraklat ';
       for (const r of speeds) r.checked = Number(r.value) === state.speed;
       undo.disabled = !state.canUndo;
+      quality.value = state.quality;
       sceneSelect.value = state.scene;
       committedSeed = state.seed;
       if (doc.activeElement !== seedInput) seedInput.value = state.seed;

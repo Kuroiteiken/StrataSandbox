@@ -81,9 +81,15 @@ export function buildRamps(littleEndian = IS_LITTLE_ENDIAN) {
   burn[MAT.BURNING_PLANT] = g([[0, '#1e1a0e'], [0.4, '#5a4a18'], [0.75, '#c8682a'], [1, '#ffc060']]);
   burn[MAT.BURNING_OIL] = g([[0, '#2a1006'], [0.4, '#8a2e0c'], [0.75, '#f06a1c'], [1, '#ffd070']]);
   return {
+    littleEndian,
     fire: g([[0, '#4a1004'], [0.3, '#b02a08'], [0.55, '#f0601a'], [0.8, '#ffae3a'], [1, '#fff2c4']]),
     lava: g([[0, '#6a1604'], [0.4, '#c8380c'], [0.75, '#f26a1e'], [1, '#ffb450']]),
     burn,
     heat: gradient([[0, '#d9bb82'], [0.6, '#f0924a'], [1, '#ff6a2a']], HEAT_RAMP_SIZE, littleEndian),
   };
+}
+
+// Paketli rengin alfa baytını değiştirir (glow yoğunluğu).
+export function withAlpha(color, alpha, littleEndian = IS_LITTLE_ENDIAN) {
+  return littleEndian ? ((color & 0x00ffffff) | (alpha << 24)) >>> 0 : ((color & 0xffffff00) | alpha) >>> 0;
 }

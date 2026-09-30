@@ -240,6 +240,10 @@
   margin-top: 0;
 }
 
+.field.field-spaced {
+  margin-top: var(--space-3);
+}
+
 .field input[type="range"] {
   width: 100%;
   min-height: 28px;

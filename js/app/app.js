@@ -4,7 +4,7 @@ import { pickerByKey } from './catalog.js';
 import { SPEEDS } from '../engine/simulation.js';
 import { BRUSH_SHAPES, clampBrushSize } from '../engine/brush.js';
 import { getScene } from '../scenes/index.js';
-import { isValidSeed, savePrefs } from './storage.js';
+import { isValidSeed, savePrefs, QUALITY_LEVELS } from './storage.js';
 import { APP_SLUG, STORAGE_KEY } from '../config.js';
 
 const PERSIST_DELAY_MS = 300;
@@ -20,7 +20,7 @@ function timestamp(date) {
   return `${date.getFullYear()}${p(date.getMonth() + 1)}${p(date.getDate())}-${p(date.getHours())}${p(date.getMinutes())}${p(date.getSeconds())}`;
 }
 
-export function createApp({ sim, renderer, prefs, storage, doc, onStateChange = () => {} }) {
+export function createApp({ sim, renderer, prefs, storage, doc, onStateChange = () => {}, onQualityChange = () => {} }) {
   const state = {
     material: prefs.material,
     brushSize: prefs.brushSize,
@@ -116,6 +116,13 @@ export function createApp({ sim, renderer, prefs, storage, doc, onStateChange = 
     changeSpeed(delta) {
       const i = SPEEDS.indexOf(state.speed);
       actions.setSpeed(SPEEDS[Math.max(0, Math.min(SPEEDS.length - 1, i + delta))]);
+    },
+    setQuality(mode) {
+      if (!QUALITY_LEVELS.includes(mode)) return;
+      state.quality = mode;
+      onQualityChange(mode);
+      persist();
+      sync();
     },
     undo() {
       if (sim.undo()) announce('Son çizim geri alındı');
