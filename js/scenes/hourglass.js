@@ -1,47 +1,67 @@
-// Kum saati: cam duvarlı iki hazne, 3 hücrelik dar boğaz, odun çerçeve ve üst haznede kum.
-// Animasyon sahte değildir: kum yalnızca fizik kurallarıyla boğazdan akar.
+// Kum saati: kavisli iki cam hazne, dar boğaz, odun kapaklar ve yan direkler.
+// Cam ve odun şekli dünyanın orta satırına göre tam simetriktir (ters çevirince (F) aynı kalır).
+// Akış sahte değildir: kum yalnızca fizik kurallarıyla boğazdan akar.
+// Duvar eğimi satır başına en fazla 1 hücredir (A ≤ 0,66·L), bu yüzden kum camda takılmaz.
+// Sürekli akış: üstte kumu öğrenmiş sınırsız çoğaltıcı boşalan yeri doldurur, altta sınırsız yutucu
+// biriken kumu yutar (kaynaklar şeklin simetrisine dahil değildir).
 import { MAT } from '../engine/materials.js';
-import { frame, rect, thickLine, fillPolygon } from './tools.js';
+import { frame } from './tools.js';
+
+const SAND_FILL = 0.85; // üst haznenin doluluk oranı
+const smoothstep = (u) => u * u * (3 - 2 * u);
 
 export function hourglass(sim) {
   const { W, H } = frame(sim);
-  const cx = Math.floor(W / 2);
-  const y0 = Math.max(3, Math.round(H * 0.06));
-  const y1 = Math.min(H - 4, Math.round(H * 0.94));
-  const ym = Math.round((y0 + y1) / 2);
-  const hw = Math.max(6, Math.round(Math.min(W * 0.42, (y1 - y0) * 0.36)));
-  const throat = 1; // boğaz açıklığı: cx-1..cx+1 (3 hücre)
-  const glass = 2; // cam kalınlığı
+  // Her yazma orta satıra göre aynalanır (kum hariç; kum yalnızca üst yarıya konur).
+  const put = (x, y, mat) => {
+    sim.setCell(x, y, mat);
+    sim.setCell(x, H - 1 - y, mat);
+  };
 
-  // Cam duvarlar: sol ve sağ, dış köşeden boğaza ve tekrar dışa.
-  const wallL = [[cx - hw, y0], [cx - throat - 1 - glass + 1, ym], [cx - hw, y1]];
-  const wallR = [[cx + hw, y0], [cx + throat + 1 + glass - 1, ym], [cx + hw, y1]];
-  for (const wall of [wallL, wallR]) {
-    thickLine(sim, wall[0][0], wall[0][1], wall[1][0], wall[1][1], MAT.GLASS, glass);
-    thickLine(sim, wall[1][0], wall[1][1], wall[2][0], wall[2][1], MAT.GLASS, glass);
+  const cx = Math.floor((W - 2) / 2); // boğazın sol hücresi; boğaz: cx, cx+1
+  const capH = Math.max(2, Math.min(3, Math.round(H * 0.015)));
+  const top = Math.max(1, Math.round(H * 0.05));
+  const glassTop = top + capH; // haznenin ilk satırı (kapağın altı)
+  const midRow = Math.floor((H - 1) / 2); // üst yarının son satırı (tek H'de orta satır)
+  const neckStart = H % 2 === 1 ? midRow - 1 : midRow; // boğaz tüpü: toplam 2 (çift H) ya da 3 (tek H) satır
+  const L = Math.max(1, neckStart - glassTop);
+  const A = Math.max(1, Math.min(Math.floor(0.66 * L), cx - 7, W - 9 - cx));
+  // İç yarı genişlik fazlası (boğazda 0, kapağa yakın A): iç boşluk x ∈ [cx − a, cx + 1 + a].
+  const extra = (y) => (y >= neckStart ? 0 : Math.round(A * smoothstep((neckStart - y) / L)));
+
+  // Cam duvarlar: iki yanda 2'şer hücre.
+  for (let y = glassTop; y <= midRow; y++) {
+    const a = extra(y);
+    for (const x of [cx - a - 2, cx - a - 1, cx + a + 2, cx + a + 3]) put(x, y, MAT.GLASS);
   }
-  // Boğazın iki yanı: tam boğaz satırında 3 hücrelik açıklık kalsın.
-  rect(sim, cx - throat - glass, ym, cx - throat - 1, ym, MAT.GLASS);
-  rect(sim, cx + throat + 1, ym, cx + throat + glass, ym, MAT.GLASS);
-  for (let x = cx - throat; x <= cx + throat; x++) sim.setCell(x, ym, MAT.EMPTY);
 
-  // Üst ve alt kapaklar (cam) + odun çerçeve.
-  rect(sim, cx - hw, y0, cx + hw, y0, MAT.GLASS);
-  rect(sim, cx - hw, y1, cx + hw, y1, MAT.GLASS);
-  const fx0 = cx - hw - 3;
-  const fx1 = cx + hw + 3;
-  rect(sim, fx0, y0 - 2, fx1, y0 - 1, MAT.WOOD);
-  rect(sim, fx0, y1 + 1, fx1, y1 + 2, MAT.WOOD);
-  rect(sim, fx0, y0 - 2, fx0 + 1, y1 + 2, MAT.WOOD);
-  rect(sim, fx1 - 1, y0 - 2, fx1, y1 + 2, MAT.WOOD);
+  // Odun kapaklar ve direkler (direk ile cam arasında 2 hücre boşluk).
+  const x0 = cx - A - 7;
+  const x1 = cx + A + 8;
+  for (let y = top; y < glassTop; y++) for (let x = x0; x <= x1; x++) put(x, y, MAT.WOOD);
+  for (let y = glassTop; y <= midRow; y++) {
+    for (const x of [cx - A - 6, cx - A - 5, cx + A + 6, cx + A + 7]) put(x, y, MAT.WOOD);
+  }
 
-  // Üst haznede kum: iç üçgenin alt ~%80'i (tepede boşluk kalır).
-  const sandTop = y0 + Math.max(2, Math.round((ym - y0) * 0.18));
-  const inset = glass + 1;
-  const topBulb = [[cx - hw + inset, y0 + 1], [cx + hw - inset, y0 + 1], [cx, ym - 1]];
-  fillPolygon(sim, topBulb, MAT.SAND);
-  for (let y = y0 + 1; y < sandTop; y++) for (let x = cx - hw; x <= cx + hw; x++) {
-    const c = sim.getCell(x, y);
-    if (c && c.material === MAT.SAND) sim.setCell(x, y, MAT.EMPTY);
+  // Kum: üst haznenin alttan (boğazdan) yukarı ~%85'i.
+  let total = 0;
+  for (let y = glassTop; y <= midRow; y++) total += 2 + 2 * extra(y);
+  let filled = 0;
+  for (let y = midRow; y >= glassTop && filled < total * SAND_FILL; y--) {
+    const a = extra(y);
+    for (let x = cx - a; x <= cx + 1 + a; x++) sim.setCell(x, y, MAT.SAND);
+    filled += 2 + 2 * a;
+  }
+
+  // Kaynaklar: iç boşluğun ortasında; yarı genişlik ≤ A + 1 olduğundan camın içinde kalır.
+  const clonerHalf = Math.min(4, A + 1); // en fazla 8 hücre
+  const sinkHalf = Math.min(3, A + 1); // en fazla 6 hücre: yutma akışa yetişir, altta küçük bir yığın kalır
+  for (let x = cx + 1 - clonerHalf; x <= cx + clonerHalf; x++) {
+    sim.setCell(x, glassTop, MAT.CLONER);
+    sim.configureSource(x, glassTop, { learn: MAT.SAND, budget: Infinity });
+  }
+  for (let x = cx + 1 - sinkHalf; x <= cx + sinkHalf; x++) {
+    sim.setCell(x, H - 1 - glassTop, MAT.SINK);
+    sim.configureSource(x, H - 1 - glassTop, { budget: Infinity });
   }
 }

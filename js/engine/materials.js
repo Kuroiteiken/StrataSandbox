@@ -27,6 +27,9 @@ export const MAT = Object.freeze({
   BURNING_PLANT: 13,
   BURNING_OIL: 14,
   ASH: 15,
+  // Kaynaklar (0.10.0): üstüne konan hareketli materyali bütçesi kadar çoğaltır / yutar.
+  CLONER: 21,
+  SINK: 22,
 });
 
 // Ortak alanlar:
@@ -79,6 +82,9 @@ export const MATERIAL_DEFS = [
     burn: { emit: 0.35, douse: 0, ash: 0, extinguishTo: MAT.OIL },
   },
   { id: MAT.ASH, key: 'ASH', name: 'Ash', kind: KIND.POWDER, density: 12, color: '#8c8680', hidden: true },
+  // Kaynaklar: life = kalan bütçe (65535 = sınırsız); çoğaltıcının öğrendiği materyal variant'ta (reactions.js).
+  { id: MAT.CLONER, key: 'CLONER', name: 'Cloner', kind: KIND.STATIC, density: 255, color: '#6a5a86', reactive: true, life: [1000, 1000] },
+  { id: MAT.SINK, key: 'SINK', name: 'Sink', kind: KIND.STATIC, density: 255, color: '#1b1626', reactive: true, life: [1000, 1000] },
 ];
 
 const VALID_KINDS = new Set(Object.values(KIND));

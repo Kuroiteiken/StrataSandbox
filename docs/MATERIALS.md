@@ -147,7 +147,8 @@ Eşiklerde histerezis vardır (ör. donma −1 °C, erime +1 °C), böylece hüc
 | Metal | `METAL` | `M` | statik | — | Isıyı çok hızlı iletir (K 1,6, C 8). 450 °C'den sonra kızarır, 1400 °C'de erir. |
 | Erimiş metal | `MOLTEN_METAL` | `E` | sıvı | 40 | Doğuş 1450 °C. 1300 °C'de metale döner. Lavdan ağırdır, lavın içinde batar. |
 | Magma kaynağı | `MAGMA` | — | statik | — | Seçicide yok; sahneler yerleştirir. Sabit 1200 °C ısı kaynağıdır. |
-| Çoğaltıcı | `CLONER` | `X` | statik | — | Bkz. §4.5. |
+| Çoğaltıcı | `CLONER` | `X` | statik | — | **Mevcut (0.10.0 geliştirme).** Bkz. §4.5. |
+| Yutucu | `SINK` | `Y` | statik | — | **Mevcut (0.10.0 geliştirme).** Bkz. §4.5. |
 
 ### 4.4 Araçlar
 
@@ -156,13 +157,20 @@ Eşiklerde histerezis vardır (ör. donma −1 °C, erime +1 °C), böylece hüc
 | Isıt | `H` | Materyal koymaz. Fırçanın altındaki sıcaklığı her uygulamada 25 °C artırır (en fazla 2500 °C). Basılı tutunca sürer. |
 | Soğut | `C` | Aynı etki, ters yönde (en az −100 °C). |
 
-### 4.5 Çoğaltıcı (`CLONER`)
+### 4.5 Çoğaltıcı (`CLONER`) ve Yutucu (`SINK`) — Mevcut (0.10.0 geliştirme)
 
 - **Öğrenme:** çoğaltıcı ilk temas ettiği hareketli materyali "öğrenir". Hareketli materyaller toz, sıvı ve gazdır; örneğin üstüne dökülen kum, su ya da lav.
 - **Üretim:** öğrendikten sonra her tick rastgele bir komşusuna bakar. O komşu boşsa oraya bir kopya koyar. Kopya materyalin doğuş sıcaklığıyla doğar.
 - **Bütçe:** her çoğaltıcı hücresi en fazla 1000 kopya üretir. Bütçe bitince durur ve sönük görünür. Dünya genelinde tick başına en fazla 300 kopya üretilir.
 - **Öğrenemediği materyaller:** statik materyaller (taş, odun, buz vb.), başka bir çoğaltıcı ve boşluk. Bu sayede kabının duvarlarını kopyalamaz.
 - **Görünüm:** öğrendiği materyalin rengine bürünür.
+- **Sınırsız mod:** bütçe `65535` ise hiç azalmaz. Seçiciden boyanan kaynaklar sınırlıdır (1000); sahneler `sim.configureSource(x, y, { learn, budget })` ile sınırsız kaynak kurar (`budget: Infinity`).
+- **Yutucu (`SINK`, `Y`):** çoğaltıcının tersidir. Her tick rastgele bir komşusuna bakar; komşu hareketli bir materyalse (toz, sıvı, gaz) hücreyi boşaltır ve bütçesini 1 azaltır.
+  - Statik materyalleri ve başka kaynakları yutmaz.
+  - Hücre başına 1000 birimlik bütçesi vardır; `65535` sınırsızdır.
+  - Dünya genelinde tick başına en fazla 300 yutma olur.
+  - Bütçesi biten yutucu grileşir.
+- **Kum saati:** üst haznenin tepesinde kumu öğrenmiş sınırsız çoğaltıcı sırası (8 hücre), alt haznenin dibinde sınırsız yutucu sırası (6 hücre; altta küçük ve sabit bir yığın kalır) vardır. Kum sürekli akar.
 - **Volkandaki kullanım:** çoğaltıcı krater tabanına, lavın taştığı yarığa yerleştirilir. Volkan böylece bütçe bitene kadar uzun süre lav akıtır.
 - **Sınır:** basınç olmadığı için, dolu bir odanın altındaki çoğaltıcı lavı yukarı itemez; etrafında boş hücre yoksa üretim yapmaz. Basınç alt proje 2'de gelecek.
 

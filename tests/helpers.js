@@ -19,6 +19,8 @@ export const CHAR_TO_MAT = {
   b: MAT.BURNING_PLANT,
   O: MAT.BURNING_OIL,
   a: MAT.ASH,
+  C: MAT.CLONER,
+  V: MAT.SINK,
 };
 const MAT_TO_CHAR = Object.fromEntries(Object.entries(CHAR_TO_MAT).map(([c, m]) => [m, c]));
 

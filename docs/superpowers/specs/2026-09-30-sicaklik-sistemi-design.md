@@ -295,10 +295,13 @@ Bu değerler hedef değerlerdir. Kesin sabitler testlerle ayarlanır ve uygulama
 | `MOLTEN_METAL` | 19 | seçicide |
 | `MAGMA` | 20 | `hidden`; seçicide yok, sahneler yazar |
 | `CLONER` | 21 | seçicide (Katı, `X`) |
+| `SINK` | 22 | seçicide (Katı, `Y`) |
 
-Kimlik 22 ve sonrası alt proje 2'ye ayrılır.
+Kimlik 23 ve sonrası alt proje 2'ye ayrılır.
 
 ### 3.4 Çoğaltıcı (`CLONER`)
+
+> Uygulama sırası notu (2026-09-30): kullanıcı çoğaltıcıyı ve yutucuyu kum saati iyileştirmesine dahil etmek istedi. Bu yüzden ikisi de plan Görev 3'te, sıcaklık alanından önce uygulanır. Sıcaklıkla ilgili ayrıntılar (kopyanın doğuş sıcaklığı) Görev 4'te bağlanır.
 
 Kullanıcı isteği (2026-09-30): "üstüne konulan malzemeyi çoğaltır, belli bir miktar çoğalttıktan sonra durur; örneğin volkanın altına koyarız."
 
@@ -321,8 +324,27 @@ Kullanıcı isteği (2026-09-30): "üstüne konulan malzemeyi çoğaltır, belli
   - Öğrenmemiş çoğaltıcı kendi rengindedir (mor-gri).
   - Öğrenmiş çoğaltıcı öğrendiği materyalin rengiyle %50 karışık görünür.
   - Bütçesi bitmiş çoğaltıcı %20 karışık ve daha sönük görünür.
+- **Sınırsız bütçe:** `life === 65535` sınırsız demektir; bu değerde bütçe hiç azalmaz. Seçiciden boyanan çoğaltıcı sınırlıdır (1000). Sahneler sınırsız kaynağı `sim.configureSource(x, y, { learn, budget })` ile kurar (§3.5).
 - **Sınır:** basınç olmadığından sıvı yalnızca aşağı ve yana akar. Dolu bir magma odasının altındaki çoğaltıcının boş komşusu olmaz ve üretim yapmaz. Volkan sahnesinde çoğaltıcı bu yüzden krater yarığının içine konur (§7). Alt proje 2'deki basınç, çoğaltıcının derin odalardan patlama beslemesini mümkün kılacak.
 
+
+### 3.5 Yutucu (`SINK`) ve kaynak ayarı
+
+Kullanıcı isteği (2026-09-30): "çoğaltıcı gibi yutucu da ekleyelim; kum saatinde yukarıda sınırsız çoğaltıcı, aşağıda sınırsız yutucu ile sürekli devamını sağlayalım."
+
+- **Davranış:**
+  - Reaktif bir statik; tek sahip kuralına uyar.
+  - Her tick rastgele bir komşuya bakar. Komşu hareketli bir materyalse (toz, sıvı, gaz), hücreyi boşaltır ve bütçesini 1 azaltır.
+  - Statik materyalleri, başka kaynakları ve kenarı yutmaz.
+- **Bütçe:** hücre başına varsayılan 1000 (`life`). `65535` sınırsız demektir. Bütçesi biten yutucu durur.
+- **Genel sınır:** dünya genelinde tick başına en fazla 300 yutma (`RATES.maxSinksPerTick`).
+- **Termal:** yutulan hücrenin yeri ortam sıcaklığında havaya döner (Görev 4). Yutucu, materyali ısısıyla birlikte yok eder.
+- **Görünüm:** çok koyu mor-siyah. Bütçesi bitmiş yutucu grileşir.
+- **Kaynak ayarı API'si:** `sim.configureSource(x, y, { learn?, budget? }) → boolean`
+  - Hücre `CLONER` ya da `SINK` değilse `false` döner.
+  - `learn` yalnızca çoğaltıcıda geçerlidir ve hareketli bir materyal olmalıdır; aksi halde `false` döner.
+  - `budget`, 0..65535 aralığında bir tamsayı ya da `Infinity` olabilir; `Infinity` değeri 65535'e (sınırsız) çevrilir.
+  - Undo noktası oluşturmaz. Sahneler ve testler için tasarlanmıştır.
 ---
 
 ## 4. Ortam ve gün/gece döngüsü
@@ -518,7 +540,12 @@ Kullanıcı isteği (2026-09-30): sürüm numarası ekranda görünsün ve eklen
 - **Tam simetri:**
   - Önce üst yarı üretilir, alt yarı dünyanın orta satırına göre aynalanır (`y → H−1−y`).
   - Böylece çevirme (§5.2) şekli birebir korur; grid yüksekliğinin tek ya da çift olması fark etmez.
-- **Boğaz:** 2 hücre genişliğinde, 2–3 satır uzunluğunda bir tüp. Hedef boşalma süresi 400×225'te 1× hızda 30–60 saniye.
+- **Boğaz:** 2 hücre genişliğinde, 2–3 satır uzunluğunda bir tüp.
+- **Sürekli akış** (kullanıcı isteği):
+  - Üst haznenin ilk satırında, kapağın hemen altında, kumu öğrenmiş **sınırsız çoğaltıcı** sırası vardır (en fazla 8 hücre).
+  - Alt haznenin son satırında **sınırsız yutucu** sırası vardır (en fazla 6 hücre; altta küçük, sabit bir yığın kalır).
+  - Çoğaltıcı boşalan yeri doldurur, yutucu biriken kumu yutar. Kum boğazdan hiç durmadan akar ve alt hazne tıkanmaz.
+  - Kaynaklar şeklin simetrisine dahil değildir. Ters çevirme yine çalışır ama sürekli akış için gerekli değildir.
 - **Çerçeve:**
   - üstte ve altta 3 satır kalınlığında odun kapak
   - iki yanda odun direk; direkler camdan 2 hücre uzakta

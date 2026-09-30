@@ -10,7 +10,7 @@ export const HEAT_RAMP_SIZE = 32;
 export const IS_LITTLE_ENDIAN = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1;
 
 // Dinamik renk türleri (pixels.js kullanır).
-export const DYN = Object.freeze({ NONE: 0, FIRE: 1, LAVA: 2, BURN: 3, SAND: 4 });
+export const DYN = Object.freeze({ NONE: 0, FIRE: 1, LAVA: 2, BURN: 3, SAND: 4, CLONER: 5, SINK: 6 });
 export const DYNAMIC = new Uint8Array(256);
 DYNAMIC[MAT.FIRE] = DYN.FIRE;
 DYNAMIC[MAT.LAVA] = DYN.LAVA;
@@ -18,6 +18,8 @@ DYNAMIC[MAT.BURNING_WOOD] = DYN.BURN;
 DYNAMIC[MAT.BURNING_PLANT] = DYN.BURN;
 DYNAMIC[MAT.BURNING_OIL] = DYN.BURN;
 DYNAMIC[MAT.SAND] = DYN.SAND;
+DYNAMIC[MAT.CLONER] = DYN.CLONER;
+DYNAMIC[MAT.SINK] = DYN.SINK;
 
 // Kareler arası canlanan materyaller (bunlar varken tampon her karede yeniden doldurulur).
 export const ANIMATED_IDS = Object.freeze([MAT.FIRE, MAT.LAVA, MAT.BURNING_WOOD, MAT.BURNING_PLANT, MAT.BURNING_OIL]);
@@ -86,6 +88,7 @@ export function buildRamps(littleEndian = IS_LITTLE_ENDIAN) {
     lava: g([[0, '#6a1604'], [0.4, '#c8380c'], [0.75, '#f26a1e'], [1, '#ffb450']]),
     burn,
     heat: gradient([[0, '#d9bb82'], [0.6, '#f0924a'], [1, '#ff6a2a']], HEAT_RAMP_SIZE, littleEndian),
+    spent: packRGBA(104, 98, 112, 255, littleEndian), // bütçesi bitmiş kaynak tonu
   };
 }
 

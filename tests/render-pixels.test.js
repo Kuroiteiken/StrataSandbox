@@ -84,6 +84,18 @@ test('ateş titremesi azaltılmış harekette kapanır', () => {
   assert.deepEqual([...render(sim, 0, true)], [...render(sim, 7, true)]);
 });
 
+test('öğrenmiş çoğaltıcı öğrendiği materyalin rengine bürünür; bütçesi biten kaynaklar sönükleşir', () => {
+  const sim = simWith([[0, 0, MAT.CLONER], [1, 0, MAT.CLONER], [2, 0, MAT.CLONER], [0, 1, MAT.SINK], [1, 1, MAT.SINK]]);
+  sim.configureSource(1, 0, { learn: MAT.SAND });
+  sim.configureSource(2, 0, { learn: MAT.SAND, budget: 0 });
+  sim.configureSource(1, 1, { budget: 0 });
+  const out = render(sim);
+  const warm = (v) => red(v) - blue(v); // kum sarı: kırmızı − mavi farkı büyük
+  assert.ok(warm(out[1]) > warm(out[0]) + 30, 'öğrenmiş: kum tonu');
+  assert.ok(warm(out[1]) > warm(out[2]), 'bütçesi biten daha az karışık');
+  assert.ok(luma(out[5]) > luma(out[4]) + 20, 'tükenmiş yutucu grileşir');
+});
+
 test('fillPixels simülasyon durumunu değiştirmez', () => {
   const sim = new Simulation({ width: 12, height: 8 });
   for (let x = 0; x < 12; x++) {

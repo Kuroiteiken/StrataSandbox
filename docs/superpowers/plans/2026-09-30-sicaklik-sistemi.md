@@ -678,199 +678,136 @@ git push -q origin main
 
 ---
 
-### Task 3 (Görev 3): Kum saati yenilemesi
+### Task 3 (Görev 3): Çoğaltıcı, Yutucu ve sürekli akan kum saati
+
+> **Kapsam değişikliği (kullanıcı isteği, 2026-09-30).** Kullanıcı yutucuyu ve sınırsız kaynakları kum saati iyileştirmesine dahil etmek istedi: "kum saatinde yukarıda sınırsız çoğaltıcı, aşağıda sınırsız yutucu, sürekli devam". Bu yüzden çoğaltıcı (eski Görev 12) ve yeni yutucu bu görevde, sıcaklık alanından önce yapılır. Spec §3.4, §3.5, §7.1.
 
 **Files:**
-- Modify: `js/scenes/hourglass.js` (tamamen yeniden yazılır)
-- Modify: `js/scenes/index.js` (`hint`)
+- Modify: `js/engine/materials.js` (`MAT.CLONER = 21`, `MAT.SINK = 22`, tanımlar)
+- Modify: `js/engine/reactions.js`:
+  - `SOURCE_INFINITE`, `CLONER_LEARNED`, `isMover`
+  - `reactCloner`, `reactSink`
+  - `RATES.maxClonesPerTick`, `RATES.maxSinksPerTick`
+  - bütçeler
+- Modify: `js/engine/simulation.js` (`configureSource`)
+- Modify: `js/render/palette.js` (`DYN.CLONER`, `DYN.SINK`, `ramps.spent`), `js/render/pixels.js` (`mixPacked` ve iki kaynak rengi)
+- Modify: `js/app/catalog.js` (Çoğaltıcı `X`, Yutucu `Y`; `category: 'solid'`), `index.html` (yardım satırları)
+- Modify: `js/scenes/hourglass.js` (sürekli akış), `js/scenes/index.js` (ipucu)
 - Modify: `js/app/app.js` (sahne ipucunu duyur)
-- Test: `tests/scenes.test.js` (eski kum saati testinin yerine)
+- Modify: `tests/helpers.js` (`C` çoğaltıcı, `V` yutucu)
+- Create: `tests/sources.test.js`
+- Modify: `tests/scenes.test.js`, `tests/render-pixels.test.js`, `tests/app-modules.test.js`
+- Modify: `docs/MATERIALS.md` (Çoğaltıcı ve Yutucu → Mevcut), `CHANGELOG.md`, `docs/DEVELOPMENT.md`
 
 **Interfaces:**
-- Consumes: `Simulation#flipVertical()` (Görev 2).
-- Produces: sahne kaydında isteğe bağlı `hint: string` alanı. `app.load()` bu alanı duyurur.
+- Produces:
+  - `MAT.CLONER = 21`, `MAT.SINK = 22`
+  - `reactions.js`: `export const SOURCE_INFINITE = 65535`, `export const CLONER_LEARNED = 2`, `export function isMover(t): boolean`
+  - `Simulation#configureSource(x, y, { learn?, budget? }): boolean`
+    - `budget`: 0..65535 tamsayı ya da `Infinity` (→ 65535, sınırsız)
+    - `learn`: yalnızca çoğaltıcıda ve yalnızca hareketli materyal
+    - Undo noktası oluşturmaz.
+  - `pixels.js` içinde modül fonksiyonu `mixPacked(a, b, f)`. Görev 6 bunu kullanır, yeniden tanımlamaz.
+  - Sahne kaydında `hint` alanı; `app.load()` duyurur.
+- Sonraki görevlere düşen işler:
+  - Görev 4: `reactCloner` kopyasını `spawnTemp(m, world.ambient)` ile, `reactSink` boşalttığı hücreyi `world.ambient` ile yazar.
+  - Görev 5: CLONER/SINK termal değerleri `conduct: 0.06, capacity: 4`.
 
 - [ ] **Adım 1: Başarısız testleri yaz**
 
-`tests/scenes.test.js` içindeki `test('Hourglass cam duvarlar, çerçeve ...` testini sil. Yerine şunları ekle:
+1. `tests/helpers.js` → `CHAR_TO_MAT` sözlüğüne `C: MAT.CLONER, V: MAT.SINK,` ekle.
+2. `tests/sources.test.js`:
+   - çoğaltıcı üstüne dökülen kumu öğrenir ve kopyalar
+   - tam olarak bütçesi kadar kopya üretir
+   - sınırsız çoğaltıcı bütçe harcamaz
+   - statik materyali ve kaynakları öğrenmez; öğrenmemişken üretmez
+   - yutucu değen hareketli materyali bütçesi kadar yutar, statik materyale dokunmaz
+   - sınırsız yutucu tükenmez
+   - `configureSource` doğrulaması (kaynak olmayan hücre, hareketsiz `learn`, aralık dışı bütçe)
+   - determinizm
+3. `tests/render-pixels.test.js`:
+   - öğrenmiş çoğaltıcı öğrendiği materyalin rengine bürünür
+   - bütçesi bitmiş çoğaltıcı ve yutucu sönükleşir
+4. `tests/app-modules.test.js`: kısayol eşlemesine `x: MAT.CLONER, y: MAT.SINK` eklenir.
+5. `tests/scenes.test.js`: kum saati testleri (aşağıda).
 
-```js
-const HG_SIZES = [[200, 220], [201, 221], [320, 180], [400, 225], [64, 48], [400, 120], [120, 300]];
+Kum saati testleri:
 
-function sandHalves(sim) {
-  const { width, height } = sim.view;
-  let top = 0;
-  let bottom = 0;
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      if (cellType(sim, x, y) !== MAT.SAND) continue;
-      if (y < height / 2) top++;
-      else bottom++;
-    }
-  }
-  return { top, bottom };
-}
-
-test('Kum saati: kum dışındaki şekil orta satıra göre tam simetrik, başta tüm kum üstte', () => {
-  const norm = (m) => (m === MAT.SAND ? MAT.EMPTY : m);
-  for (const [w, h] of HG_SIZES) {
-    const sim = load('hourglass', 'hg', w, h);
-    assert.ok(present(sim, MAT.GLASS, MAT.WOOD, MAT.SAND), `${w}×${h}`);
-    for (let y = 0; y < h; y++) {
-      for (let x = 0; x < w; x++) {
-        assert.equal(norm(cellType(sim, x, y)), norm(cellType(sim, x, h - 1 - y)), `${w}×${h} (${x},${y})`);
-      }
-    }
-    assert.equal(sandHalves(sim).bottom, 0, `${w}×${h}: başta alt hazne boş`);
-  }
-});
-
-test('Kum saati 400×225\'te 1× hızda 30–60 saniyede boşalır; kum takılmaz ve korunur', () => {
-  const sim = load('hourglass', 'hg', 400, 225);
-  const total = countMaterial(sim, MAT.SAND);
-  let t = 0;
-  while (sandHalves(sim).top > total * 0.005 && t < 6000) {
-    runTicks(sim, 30);
-    t += 30;
-  }
-  assert.ok(t >= 1800 && t <= 3600, `boşalma ${t} tick (${(t / 60).toFixed(1)} s)`);
-  runTicks(sim, 600);
-  assert.equal(sandHalves(sim).top, 0, 'üst haznede takılı kum kalmamalı');
-  assert.equal(countMaterial(sim, MAT.SAND), total);
-});
-
-test('Kum saati uç en-boy oranlarında da akar', () => {
-  for (const [w, h] of [[64, 48], [400, 120], [120, 300]]) {
-    const sim = load('hourglass', 'hg', w, h);
-    runTicks(sim, 400);
-    assert.ok(sandHalves(sim).bottom > 0, `${w}×${h}`);
-  }
-});
-
-test('Kum saati ters çevrilince kum yeniden akar', () => {
-  const sim = load('hourglass', 'hg', 200, 220);
-  runTicks(sim, 5000);
-  assert.equal(sandHalves(sim).top, 0);
-  sim.flipVertical();
-  assert.equal(sandHalves(sim).bottom, 0, 'çevirince tüm kum üstte');
-  runTicks(sim, 300);
-  assert.ok(sandHalves(sim).bottom > 50);
-});
-```
+- **Simetri:** kum, çoğaltıcı ve yutucu dışındaki şekil orta satıra göre simetriktir. Uç en-boy oranları dahil yedi boyutta kontrol edilir.
+- **Kaynak konumu:** çoğaltıcı üst yarıdadır, kumu öğrenmiştir ve sınırsızdır; yutucu alt yarıda ve sınırsızdır.
+- **Sürekli akış:** 400×225 gridde 3000–6000 tick arasında, 20 tick'te bir alınan örneklerin en az %80'inde boğazda kum vardır. Sonda üst hazne en az başlangıç kumunun yarısını tutar; alt hazne tıkanmaz (alt yarıdaki kum < başlangıç üst kumunun %60'ı).
+- **Uç oranlar:** 64×48, 400×120 ve 120×300 gridlerde 200–400 tick arasında boğazda kum görülür.
 
 - [ ] **Adım 2: Başarısız olduğunu gör**
 
-Çalıştır: `node --test tests/scenes.test.js`
-Beklenen: simetri ve boşalma testleri FAIL (eski şekil simetrik değil).
+Çalıştır: `node --test tests/sources.test.js tests/scenes.test.js tests/render-pixels.test.js tests/app-modules.test.js`
+Beklenen: FAIL (`MAT.CLONER` tanımsız, `configureSource` yok).
 
-- [ ] **Adım 3: Kum saatini yeniden yaz**
+- [ ] **Adım 3: Uygula**
 
-`js/scenes/hourglass.js`:
+**Motor**
 
-```js
-// Kum saati: kavisli iki cam hazne, dar boğaz, odun kapaklar ve yan direkler.
-// Şekil dünyanın orta satırına göre tam simetriktir: ters çevirince (F) birebir aynı kalır.
-// Akış sahte değildir: kum yalnızca fizik kurallarıyla boğazdan akar.
-// Duvar eğimi satır başına en fazla 1 hücredir (A ≤ 0,66·L), bu yüzden kum camda takılmaz.
-import { MAT } from '../engine/materials.js';
-import { frame } from './tools.js';
-
-const SAND_FILL = 0.85; // üst haznenin doluluk oranı
-const smoothstep = (u) => u * u * (3 - 2 * u);
-
-export function hourglass(sim) {
-  const { W, H } = frame(sim);
-  // Her yazma orta satıra göre aynalanır (kum hariç; kum yalnızca üst yarıya konur).
-  const put = (x, y, mat) => {
-    sim.setCell(x, y, mat);
-    sim.setCell(x, H - 1 - y, mat);
-  };
-
-  const cx = Math.floor((W - 2) / 2); // boğazın sol hücresi; boğaz: cx, cx+1
-  const capH = Math.max(2, Math.min(3, Math.round(H * 0.015)));
-  const top = Math.max(1, Math.round(H * 0.05));
-  const glassTop = top + capH; // haznenin ilk satırı (kapağın altı)
-  const midRow = Math.floor((H - 1) / 2); // üst yarının son satırı (tek H'de orta satır)
-  const neckStart = H % 2 === 1 ? midRow - 1 : midRow; // boğaz tüpü: toplam 2 (çift H) ya da 3 (tek H) satır
-  const L = Math.max(1, neckStart - glassTop);
-  const A = Math.max(1, Math.min(Math.floor(0.66 * L), cx - 7, W - 9 - cx));
-  // İç yarı genişlik fazlası (boğazda 0, kapağa yakın A): iç boşluk x ∈ [cx − a, cx + 1 + a].
-  const extra = (y) => (y >= neckStart ? 0 : Math.round(A * smoothstep((neckStart - y) / L)));
-
-  // Cam duvarlar: iki yanda 2'şer hücre.
-  for (let y = glassTop; y <= midRow; y++) {
-    const a = extra(y);
-    for (const x of [cx - a - 2, cx - a - 1, cx + a + 2, cx + a + 3]) put(x, y, MAT.GLASS);
-  }
-
-  // Odun kapaklar ve direkler (direk ile cam arasında 2 hücre boşluk).
-  const x0 = cx - A - 7;
-  const x1 = cx + A + 8;
-  for (let y = top; y < glassTop; y++) for (let x = x0; x <= x1; x++) put(x, y, MAT.WOOD);
-  for (let y = glassTop; y <= midRow; y++) {
-    for (const x of [cx - A - 6, cx - A - 5, cx + A + 6, cx + A + 7]) put(x, y, MAT.WOOD);
-  }
-
-  // Kum: üst haznenin alttan (boğazdan) yukarı ~%85'i.
-  let total = 0;
-  for (let y = glassTop; y <= midRow; y++) total += 2 + 2 * extra(y);
-  let filled = 0;
-  for (let y = midRow; y >= glassTop && filled < total * SAND_FILL; y--) {
-    const a = extra(y);
-    for (let x = cx - a; x <= cx + 1 + a; x++) sim.setCell(x, y, MAT.SAND);
-    filled += 2 + 2 * a;
-  }
-}
-```
-
-`js/scenes/index.js` → kum saati kaydına `hint: 'Kum bitince Ters çevir (F).'` ekle.
-
-`js/app/app.js` → `load()`:
+- `materials.js`:
 
 ```js
-  const load = () => {
-    const scene = getScene(state.scene);
-    sim.loadScene(scene, state.seed);
-    renderer.setBackground(state.seed);
-    if (scene.hint) announce(scene.hint);
-    sync();
-  };
+  { id: MAT.CLONER, key: 'CLONER', name: 'Cloner', kind: KIND.STATIC, density: 255, color: '#6a5a86', reactive: true, life: [1000, 1000] },
+  { id: MAT.SINK, key: 'SINK', name: 'Sink', kind: KIND.STATIC, density: 255, color: '#1b1626', reactive: true, life: [1000, 1000] },
 ```
 
-- [ ] **Adım 4: Testleri çalıştır ve gerekirse ayarla**
+- `reactions.js`:
+  - `reactCloner`: bütçe varken öğrendiği materyali boş komşuya yazar.
+  - `reactSink`: bütçe varken hareketli komşuyu boşaltır.
+  - İkisi de `spend(world, i)` ile bütçeyi azaltır. Bütçe `SOURCE_INFINITE` ise azaltmaz.
+  - Tick başına genel sınırlar `cloneBudget` ve `sinkBudget`, varsayılan 300.
+- `simulation.js` → `configureSource`: spec §3.5'teki doğrulamayı yapar, `this.version++`.
 
-Çalıştır: `node --test tests/scenes.test.js`
+**Render**
+
+- `palette.js`: `DYN.CLONER = 5`, `DYN.SINK = 6`, `ramps.spent` (gri).
+- `pixels.js`:
+  - çoğaltıcı: öğrendiyse %50 karışım, bütçesi bittiyse %20
+  - yutucu: bütçesi bitince `spent` ile %50 karışım
+
+**Kum saati**
+
+- Önce kum doldurulur. Ardından:
+  - `glassTop` satırında en fazla 8 hücrelik sınırsız çoğaltıcı yerleştirilir (`learn: SAND`).
+  - `H−1−glassTop` satırında en fazla 6 hücrelik sınırsız yutucu (ölçüm: 4 hücrede yığın büyüyüp tıkanıyor, 6 hücrede ~200 kumluk sabit yığın) yerleştirilir.
+- Hücreler iç boşluğun içinde kalır: yarı genişlik ≤ A + 1.
+
+- [ ] **Adım 4: Testleri çalıştır**
+
+Çalıştır: `npm test`
 Beklenen: PASS.
 
-Boşalma süresi 1800–3600 tick dışında kalırsa yalnızca `SAND_FILL` değerini değiştir. Kum miktarı süreyle doğru orantılıdır. `SAND_FILL` 0,6–0,95 aralığında kalmalı. Yetmezse boğazı değiştirme; durumu rapor et.
+`docs-materials` testi `SINK` belgelenmeden kırmızıdır. Bunu `docs/MATERIALS.md`'yi güncelleyerek düzelt.
 
-- [ ] **Adım 5: Tarayıcıda gözle kontrol et**
+- [ ] **Adım 5: Tarayıcıda gözle kontrol**
 
-`?scene=hourglass` adresini aç ve ekran görüntüsü al. Beklenen:
+`?scene=hourglass` adresini aç. Beklenenler:
 
-- yuvarlak iki hazne, ince boğaz, odun kapak ve direkler
-- kum akıyor
-- `F` ile kum yeniden akıyor
+- yuvarlak hazneler
+- üstte mor çoğaltıcı sırası, altta koyu yutucu sırası
+- kum dakikalarca durmadan akıyor
+- konsol temiz
 
-- [ ] **Adım 6: Changelog, DEVELOPMENT, commit**
+- [ ] **Adım 6: Belge, changelog, commit**
 
-`CHANGELOG.md` → `[Unreleased]` → yeni bir `### Changed` maddesi:
-
-```markdown
-- Kum saati yenilendi: kavisli iki cam hazne, dar boğaz, odun kapaklar ve direkler. Şekil orta satıra göre tam simetrik olduğu için ters çevirince birebir aynı kalıyor. Kum camda takılmıyor. Sahne yüklenince "Kum bitince Ters çevir (F)" ipucu duyuruluyor.
-```
-
-`docs/DEVELOPMENT.md` → "Kum saati yenilemesi" `[x]`.
+- `docs/MATERIALS.md`: Çoğaltıcı ve Yutucu → Mevcut; `SINK` satırı; sınırsız mod.
+- `CHANGELOG.md`: Added (Çoğaltıcı, Yutucu, `configureSource`), Changed (kum saati sürekli akış).
+- `docs/DEVELOPMENT.md`: "Kum saati yenilemesi" ve "Çoğaltıcı" maddeleri `[x]`.
 
 ```powershell
-git add js/scenes/hourglass.js js/scenes/index.js js/app/app.js tests/scenes.test.js CHANGELOG.md docs/DEVELOPMENT.md
-git commit -m "Kum saati yenilendi: kavisli simetrik hazneler, boğaz, odun çerçeve ve ipucu"
+git add -A js tests index.html docs/MATERIALS.md CHANGELOG.md docs/DEVELOPMENT.md
+git commit -m "Çoğaltıcı ve Yutucu; sürekli akan, simetrik kum saati"
 git push -q origin main
 ```
 
 ---
 
 ### Task 4 (Görev 4): Sıcaklık alanı veri modeli
+
+> Görev 3'ten: `reactCloner` ve `reactSink` içindeki `world.set` çağrılarına da sıcaklık ver. Kopya `spawnTemp(m, world.ambient)` alır, yutulan hücre `world.ambient` alır.
 
 **Files:**
 - Create: `js/engine/climate.js`
@@ -1220,6 +1157,8 @@ git push -q origin main
 ---
 
 ### Task 5 (Görev 5): Isı geçişi (difüzyon, hava, kaynaklar, uyuyan satırlar)
+
+> Görev 3'ten: termal tabloya CLONER ve SINK için `conduct: 0.06, capacity: 4` ekle.
 
 **Files:**
 - Create: `js/engine/heat.js`
@@ -1633,6 +1572,8 @@ git push -q origin main
 ---
 
 ### Task 6 (Görev 6): Isı görselleri ve termal görünüm
+
+> Görev 3'ten: `mixPacked`, `DYN.CLONER` ve `DYN.SINK` zaten `pixels.js`/`palette.js` içinde; yeniden tanımlama. Aşağıdaki `fillPixels` kodunu yazarken bu iki `case` dalını koru.
 
 **Files:**
 - Modify: `js/render/palette.js` (akkorluk rampası, soğuk ton, termal rampalar ve LUT; `DYN.SAND` kaldırılır)
@@ -3768,254 +3709,21 @@ git push -q origin main
 
 ---
 
-### Task 12 (Görev 12): Çoğaltıcı (`CLONER`)
+### Task 12 (Görev 12): Çoğaltıcı — Görev 3'e taşındı
 
-**Files:**
-- Modify: `js/engine/materials.js` (`MAT.CLONER = 21`, tanım)
-- Modify: `js/engine/reactions.js` (`reactCloner`, `CLONER_LEARNED`, `RATES.maxClonesPerTick`, `cloneBudget`)
-- Modify: `js/render/palette.js` (`DYN.CLONER`), `js/render/pixels.js` (çoğaltıcı rengi)
-- Modify: `js/app/catalog.js` (Çoğaltıcı, `X`, Katı), `index.html` (yardım satırı)
-- Modify: `tests/helpers.js` (`C` karakteri)
-- Create: `tests/cloner.test.js`
-- Modify: `tests/render-pixels.test.js`, `tests/app-modules.test.js`
-- Modify: `docs/MATERIALS.md` (§4.5 → Mevcut), `CHANGELOG.md`, `docs/DEVELOPMENT.md`
+Çoğaltıcı ve Yutucu kullanıcı isteğiyle Görev 3'te uygulandı. Bu görevde yalnızca şunlar yapılır:
 
-**Interfaces:**
-- Consumes:
-  - `mixPacked` (Görev 6, `pixels.js` içinde modül fonksiyonu)
-  - `spawnTemp` (Görev 4)
-  - `initialLife`
-- Produces:
-  - `MAT.CLONER = 21`
-  - `export const CLONER_LEARNED = 2` (`reactions.js`; `flags` bit1)
-  - Öğrenilen materyal `variant` alanında, kalan bütçe `life` alanında tutulur (varsayılan 1000).
-  - `RATES.maxClonesPerTick = 300`
+1. Sıcaklık alanı geldikten sonra kaynakların termal davranışını doğrula:
+   - kopya doğuş sıcaklığıyla doğar (ör. lav 1150 °C)
+   - yutulan hücre ortam sıcaklığına döner
 
-- [ ] **Adım 1: Başarısız testleri yaz**
-
-`tests/helpers.js` → `CHAR_TO_MAT` sözlüğüne `C: MAT.CLONER,` ekle.
-
-`tests/cloner.test.js`:
-
-```js
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import { MAT } from '../js/engine/materials.js';
-import { Simulation } from '../js/engine/simulation.js';
-import { CLONER_LEARNED } from '../js/engine/reactions.js';
-import { makeSim, countMaterial, runTicks, hashView, toAscii } from './helpers.js';
-
-// Testte öğrenmeyi atlamak için: çoğaltıcıya materyali doğrudan öğretir.
-function teach(sim, x, y, mat, budget) {
-  const i = sim.world.index(x, y);
-  sim.world.variant[i] = mat;
-  sim.world.flags[i] |= CLONER_LEARNED;
-  if (budget !== undefined) sim.world.life[i] = budget;
-}
-
-test('çoğaltıcı üstüne dökülen kumu öğrenir ve boş komşulara kopyalar', () => {
-  const sim = makeSim(`
-    .......
-    ...S...
-    .......
-    ...C...
-    .......
-    #######
-  `, { seed: 'clone' });
-  runTicks(sim, 600);
-  const c = sim.getCell(3, 3);
-  assert.equal(c.material, MAT.CLONER);
-  assert.equal(c.variant, MAT.SAND, 'kumu öğrenmeli');
-  assert.ok(countMaterial(sim, MAT.SAND) > 5, toAscii(sim));
-});
-
-test('çoğaltıcı tam olarak bütçesi kadar kopya üretir ve durur', () => {
-  const sim = new Simulation({ width: 40, height: 40, seed: 'budget', debug: true });
-  sim.setCell(20, 10, MAT.CLONER);
-  teach(sim, 20, 10, MAT.WATER, 50);
-  runTicks(sim, 4000);
-  assert.equal(countMaterial(sim, MAT.WATER), 50);
-  assert.equal(sim.getCell(20, 10).life, 0);
-});
-
-test('çoğaltıcı statik materyali ve kendi türünü öğrenmez; öğrenmemişken üretmez', () => {
-  const sim = makeSim(`
-    #####
-    #CC.#
-    #####
-  `, { seed: 'static' });
-  const before = [...sim.view.type];
-  runTicks(sim, 500);
-  assert.deepEqual([...sim.view.type], before);
-  for (const x of [1, 2]) assert.equal(sim.world.flags[sim.world.index(x, 1)] & CLONER_LEARNED, 0);
-});
-
-test('kopya materyalin doğuş sıcaklığıyla doğar (lav 1150 °C)', () => {
-  const sim = new Simulation({ width: 12, height: 12, seed: 'hot-clone' });
-  sim.setCell(6, 2, MAT.CLONER);
-  teach(sim, 6, 2, MAT.LAVA, 1);
-  for (let t = 0; t < 400 && countMaterial(sim, MAT.LAVA) === 0; t++) sim.step();
-  let lavaTemp = 0;
-  for (let y = 0; y < 12; y++) for (let x = 0; x < 12; x++) if (sim.getCell(x, y).material === MAT.LAVA) lavaTemp = sim.getCell(x, y).temp;
-  assert.ok(lavaTemp > 1000, `lav ${lavaTemp} °C`);
-});
-
-test('çoğaltıcı deterministiktir', () => {
-  const run = () => {
-    const sim = new Simulation({ width: 30, height: 30, seed: 'det-clone' });
-    sim.setCell(15, 5, MAT.CLONER);
-    teach(sim, 15, 5, MAT.SAND, 200);
-    runTicks(sim, 800);
-    return hashView(sim);
-  };
-  assert.equal(run(), run());
-});
-```
-
-`tests/render-pixels.test.js` sonuna:
-
-```js
-test('öğrenmiş çoğaltıcı öğrendiği materyalin rengine bürünür, bütçesi biten daha sönüktür', () => {
-  const sim = simWith([[0, 0, MAT.CLONER], [1, 0, MAT.CLONER], [2, 0, MAT.CLONER]]);
-  const w = sim.world;
-  for (const x of [1, 2]) {
-    const i = w.index(x, 0);
-    w.variant[i] = MAT.SAND;
-    w.flags[i] |= 2;
-  }
-  w.life[w.index(2, 0)] = 0;
-  sim.version++;
-  const out = render(sim);
-  // kum sarı: kırmızı − mavi farkı öğrenmemiş (mor-gri) çoğaltıcıdan büyük
-  const warm = (v) => red(v) - blue(v);
-  assert.ok(warm(out[1]) > warm(out[0]) + 30, 'öğrenmiş: kum tonu');
-  assert.ok(warm(out[1]) > warm(out[2]), 'bütçesi biten daha az karışık');
-});
-```
-
-`tests/app-modules.test.js` → kısayol eşlemesi testinin beklenen sözlüğüne `x: MAT.CLONER` ekle.
-
-- [ ] **Adım 2: Başarısız olduğunu gör**
-
-Çalıştır: `node --test tests/cloner.test.js tests/render-pixels.test.js tests/app-modules.test.js`
-Beklenen: FAIL (`MAT.CLONER` tanımsız).
-
-- [ ] **Adım 3: Materyal ve reaksiyon**
-
-`js/engine/materials.js`:
-
-- `MAT` sözlüğüne `CLONER: 21,` ekle. Yorumu şu olsun: `// üstüne konan hareketli materyali bütçesi kadar çoğaltır`
-- `MATERIAL_DEFS` sonuna:
-
-```js
-  {
-    id: MAT.CLONER, key: 'CLONER', name: 'Cloner', kind: KIND.STATIC, density: 255, color: '#6a5a86',
-    reactive: true, life: [1000, 1000], conduct: 0.06, capacity: 4,
-  },
-```
-
-`js/engine/reactions.js`:
-
-- Import satırı: `import { MAT, KIND, MATERIALS, spawnTemp } from './materials.js';`
-- `RATES` sözlüğüne: `maxClonesPerTick: 300, // çoğaltıcıların tick başına üretebileceği en fazla kopya (dünya genelinde)`
-- `createReactionState`: `return { fireBudget: 0, growthBudget: 0, cloneBudget: 0 };`
-- `beginReactionTick`: `state.cloneBudget = RATES.maxClonesPerTick;`
-- `reactPlant`'ın altına:
-
-```js
-// ---- Çoğaltıcı ----
-// flags bit1: materyal öğrenildi (öğrenilen materyal variant'ta); life: kalan kopya bütçesi.
-// Yalnızca hareketli materyaller (toz, sıvı, gaz) öğrenilir: kap duvarları ve başka çoğaltıcılar kopyalanmaz.
-// Kopyalar yalnızca bitişik boş hücrelere yazılır (taşma yok); bütçe bitince çoğaltıcı durur.
-export const CLONER_LEARNED = 2;
-const { KIND: KIND_OF } = MATERIALS;
-
-function isMover(t) {
-  const k = KIND_OF[t];
-  return k === KIND.POWDER || k === KIND.LIQUID || k === KIND.GAS;
-}
-
-function reactCloner(world, rng, i, state) {
-  const j = sampleNeighbor(world, rng, i);
-  const nt = world.type[j];
-  const flags = world.flags;
-  if ((flags[i] & CLONER_LEARNED) === 0) {
-    if (isMover(nt)) {
-      world.variant[i] = nt;
-      flags[i] |= CLONER_LEARNED;
-    }
-    return false;
-  }
-  if (nt !== EMPTY || world.life[i] === 0 || state.cloneBudget <= 0) return false;
-  const m = world.variant[i];
-  world.set(j, m, rng.nextU32() & 255, initialLife(m, rng.nextU32()), rng.nextU32() & 1, spawnTemp(m, world.ambient));
-  world.life[i]--;
-  state.cloneBudget--;
-  return false;
-}
-```
-
-- `react()` switch'ine: `case MAT.CLONER: return reactCloner(world, rng, i, state);`
-
-- [ ] **Adım 4: Görünüm, katalog, yardım**
-
-`js/render/palette.js`:
-
-- `DYN` sözlüğüne `CLONER: 5` ekle.
-- `DYNAMIC[MAT.CLONER] = DYN.CLONER;`
-
-`js/render/pixels.js`:
-
-- `fillPixels` başındaki destructuring'e `flags` ekle: `const { type, variant, life, flags, width, height, stride } = view;`
-- `switch`'e, `DYN.BURN`'den sonra:
-
-```js
-        case DYN.CLONER: {
-          // variant öğrenilen materyali tutar; ton hücre indeksinden. Öğrenmiş: %50, bütçesi bitmiş: %20 karışım.
-          let c = pal[t * SHADES + (i & SHADE_MASK)];
-          if ((flags[i] & 2) !== 0) c = mixPacked(c, pal[variant[i] * SHADES + (i & SHADE_MASK)], life[i] > 0 ? 0.5 : 0.2);
-          out[o] = c;
-          break;
-        }
-```
-
-`js/app/catalog.js` → METAL girişinin altına:
-
-```js
-  { key: 'CLONER', mat: MAT.CLONER, label: 'Çoğaltıcı', shortcut: 'x', category: 'solid' },
-```
-
-`index.html` yardım tablosuna:
-
-```html
-        <tr><th scope="row"><kbd>X</kbd></th><td>Çoğaltıcı: üstüne dökülen materyali 1000 kez çoğaltıp durur</td></tr>
-```
-
-- [ ] **Adım 5: Testleri çalıştır**
-
-Çalıştır: `npm test`
-Beklenen: PASS.
-
-"bütçesi kadar kopya" testi 4000 tick'te 50 kopyayı tamamlayamazsa bir hata vardır; tick'i artırma, çoğaltıcıyı incele. Tek boş komşuda bile beklenen üretim hızı tick başına 1/8'dir.
-
-- [ ] **Adım 6: Belge, changelog, commit**
-
-`docs/MATERIALS.md`:
-
-- §4.3 tablosundaki Çoğaltıcı satırını ve §4.5 başlığını "Mevcut (0.10.0 geliştirme)" olarak işaretle.
-- Sayıları kodla eşitle: bütçe 1000, tick sınırı 300.
-
-`CHANGELOG.md` → `### Added`:
-
-```markdown
-- **Çoğaltıcı** (`X`, Katı): üstüne dökülen ilk hareketli materyali (toz, sıvı, gaz) öğrenir ve bitişik boş hücrelere kopyalar. Hücre başına 1000 kopya üretir, sonra durur. Öğrendiği materyalin rengine bürünür, bütçesi bitince söner. Statik materyalleri öğrenmez.
-```
-
-`docs/DEVELOPMENT.md` → "Çoğaltıcı" `[x]`.
+   Testleri `tests/sources.test.js`'e ekle.
+2. `docs/MATERIALS.md`'deki kaynak bölümündeki sayıları kodla eşitle.
+3. `docs/DEVELOPMENT.md` → "Çoğaltıcı" maddesi zaten `[x]` ise dokunma.
 
 ```powershell
-git add js/engine/materials.js js/engine/reactions.js js/render/palette.js js/render/pixels.js js/app/catalog.js index.html tests/helpers.js tests/cloner.test.js tests/render-pixels.test.js tests/app-modules.test.js docs/MATERIALS.md CHANGELOG.md docs/DEVELOPMENT.md
-git commit -m "Çoğaltıcı: üstüne konan materyali bütçesi kadar çoğaltır"
+git add tests/sources.test.js docs/MATERIALS.md CHANGELOG.md
+git commit -m "Kaynakların termal davranışı testleri"
 git push -q origin main
 ```
 

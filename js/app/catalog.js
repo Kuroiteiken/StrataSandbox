@@ -13,6 +13,8 @@ export const PICKER = Object.freeze([
   { key: 'LAVA', mat: MAT.LAVA, label: 'Lav', shortcut: '8' },
   { key: 'PLANT', mat: MAT.PLANT, label: 'Bitki', shortcut: '9' },
   { key: 'GLASS', mat: MAT.GLASS, label: 'Cam', shortcut: 'g' },
+  { key: 'CLONER', mat: MAT.CLONER, label: 'Çoğaltıcı', shortcut: 'x', category: 'solid' },
+  { key: 'SINK', mat: MAT.SINK, label: 'Yutucu', shortcut: 'y', category: 'solid' },
   { key: 'ERASER', mat: MAT.EMPTY, label: 'Silgi', shortcut: '0' },
 ]);
 

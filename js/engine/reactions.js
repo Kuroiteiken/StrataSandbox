@@ -4,7 +4,7 @@
 // - Sıcaklık alanı yok: yerel ısı/soğuma `life` sayaçlarında tutulur.
 // - Dönüştürülen/oluşturulan hücre damgalanır (world.transform/set) → aynı tick'te zincirleme yok.
 // react() true dönerse hücre artık aynı materyal değildir; çağıran hareketi atlar.
-import { MAT, MATERIALS } from './materials.js';
+import { MAT, KIND, MATERIALS } from './materials.js';
 
 const { FLAMMABILITY, BURNS_INTO, LIFE_MIN, LIFE_SPAN, EMIT, DOUSE, ASH_CHANCE, EXTINGUISH_TO } = MATERIALS;
 const { EMPTY, SAND, WATER, LAVA, STEAM, FIRE, STONE, GLASS, PLANT, ASH } = MAT;
@@ -23,15 +23,19 @@ export const RATES = Object.freeze({
   plantGrow: p(0.012), // bitkinin tick başına büyüme denemesi olasılığı (yavaş yayılım)
   maxFireSpawnPerTick: 400, // yanan materyallerin tick başına üretebileceği en fazla ateş
   maxGrowthPerTick: 24, // tick başına en fazla bitki büyümesi (dünya genelinde)
+  maxClonesPerTick: 300, // çoğaltıcıların tick başına en fazla kopyası (dünya genelinde)
+  maxSinksPerTick: 300, // yutucuların tick başına en fazla yutması (dünya genelinde)
 });
 
 export function createReactionState() {
-  return { fireBudget: 0, growthBudget: 0 };
+  return { fireBudget: 0, growthBudget: 0, cloneBudget: 0, sinkBudget: 0 };
 }
 
 export function beginReactionTick(state) {
   state.fireBudget = RATES.maxFireSpawnPerTick;
   state.growthBudget = RATES.maxGrowthPerTick;
+  state.cloneBudget = RATES.maxClonesPerTick;
+  state.sinkBudget = RATES.maxSinksPerTick;
 }
 
 // Materyalin spawn ömrü: LIFE_MIN + r mod (span + 1).
@@ -170,6 +174,52 @@ function reactPlant(world, rng, i, state) {
   return false;
 }
 
+// ---- Kaynaklar: Çoğaltıcı ve Yutucu ----
+// life: kalan bütçe; SOURCE_INFINITE (65535) sınırsızdır ve hiç azalmaz. Yalnızca hareketli
+// materyaller (toz, sıvı, gaz) öğrenilir/yutulur: kap duvarları ve başka kaynaklar etkilenmez.
+// Çoğaltıcı yalnızca bitişik boş hücrelere yazar (taşma yok). Çoğaltıcının öğrendiği materyal
+// variant'ta tutulur; flags bit1 "öğrendi" işaretidir.
+export const SOURCE_INFINITE = 65535;
+export const CLONER_LEARNED = 2;
+const { KIND: KIND_OF } = MATERIALS;
+
+export function isMover(t) {
+  const k = KIND_OF[t];
+  return k === KIND.POWDER || k === KIND.LIQUID || k === KIND.GAS;
+}
+
+function spend(world, i) {
+  if (world.life[i] !== SOURCE_INFINITE) world.life[i]--;
+}
+
+function reactCloner(world, rng, i, state) {
+  const j = sampleNeighbor(world, rng, i);
+  const nt = world.type[j];
+  const flags = world.flags;
+  if ((flags[i] & CLONER_LEARNED) === 0) {
+    if (isMover(nt)) {
+      world.variant[i] = nt;
+      flags[i] |= CLONER_LEARNED;
+    }
+    return false;
+  }
+  if (nt !== EMPTY || world.life[i] === 0 || state.cloneBudget <= 0) return false;
+  const m = world.variant[i];
+  world.set(j, m, rng.nextU32() & 255, initialLife(m, rng.nextU32()), rng.nextU32() & 1);
+  spend(world, i);
+  state.cloneBudget--;
+  return false;
+}
+
+function reactSink(world, rng, i, state) {
+  const j = sampleNeighbor(world, rng, i);
+  if (!isMover(world.type[j]) || world.life[i] === 0 || state.sinkBudget <= 0) return false;
+  world.set(j, EMPTY, 0, 0, 0);
+  spend(world, i);
+  state.sinkBudget--;
+  return false;
+}
+
 export function react(world, rng, i, t, state) {
   switch (t) {
     case FIRE:
@@ -184,6 +234,10 @@ export function react(world, rng, i, t, state) {
     case MAT.BURNING_PLANT:
     case MAT.BURNING_OIL:
       return reactBurning(world, rng, i, t, state);
+    case MAT.CLONER:
+      return reactCloner(world, rng, i, state);
+    case MAT.SINK:
+      return reactSink(world, rng, i, state);
     default:
       return false;
   }

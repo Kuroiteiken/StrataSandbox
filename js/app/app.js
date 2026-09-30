@@ -56,8 +56,10 @@ export function createApp({ sim, renderer, prefs, storage, doc, onStateChange = 
   };
 
   const load = () => {
-    sim.loadScene(getScene(state.scene), state.seed);
+    const scene = getScene(state.scene);
+    sim.loadScene(scene, state.seed);
     renderer.setBackground(state.seed);
+    if (scene.hint) announce(scene.hint);
     sync();
   };
 

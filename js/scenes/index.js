@@ -1,6 +1,6 @@
-// Sahne kaydı. Her sahne { id, name, generate(sim, rng), hidden? } biçimindedir;
+// Sahne kaydı. Her sahne { id, name, generate(sim, rng), hidden?, hint? } biçimindedir;
 // Simulation.loadScene(scene, seed) ile yüklenir (engine bu kayıttan habersizdir).
-// hidden: seçicide yalnızca debug modunda görünür.
+// hidden: seçicide yalnızca debug modunda görünür. hint: yüklenince duyurulan kısa ipucu.
 import { volcano } from './volcano.js';
 import { hourglass } from './hourglass.js';
 import { oasis } from './oasis.js';
@@ -9,7 +9,7 @@ import { benchmark } from './benchmark.js';
 
 export const SCENES = Object.freeze([
   { id: 'volcano', name: 'Volkan', generate: volcano },
-  { id: 'hourglass', name: 'Kum saati', generate: hourglass },
+  { id: 'hourglass', name: 'Kum saati', generate: hourglass, hint: 'Kum saati sürekli akar: üstte sınırsız çoğaltıcı, altta sınırsız yutucu var.' },
   { id: 'oasis', name: 'Vaha', generate: oasis },
   { id: 'chaos', name: 'Kaos Lab', generate: chaos },
   { id: 'empty', name: 'Boş', generate: () => {} },

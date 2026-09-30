@@ -732,7 +732,7 @@ Spec: `docs/superpowers/specs/2026-09-30-sicaklik-sistemi-design.md` · Plan: `d
 
 - [x] Sürüm rozeti ve Yenilikler diyaloğu
 - [x] Ters çevirme (`flipVertical`, düğme, `F`)
-- [ ] Kum saati yenilemesi
+- [x] Kum saati yenilemesi
 - [ ] Sıcaklık alanı veri modeli
 - [ ] Isı geçişi (difüzyon, hava, kaynaklar, uyuyan satırlar)
 - [ ] Isı görselleri ve termal görünüm
@@ -741,7 +741,7 @@ Spec: `docs/superpowers/specs/2026-09-30-sicaklik-sistemi-design.md` · Plan: `d
 - [ ] Gün/gece döngüsü, sahne ortamları, gökyüzü
 - [ ] Isıt ve Soğut fırçaları
 - [ ] Sekmeli seçici, Ortam bölümü, termal düğme, kısayollar, göstergeler
-- [ ] Çoğaltıcı (`CLONER`)
+- [x] Çoğaltıcı (`CLONER`) ve Yutucu (`SINK`) — Görev 3'te, kum saatiyle birlikte
 - [ ] Buzul, Dökümhane ve Mağara sahneleri; volkan magması ve çoğaltıcısı
 - [ ] Performans, dokümanlar, 0.10.0 sürümü
 

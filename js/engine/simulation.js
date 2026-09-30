@@ -4,7 +4,7 @@ import { World } from './world.js';
 import { Rng, hashSeed } from './rng.js';
 import { MAT, KIND, MATERIALS } from './materials.js';
 import { stepPowder, stepLiquid, stepGas } from './kernels.js';
-import { react, createReactionState, beginReactionTick, initialLife } from './reactions.js';
+import { react, createReactionState, beginReactionTick, initialLife, isMover, SOURCE_INFINITE, CLONER_LEARNED } from './reactions.js';
 import { footprint, lineCells, SPRAY_DENSITY } from './brush.js';
 
 export const SPEEDS = Object.freeze([0.5, 1, 2, 4]);
@@ -212,6 +212,29 @@ export class Simulation {
     const i = w.index(x, y);
     const h = spawnHash(i, this._spawnSalt());
     w.set(i, material, h & 255, initialLife(material, h >>> 9), (h >>> 8) & 1);
+    this.version++;
+    return true;
+  }
+
+  // Çoğaltıcı/yutucu ayarı (sahneler, testler): öğrenilecek materyal ve bütçe (Infinity = sınırsız).
+  // Kaynak olmayan hücre, hareketsiz materyal ya da geçersiz bütçe reddedilir; undo noktası oluşturmaz.
+  configureSource(x, y, { learn, budget } = {}) {
+    const w = this.world;
+    if (!w.inBounds(x, y)) return false;
+    const i = w.index(x, y);
+    const t = w.type[i];
+    if (t !== MAT.CLONER && t !== MAT.SINK) return false;
+    if (learn !== undefined && (t !== MAT.CLONER || !isMover(learn))) return false;
+    let b;
+    if (budget !== undefined) {
+      b = budget === Infinity ? SOURCE_INFINITE : budget;
+      if (!Number.isInteger(b) || b < 0 || b > SOURCE_INFINITE) return false;
+    }
+    if (learn !== undefined) {
+      w.variant[i] = learn;
+      w.flags[i] |= CLONER_LEARNED;
+    }
+    if (b !== undefined) w.life[i] = b;
     this.version++;
     return true;
   }

@@ -71,20 +71,93 @@ test('Volcano ve Oasis seed ile değişir', () => {
   assert.notEqual(typeHash(load('oasis', 'a')), typeHash(load('oasis', 'b')));
 });
 
-test('Hourglass cam duvarlar, çerçeve ve üst haznede kum içerir; kum gerçek fizikle alt hazneye akar', () => {
-  const sim = load('hourglass', 'hg', 200, 220);
-  assert.ok(present(sim, MAT.GLASS, MAT.WOOD, MAT.SAND));
-  const { height } = sim.view;
-  const sandBelow = () => {
-    let n = 0;
-    for (let y = Math.floor(height / 2) + 2; y < height; y++) for (let x = 0; x < sim.view.width; x++) if (cellType(sim, x, y) === MAT.SAND) n++;
-    return n;
-  };
-  const total = countMaterial(sim, MAT.SAND);
-  const before = sandBelow();
-  runTicks(sim, 300);
-  assert.ok(sandBelow() > before + 50, `alt hazne: ${before} → ${sandBelow()}`);
-  assert.equal(countMaterial(sim, MAT.SAND), total, 'kum korunmalı');
+const HG_SIZES = [[200, 220], [201, 221], [320, 180], [400, 225], [64, 48], [400, 120], [120, 300]];
+
+function sandHalves(sim) {
+  const { width, height } = sim.view;
+  let top = 0;
+  let bottom = 0;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (cellType(sim, x, y) !== MAT.SAND) continue;
+      if (y < height / 2) top++;
+      else bottom++;
+    }
+  }
+  return { top, bottom };
+}
+
+// Boğaz tüpü: iki hücre (cx, cx+1), orta satırlar (hourglass.js ile aynı formül).
+function neckHasSand(sim) {
+  const { width: W, height: H } = sim.view;
+  const cx = Math.floor((W - 2) / 2);
+  const midRow = Math.floor((H - 1) / 2);
+  const neckStart = H % 2 === 1 ? midRow - 1 : midRow;
+  for (let y = neckStart; y <= H - 1 - neckStart; y++) for (const x of [cx, cx + 1]) if (cellType(sim, x, y) === MAT.SAND) return true;
+  return false;
+}
+
+test('Kum saati: kum ve kaynaklar dışındaki şekil orta satıra göre tam simetrik, başta tüm kum üstte', () => {
+  const norm = (m) => (m === MAT.SAND || m === MAT.CLONER || m === MAT.SINK ? MAT.EMPTY : m);
+  for (const [w, h] of HG_SIZES) {
+    const sim = load('hourglass', 'hg', w, h);
+    assert.ok(present(sim, MAT.GLASS, MAT.WOOD, MAT.SAND, MAT.CLONER, MAT.SINK), `${w}×${h}`);
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        assert.equal(norm(cellType(sim, x, y)), norm(cellType(sim, x, h - 1 - y)), `${w}×${h} (${x},${y})`);
+      }
+    }
+    assert.equal(sandHalves(sim).bottom, 0, `${w}×${h}: başta alt hazne boş`);
+  }
+});
+
+test('Kum saati: üstte kumu öğrenmiş sınırsız çoğaltıcı, altta sınırsız yutucu', () => {
+  const sim = load('hourglass', 'hg', 320, 180);
+  assert.ok(countMaterial(sim, MAT.CLONER) > 0 && countMaterial(sim, MAT.SINK) > 0, 'kaynaklar yerleşmeli');
+  for (let y = 0; y < 180; y++) {
+    for (let x = 0; x < 320; x++) {
+      const m = cellType(sim, x, y);
+      if (m === MAT.CLONER) {
+        assert.ok(y < 90, 'çoğaltıcı üst yarıda');
+        assert.equal(sim.getCell(x, y).variant, MAT.SAND);
+        assert.equal(sim.getCell(x, y).life, 65535);
+      }
+      if (m === MAT.SINK) {
+        assert.ok(y >= 90, 'yutucu alt yarıda');
+        assert.equal(sim.getCell(x, y).life, 65535);
+      }
+    }
+  }
+});
+
+test('Kum saati sürekli akar: boğaz boşalmaz, üst hazne dolu kalır, alt hazne tıkanmaz', () => {
+  const sim = load('hourglass', 'hg', 400, 225);
+  const initialTop = sandHalves(sim).top;
+  runTicks(sim, 3000);
+  let flowing = 0;
+  let samples = 0;
+  for (let t = 3000; t < 6000; t += 20) {
+    runTicks(sim, 20);
+    samples++;
+    if (neckHasSand(sim)) flowing++;
+  }
+  assert.ok(flowing / samples >= 0.8, `boğazda kum oranı ${(flowing / samples).toFixed(2)}`);
+  const { top, bottom } = sandHalves(sim);
+  assert.ok(top >= initialTop * 0.5, `üst ${top} / başlangıç ${initialTop}`);
+  assert.ok(bottom < initialTop * 0.6, `alt ${bottom} (tıkanma)`);
+});
+
+test('Kum saati uç en-boy oranlarında da akar', () => {
+  for (const [w, h] of [[64, 48], [400, 120], [120, 300]]) {
+    const sim = load('hourglass', 'hg', w, h);
+    runTicks(sim, 200);
+    let seen = false;
+    for (let t = 0; t < 200 && !seen; t += 10) {
+      runTicks(sim, 10);
+      seen = neckHasSand(sim);
+    }
+    assert.ok(seen, `${w}×${h}`);
+  }
 });
 
 test('Oasis kumul, su, taş, bitki ve odun (palmiye) içerir', () => {

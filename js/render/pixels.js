@@ -23,11 +23,22 @@ function flicker(i, frame) {
 
 const clampRamp = (v) => (v < 0 ? 0 : v > RAMP_MAX ? RAMP_MAX : v | 0);
 
+// Aynı endianness'ta paketli iki rengin bayt bayt karışımı (f ∈ [0, 1]); alfa baytları 255 ise 255 kalır.
+function mixPacked(a, b, f) {
+  const g = 1 - f;
+  return (
+    (((a & 255) * g + (b & 255) * f) | 0) |
+    (((((a >>> 8) & 255) * g + ((b >>> 8) & 255) * f) | 0) << 8) |
+    (((((a >>> 16) & 255) * g + ((b >>> 16) & 255) * f) | 0) << 16) |
+    (((((a >>> 24) & 255) * g + ((b >>> 24) & 255) * f) | 0) << 24)
+  ) >>> 0;
+}
+
 // glow (isteğe bağlı): ışık yayan hücrelerin (ateş, lav, yanma) rengi, alfa = yoğunluk;
 // diğer hücreler 0. Renderer bunu bulanıklaştırıp 'lighter' ile ekler.
 export function fillPixels(view, out, pal, ramps, frame, reducedMotion, glow = null) {
-  const { type, variant, life, width, height, stride } = view;
-  const { fire, lava, burn, heat, littleEndian } = ramps;
+  const { type, variant, life, flags, width, height, stride } = view;
+  const { fire, lava, burn, heat, spent, littleEndian } = ramps;
   const glassHeat = RATES.glassHeat;
   let o = 0;
   for (let y = 0; y < height; y++) {
@@ -61,6 +72,18 @@ export function fillPixels(view, out, pal, ramps, frame, reducedMotion, glow = n
           const burnLevel = life[i] / MAX_LIFE[t];
           out[o] = burn[t][clampRamp(burnLevel * 52 + f * 11)];
           if (glow) g = withAlpha(out[o], (30 + burnLevel * 150) | 0, littleEndian);
+          break;
+        }
+        case DYN.CLONER: {
+          // variant öğrenilen materyali tutar; ton hücre indeksinden. Öğrenmiş: %50, bütçesi bitmiş: %20 karışım.
+          let c = pal[t * SHADES + (i & SHADE_MASK)];
+          if ((flags[i] & 2) !== 0) c = mixPacked(c, pal[variant[i] * SHADES + (i & SHADE_MASK)], life[i] > 0 ? 0.5 : 0.2);
+          out[o] = c;
+          break;
+        }
+        case DYN.SINK: {
+          const c = pal[t * SHADES + (i & SHADE_MASK)];
+          out[o] = life[i] > 0 ? c : mixPacked(c, spent, 0.5);
           break;
         }
         case DYN.SAND: {
