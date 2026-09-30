@@ -31,6 +31,8 @@ Kullanıcının isteği şuydu: "ortam sıcaklığı gibi şeyleri ekle, ekstra 
 - Lav soğuyup taşa dönmeli.
 - Yaklaşım A seçildi: tam çözünürlüklü sıcaklık alanı.
 - Kum saati, Vaha ve Volkan gibi yeni hazır sahneler eklenmeli. Kum saati sahnesinin iyileştirilmesi gerekiyor (§7).
+- Çoğaltıcı: üstüne konan materyali belli bir miktar çoğaltıp duran bir kaynak; örneğin volkanda (§3.4).
+- Tüm materyaller ve etkileşimleri, eskiler ve yeniler, `docs/MATERIALS.md`'de belgelenmeli ve güncel tutulmalı.
 
 ### 1.2 Varsayımlar (kullanıcı onayladı)
 
@@ -292,8 +294,34 @@ Bu değerler hedef değerlerdir. Kesin sabitler testlerle ayarlanır ve uygulama
 | `METAL` | 18 | seçicide |
 | `MOLTEN_METAL` | 19 | seçicide |
 | `MAGMA` | 20 | `hidden`; seçicide yok, sahneler yazar |
+| `CLONER` | 21 | seçicide (Katı, `X`) |
 
-Kimlik 21 ve sonrası alt proje 2'ye ayrılır.
+Kimlik 22 ve sonrası alt proje 2'ye ayrılır.
+
+### 3.4 Çoğaltıcı (`CLONER`)
+
+Kullanıcı isteği (2026-09-30): "üstüne konulan malzemeyi çoğaltır, belli bir miktar çoğalttıktan sonra durur; örneğin volkanın altına koyarız."
+
+**Davranış** (reaktif statik; tek sahip kuralı; tick başına rastgele bir komşu örneklenir):
+
+- **Öğrenme:**
+  - Henüz öğrenmemiş bir çoğaltıcı, örneklediği komşu hareketli bir materyalse (toz, sıvı ya da gaz) o materyali öğrenir.
+  - Öğrenilen materyal `variant` alanında saklanır; `flags` bit1 "öğrendi" işaretidir.
+  - Statik materyaller, boşluk ve başka çoğaltıcılar öğrenilmez. Bu sayede çoğaltıcı kabının duvarlarını kopyalamaz.
+- **Üretim:**
+  - Öğrenmiş bir çoğaltıcı, örneklediği komşu boşsa oraya öğrendiği materyalden bir kopya koyar.
+  - Kopya doğuş sıcaklığı, doğuş ömrü ve rastgele bir tonla oluşur.
+  - Kalan bütçe (`life`) 1 azalır.
+- **Bütçe:**
+  - Hücre başına varsayılan 1000 kopya (`life: [1000, 1000]`).
+  - Bütçe biten çoğaltıcı durur ve sönük görünür.
+  - Dünya genelinde tick başına en fazla 300 kopya üretilir (`RATES.maxClonesPerTick`).
+- **Termal:** iletkenlik 0,06, kapasite 4; faz geçişi yoktur. Kopyalar materyalin doğuş sıcaklığıyla doğar; örneğin lav 1150 °C.
+- **Görünüm:**
+  - Öğrenmemiş çoğaltıcı kendi rengindedir (mor-gri).
+  - Öğrenmiş çoğaltıcı öğrendiği materyalin rengiyle %50 karışık görünür.
+  - Bütçesi bitmiş çoğaltıcı %20 karışık ve daha sönük görünür.
+- **Sınır:** basınç olmadığından sıvı yalnızca aşağı ve yana akar. Dolu bir magma odasının altındaki çoğaltıcının boş komşusu olmaz ve üretim yapmaz. Volkan sahnesinde çoğaltıcı bu yüzden krater yarığının içine konur (§7). Alt proje 2'deki basınç, çoğaltıcının derin odalardan patlama beslemesini mümkün kılacak.
 
 ---
 
@@ -400,9 +428,27 @@ Simülasyon bölümünün altına, her zaman görünür bir "Ortam" bölümü ek
 - Debug paneline imleç sıcaklığı eklenir.
 - `getCell` sonucuna `temp` alanı eklenir.
 
-### 5.6 Tercihler (`storage.js`)
+### 5.6 Sürüm bilgisi ve yenilikler
 
-- `DEFAULT_PREFS` içine `dayCycle: false` eklenir; `sanitizePrefs` bunu doğrular.
+Kullanıcı isteği (2026-09-30): sürüm numarası ekranda görünsün ve eklenenler gösterilsin.
+
+- **Rozet:** başlıkta uygulama adının yanında, örneğin `v0.10.0`. Rozet bir düğmedir ve "Yenilikler" diyaloğunu açar.
+- **Veri kaynağı:**
+  - `js/config.js`'teki `APP_VERSION`.
+  - `js/app/releases.js`'teki `RELEASES` dizisi: `{ version, date, items: string[] }`. Kullanıcıya dönük kısa maddeler içerir, geliştirici changelog'unu birebir kopyalamaz.
+  - `CHANGELOG.md` yayınlanmadığı için çalışma zamanında okunmaz.
+- **Senkron testi:** şu üçünün aynı olması bir testle doğrulanır:
+  - `APP_VERSION`
+  - `package.json` sürümü
+  - `CHANGELOG.md`'deki en son yayınlanmış sürüm başlığı
+
+  Ayrıca `RELEASES[0].version === APP_VERSION` şartı aranır. Böylece sürüm bilgisi kayamaz.
+- **Diyalog:** en yeni sürüm en üstte olmak üzere son 3 sürümün maddeleri listelenir. Tasarım yardım diyaloğuyla aynıdır.
+- **"Yeni" işareti:** tercihlerde `seenVersion` alanı tutulur. Değeri `APP_VERSION`'dan farklıysa rozette küçük bir işaret görünür. Diyalog açılınca bu değer güncellenir.
+
+### 5.7 Tercihler (`storage.js`)
+
+- `DEFAULT_PREFS` içine `dayCycle: false` ve `seenVersion: ''` eklenir; `sanitizePrefs` bunları doğrular.
 - Ortam sıcaklığı ve termal görünüm saklanmaz: ortam her sahnede o sahnenin varsayılanına döner.
 
 ---
@@ -438,6 +484,7 @@ Simülasyon bölümünün altına, her zaman görünür bir "Ortam" bölümü ek
 - **Tüm sahneler:** sahne nesnesine `ambient` alanı eklenir.
 - **Volkan:**
   - Krater tabanına, lavın altına bir sıra `MAGMA` yerleştirilir.
+  - Krater yarığının tabanına iki `CLONER` hücresi konur. Çoğaltıcı çevresindeki lavı öğrenir. Yarıktan lav aktıkça boşalan yerleri doldurur, böylece volkan yaklaşık 2000 hücrelik ek lav akıtıp durur.
   - Mevcut lav sızıntısı regresyon testi (7 boyut × 4 seed) geçmeye devam etmelidir.
   - Yeni test: magma kraterde kalır ve krater lavının bir kısmı uzun süre sıvı kalır.
 - **Buzul** (yeni, `js/scenes/glacier.js`; `id: 'glacier'`, ad "Buzul", ortam −15):
@@ -596,6 +643,13 @@ Simülasyon bölümünün altına, her zaman görünür bir "Ortam" bölümü ek
   - Toplam kum korunur.
 - **Dökümhane:** 3000 tick sonunda metal sayısı artar, erimiş metal azalır, kalıplar dolar. Erimiş metal oluk dışına taşmaz.
 - **Mağara:** göl suyu mağaradan dışarı sızmaz. Lav cebi ile göl arasındaki duvar yerinde kalır.
+- **Çoğaltıcı:**
+  - Üstüne dökülen materyali öğrenip boş komşulara kopyalar.
+  - Tam olarak bütçesi kadar kopya üretir ve durur.
+  - Statik materyali ve kendi türünü öğrenmez; öğrenmemiş çoğaltıcı hiçbir şey üretmez.
+  - Deterministiktir.
+  - Volkan çoğaltıcılı sahnede, çoğaltıcısız hâline göre daha çok lav akıtır.
+- **Belge senkronu:** her materyal anahtarı `docs/MATERIALS.md`'de geçer.
 - **Ters çevirme:**
   - İki kez çevirmek aynı hash'i verir.
   - Undo çevirmeyi geri alır.
@@ -645,7 +699,7 @@ Simülasyon bölümünün altına, her zaman görünür bir "Ortam" bölümü ek
 
 ## 12. Uygulama sırası (plan için taslak)
 
-0. Kum saati iyileştirmesi ve ters çevirme (`flipVertical`, düğme, `F`). Sıcaklıktan bağımsız olduğu için önce yapılır; sıcaklık gelince `flipVertical` alanı da aynalar.
+0. Sürüm rozeti ve Yenilikler diyaloğu (§5.6); ardından kum saati iyileştirmesi ve ters çevirme (`flipVertical`, düğme, `F`). Sıcaklıktan bağımsız olduğu için önce yapılır; sıcaklık gelince `flipVertical` alanı da aynalar.
 1. `world.temp` ve `tempNext`; `swap`, `set` ve `clear`; undo; hash yardımcısı.
 2. `heat.js`: difüzyon, hava, kenar, kaynaklar, uyuyan satırlar ve bunların testleri.
 3. Termal tanım alanları, derleyici doğrulamaları, faz mekanizması, tutuşma, buharlaşma.
@@ -654,5 +708,6 @@ Simülasyon bölümünün altına, her zaman görünür bir "Ortam" bölümü ek
 6. `climate.js` ve Simulation ortam API'si; sahnelere `ambient` alanı.
 7. Render: akkorluk, lav, soğuk su, termal görünüm, gökyüzü.
 8. Arayüz: sekmeler, Ortam bölümü, araçlar, kısayollar, durum göstergeleri, tercihler, yardım.
-9. Buzul, Dökümhane ve Mağara sahneleri; volkan magma kaynağı.
-10. Performans ölçümü, dokümanlar, tarayıcı smoke testi, sürüm.
+9. Çoğaltıcı (`CLONER`).
+10. Buzul, Dökümhane ve Mağara sahneleri; volkan magma kaynağı ve çoğaltıcısı.
+11. Performans ölçümü, dokümanlar (`docs/MATERIALS.md` dahil), tarayıcı smoke testi, sürüm.

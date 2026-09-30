@@ -5,6 +5,16 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) yaklaşımını 
 
 ## [Unreleased]
 
+Hedef sürüm 0.10.0: sıcaklık sistemi, Buz, Kar, Metal, yeni sahneler ve kum saati iyileştirmesi. Tasarım: `docs/superpowers/specs/2026-09-30-sicaklik-sistemi-design.md`.
+
+### Added
+
+- `docs/MATERIALS.md`: tüm materyallerin ve etkileşimlerinin (mevcut ve planlanan) başvuru belgesi. Tür, yoğunluk, kısayol, olasılıklar ve 0.10.0'da değişecek kurallar burada tutulur.
+
+### Changed
+
+- CI: yalnızca `docs/` altında değişiklik olduğunda test ve yayın akışı çalışmıyor (`paths-ignore`). Karışık push'larda akış yine çalışır.
+
 ### Removed
 
 - `.claude/` klasörü artık repoda izlenmiyor (`.gitignore`'da). Claude Code ayarları yerelde kalır.
