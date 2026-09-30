@@ -5,6 +5,14 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) yaklaşımını 
 
 ## [Unreleased]
 
+### Added — Phase 9 (Mobil / Erişilebilirlik)
+
+- Dar ekranda materyal seçici yatay kayan şerit. "Sahne ve diğer ayarlar" açılır bölümü dar ekranda kapalı başlar.
+- Tablet kırılma noktası (daha dar panel).
+- Dokunmatik iyileştirmeler: çift dokunma zoom'u yok, dokunma vurgusu yok.
+- DPR değişimi takibi (monitör değişimi, tarayıcı zoom'u).
+- Kontrast doğrulaması: tüm metinler WCAG AA üstünde (en düşük 6,2:1).
+
 ### Added — Phase 8 (Görsel efektler)
 
 - Ateş, lav ve yanan materyaller için glow (ısı ışıltısı): kademeli küçültmeyle bulanıklaştırılıp `lighter` ile eklenir.

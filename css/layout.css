@@ -95,6 +95,17 @@
   border-left: 1px solid var(--ink-600);
 }
 
+/* Tablet: daha dar panel. */
+@media (min-width: 761px) and (max-width: 1100px) {
+  :root {
+    --panel-width: 248px;
+  }
+
+  .readout div:has([data-stat="grid"]) {
+    display: none;
+  }
+}
+
 /* Dar ekran: canvas üstte, kontroller altta ve kendi içinde kayar. */
 @media (max-width: 760px) {
   .app {
@@ -118,6 +129,19 @@
   .panel {
     border-left: 0;
     border-top: 1px solid var(--ink-600);
+    padding-top: var(--space-1);
     padding-bottom: max(var(--space-6), env(safe-area-inset-bottom));
+  }
+
+  .app-subtitle {
+    display: none;
+  }
+}
+
+/* Çok dar ekran: başlıktaki göstergelerin yalnızca özü. */
+@media (max-width: 480px) {
+  .readout div:has([data-stat="grid"]),
+  .readout div:has([data-stat="seed"]) {
+    display: none;
   }
 }

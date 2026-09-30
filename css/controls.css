@@ -372,3 +372,71 @@
 .dialog-actions .btn {
   flex: 0 0 auto;
 }
+
+/* ---- Diğer ayarlar (dar ekranda kapalı başlayan bölüm) ---- */
+
+.panel-more {
+  padding: var(--space-3) 0 0;
+}
+
+.panel-more > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--control-height);
+  margin: 0;
+  cursor: pointer;
+  list-style: none;
+}
+
+.panel-more > summary::-webkit-details-marker {
+  display: none;
+}
+
+.panel-more > summary::after {
+  content: "▾";
+  color: var(--bone-500);
+  transition: transform var(--transition);
+}
+
+.panel-more:not([open]) > summary::after {
+  transform: rotate(-90deg);
+}
+
+.section-subtitle {
+  color: var(--bone-300);
+}
+
+/* Dokunmatik: çift dokunma yakınlaştırması ve dokunma vurgusu yok. */
+.btn,
+.specimen,
+.segmented span,
+.toggle,
+.panel-more > summary {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ---- Dar ekran: materyal seçici yatay kayan şerit ---- */
+
+@media (max-width: 760px) {
+  .specimens {
+    display: flex;
+    gap: var(--space-1);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    padding-bottom: var(--space-1);
+    scrollbar-width: thin;
+  }
+
+  .specimen {
+    flex: 0 0 auto;
+    min-width: 96px;
+    scroll-snap-align: start;
+  }
+
+  .panel-section {
+    padding: var(--space-2) 0;
+  }
+}

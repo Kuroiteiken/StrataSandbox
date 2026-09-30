@@ -85,6 +85,23 @@ const resize = () => {
 new ResizeObserver(resize).observe(viewport);
 resize();
 
+// DPR değişimi (pencere başka monitöre taşınınca ya da tarayıcı zoom'u): boyut değişmeden de olur.
+const watchDpr = () => {
+  const mq = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+  mq.addEventListener(
+    'change',
+    () => {
+      resize();
+      watchDpr();
+    },
+    { once: true },
+  );
+};
+watchDpr();
+
+// "Sahne ve diğer ayarlar" geniş ekranda açık, dar ekranda kapalı başlar.
+document.getElementById('more-controls').open = !window.matchMedia('(max-width: 760px)').matches;
+
 // İstatistikler: kare başına örnekleme, DOM'a ~400 ms'de bir yazım.
 const meter = createRateMeter();
 if (debug) document.getElementById('debug-panel').hidden = false;

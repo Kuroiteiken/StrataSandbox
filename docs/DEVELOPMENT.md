@@ -410,22 +410,32 @@ node tools/check-paths.js  # path büyük/küçük harf + root-absolute kontrol�
 
 ### Phase 9 — Mobil / Responsive / Accessibility
 
-- [ ] Mobil layout
-- [ ] `100dvh`, safe-area, `overscroll-behavior`
-- [ ] ResizeObserver, DPR takibi
-- [ ] Tablet breakpoint
-- [ ] Erişilebilirlik:
-  - [ ] klavye navigasyonu
-  - [ ] focus
-  - [ ] ARIA
-  - [ ] kontrast
-  - [ ] ≥ 44px dokunma hedefleri
-- [ ] **Test:**
-  - [ ] 360/768/1280/1920 genişliklerinde yatay scroll yok
-  - [ ] resize'da state korunur
-  - [ ] klavye erişimi
-  - [ ] touch emülasyonu
-- [ ] **Manuel test:** gerçek cihaz
+- [x] Mobil layout (≤ 760 px):
+  - [x] canvas üstte, panel altta ve kendi içinde kayıyor
+  - [x] materyal seçici yatay kayan şerit
+  - [x] "Sahne ve diğer ayarlar" açılır bölümü (dar ekranda kapalı başlar)
+  - [x] alt başlık gizli; 480 px altında başlık göstergeleri özet
+- [x] Tablet (761–1100 px): 248 px panel, grid göstergesi gizli
+- [x] `100dvh` (+ `100vh` fallback), safe-area inset'leri, `overscroll-behavior: none`
+- [x] Dokunmatik:
+  - [x] canvas'ta `touch-action: none`, `-webkit-touch-callout: none`, `user-select: none`
+  - [x] kontrollerde `touch-action: manipulation` (çift dokunma zoom'u yok)
+  - [x] coarse pointer'da 44 px kontrol yüksekliği
+- [x] ResizeObserver (Phase 1); DPR değişimi `matchMedia` ile takip ediliyor (monitör değişimi, zoom)
+- [x] Erişilebilirlik:
+  - [x] semantik bölümler, `label`/`legend`
+  - [x] radiogroup (ok tuşlarıyla gezinme)
+  - [x] `aria-pressed`, `aria-live`, `aria-keyshortcuts`
+  - [x] canvas için `role="img"` + açıklama
+  - [x] görünür odak
+  - [x] seçili materyal renkten bağımsız belli (▸, kalın ad, çift çerçeve)
+- [x] **Test** (Playwright):
+  - [x] 360×640, 768×1024, 1280×800, 1920×1080'de yatay scroll yok, konsol temiz; grid her boyutta bütçeye göre açılışta seçiliyor
+  - [x] Yön değişimi (390×844 → 844×390): grid ve parçacık sayısı korunuyor
+  - [x] Tab ile tüm kontrollere erişim (devre dışı "Geri al" atlanıyor); radio grubunda ok tuşları; odak halkası görünür
+  - [x] Touch emülasyonu (hasTouch, DPR 2): dokunarak çizim çalışıyor, önizleme gizli, `touch-action: none`
+  - [x] Kontrast (WCAG): en düşük oran 6,2:1 (ipucu metni); tüm metinler AA üstünde
+- [ ] **Manuel test:** gerçek cihazda iOS Safari + Android Chrome (checklist; bu ortamda yapılamıyor)
 
 ### Phase 10 — Performance
 
