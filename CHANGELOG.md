@@ -5,6 +5,10 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) yaklaşımını 
 
 ## [Unreleased]
 
+### Removed
+
+- `.claude/` klasörü artık repoda izlenmiyor (`.gitignore`'da). Claude Code ayarları yerelde kalır.
+
 ## [0.9.0] - 2026-09-30
 
 İlk tam sürüm adayı: Phase 0–12 tamamlandı. v1.0.0 gerçek cihaz ve tarayıcı testlerinden sonra etiketlenecek.

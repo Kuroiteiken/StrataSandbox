@@ -41,6 +41,7 @@ node tools/check-paths.js  # path büyük/küçük harf + root-absolute kontrol�
 - [x] `.claude/settings.json`:
   - [x] projeye özel plugin'ler, dil ve izinler
   - [x] JSON parse doğrulandı
+  - Not (2026-09-30): kullanıcı isteğiyle `.claude/` repodan çıkarıldı ve `.gitignore`'a eklendi; dosya yerelde duruyor.
 - [x] `package.json` (`"type":"module"`, 0 dependency, `test`/`serve` script'leri)
 - [x] `tools/serve.js`:
   - [x] sıfır bağımlılıklı statik sunucu

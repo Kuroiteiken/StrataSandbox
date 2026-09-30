@@ -11,8 +11,8 @@ Thumbs.db
 coverage/
 bench-results/
 
-# Claude Code: kişisel yerel ayarlar ve ajan çalışma alanı
-.claude/settings.local.json
+# Claude Code: yerel ayarlar ve ajan çalışma alanı (repoda izlenmez)
+.claude/
 .superpowers/
 
 # CI yayın klasörü
