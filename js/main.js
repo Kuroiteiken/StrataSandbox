@@ -1,13 +1,12 @@
 // Composition root: config, simulation, renderer ve uygulama katmanını bağlar.
-import { APP_NAME, DEFAULT_GRID, DEFAULT_SEED } from './config.js';
+import { APP_NAME, CELL_BUDGET, MAX_DPR, PHYSICS_BUDGET_MS, DEFAULT_SEED } from './config.js';
 import { Simulation } from './engine/simulation.js';
 import { Renderer } from './render/renderer.js';
+import { chooseGridSize } from './render/layout.js';
 import { createLoop } from './app/loop.js';
 import { buildDemo, demoSources } from './scenes/demo.js';
 
-const MAX_DPR = 2;
-const PHYSICS_BUDGET_MS = 8;
-const DEMO_POUR_TICKS = 1800; // geçici demo: ilk ~30 sn kum akıt
+const DEMO_POUR_TICKS = 1800; // geçici demo: ilk ~30 sn akıt
 
 document.title = APP_NAME;
 for (const el of document.querySelectorAll('[data-app-name]')) el.textContent = APP_NAME;
@@ -18,10 +17,19 @@ const debug = params.get('debug') === '1';
 const canvas = document.getElementById('world-canvas');
 const viewport = document.getElementById('viewport');
 
-const sim = new Simulation({ width: DEFAULT_GRID.width, height: DEFAULT_GRID.height, seed: DEFAULT_SEED, debug });
-const renderer = new Renderer(canvas);
+// Sabit iç grid: yalnızca açılışta, konteynır boyutuna göre.
+const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
+const initialRect = viewport.getBoundingClientRect();
+const grid = chooseGridSize(initialRect.width, initialRect.height, coarsePointer ? CELL_BUDGET.mobile : CELL_BUDGET.desktop);
+
+const sim = new Simulation({ width: grid.width, height: grid.height, seed: DEFAULT_SEED, debug });
+const renderer = new Renderer(canvas, { seed: DEFAULT_SEED });
 buildDemo(sim);
 const sources = demoSources(sim.view.width, sim.view.height);
+
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+renderer.setReducedMotion(reducedMotion.matches);
+reducedMotion.addEventListener('change', (e) => renderer.setReducedMotion(e.matches));
 
 const resize = () => {
   const rect = viewport.getBoundingClientRect();
@@ -44,4 +52,4 @@ const loop = createLoop({
 });
 loop.start();
 
-if (debug) window.__strata = { sim, renderer, loop };
+if (debug) window.__strata = { sim, renderer, loop, grid };

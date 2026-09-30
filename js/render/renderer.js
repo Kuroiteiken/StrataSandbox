@@ -1,45 +1,40 @@
-// Render engine (Phase 1 minimal sürüm). Simülasyon durumunu yalnızca okur.
-// Grid → ImageData (Uint32 view) → gizli canvas → ana canvas'a büyütülmüş çizim.
-// Phase 4: procedural arka plan, dinamik renkler, clientToCell, capture.
+// Render engine. Simülasyon durumunu (sim.view) yalnızca okur; fizik kuralı içermez.
+// Katmanlar: cache'li arka plan → sim tamponu (ImageData, büyütülmüş) → (Phase 5) brush preview
+// → (Phase 8) glow.
 import { MATERIALS } from '../engine/materials.js';
-import { buildPalette, SHADES } from './palette.js';
+import { buildPalette, buildRamps, ANIMATED_IDS } from './palette.js';
+import { fillPixels } from './pixels.js';
+import { paintBackground } from './background.js';
+import { computeLayout, pointToCell } from './layout.js';
 
-const SHADE_MASK = SHADES - 1;
-const INTEGER_SCALE_MIN_AREA = 0.85; // tam sayı ölçek, sığdırma alanının en az %85'ini kullanmalı
+export { computeLayout } from './layout.js';
 
-// Grid'i tuvale sığdırır. Piksel keskinliği için mümkünse tam sayı ölçek seçilir.
-export function computeLayout(gridW, gridH, pixelW, pixelH) {
-  if (pixelW <= 0 || pixelH <= 0) return { scale: 0, drawW: 0, drawH: 0, offsetX: 0, offsetY: 0 };
-  const fit = Math.min(pixelW / gridW, pixelH / gridH);
-  const intScale = Math.floor(fit);
-  const ratio = intScale / fit;
-  const scale = intScale >= 1 && ratio * ratio >= INTEGER_SCALE_MIN_AREA ? intScale : fit;
-  const drawW = Math.round(gridW * scale);
-  const drawH = Math.round(gridH * scale);
-  return {
-    scale,
-    drawW,
-    drawH,
-    offsetX: Math.floor((pixelW - drawW) / 2),
-    offsetY: Math.floor((pixelH - drawH) / 2),
-  };
-}
+const BACKGROUND_RES = 0.5; // arka plan yarım çözünürlükte çizilip yumuşak büyütülür (bellek)
 
 export class Renderer {
-  constructor(canvas, { frameColor = '#0e0c0a', worldColor = '#1b1713' } = {}) {
+  constructor(canvas, { seed = 'strata', frameColor = '#0e0c0a' } = {}) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d', { alpha: false });
     this.palette = buildPalette(MATERIALS);
+    this.ramps = buildRamps();
     this.frameColor = frameColor;
-    this.worldColor = worldColor;
+    this.seed = seed;
+    this.reducedMotion = false;
+    this.frame = 0;
+
     this.gridW = 0;
     this.gridH = 0;
     this.buffer = null;
     this.bufferCtx = null;
     this.image = null;
     this.pixels = null;
+    this.lastView = null;
     this.lastVersion = -1;
+
     this.layout = computeLayout(1, 1, 0, 0);
+    this._layoutKey = '';
+    this.background = null;
+    this._backgroundKey = '';
     this.lastRenderMs = 0;
   }
 
@@ -50,8 +45,27 @@ export class Renderer {
     if (this.canvas.height !== h) this.canvas.height = h;
   }
 
+  setBackground(seed) {
+    this.seed = seed;
+    this._backgroundKey = '';
+  }
+
+  setReducedMotion(enabled) {
+    this.reducedMotion = Boolean(enabled);
+    this.lastVersion = -1; // titreşimsiz görünüme hemen geç
+  }
+
+  // Ekran (CSS px, ör. PointerEvent.clientX/Y) → hücre. Çizim alanı dışında null.
+  clientToCell(clientX, clientY, options) {
+    const rect = this.canvas.getBoundingClientRect();
+    if (!(rect.width > 0) || !(rect.height > 0)) return null;
+    const px = ((clientX - rect.left) * this.canvas.width) / rect.width;
+    const py = ((clientY - rect.top) * this.canvas.height) / rect.height;
+    return pointToCell(px, py, this.layout, this.gridW, this.gridH, options);
+  }
+
   _ensureBuffer(w, h) {
-    if (this.gridW === w && this.gridH === h) return;
+    if (this.gridW === w && this.gridH === h && this.buffer) return;
     if (this.buffer) this.buffer.width = 0; // iOS canvas bellek limiti: eskisini serbest bırak
     this.buffer = document.createElement('canvas');
     this.buffer.width = w;
@@ -61,41 +75,60 @@ export class Renderer {
     this.pixels = new Uint32Array(this.image.data.buffer);
     this.gridW = w;
     this.gridH = h;
-    this.lastVersion = -1;
+    this.lastView = null;
   }
 
-  _fill(view) {
-    const { type, variant, width, height, stride } = view;
-    const px = this.pixels;
-    const pal = this.palette;
-    let o = 0;
-    for (let y = 0; y < height; y++) {
-      let i = (y + 1) * stride + 1;
-      for (let x = 0; x < width; x++, i++, o++) {
-        const t = type[i];
-        px[o] = t === 0 ? 0 : pal[t * SHADES + (variant[i] & SHADE_MASK)];
-      }
-    }
+  _ensureLayout() {
+    const key = `${this.gridW}x${this.gridH}@${this.canvas.width}x${this.canvas.height}`;
+    if (key === this._layoutKey) return;
+    this._layoutKey = key;
+    this.layout = computeLayout(this.gridW, this.gridH, this.canvas.width, this.canvas.height);
+  }
+
+  _ensureBackground() {
+    const { drawW, drawH } = this.layout;
+    const w = Math.max(1, Math.ceil(drawW * BACKGROUND_RES));
+    const h = Math.max(1, Math.ceil(drawH * BACKGROUND_RES));
+    const key = `${w}x${h}:${this.seed}`;
+    if (key === this._backgroundKey) return;
+    this._backgroundKey = key;
+    if (this.background) this.background.width = 0;
+    this.background = document.createElement('canvas');
+    this.background.width = w;
+    this.background.height = h;
+    paintBackground(this.background.getContext('2d'), w, h, this.seed);
+  }
+
+  _isAnimated(view) {
+    if (this.reducedMotion || !view.counts) return false;
+    for (let k = 0; k < ANIMATED_IDS.length; k++) if (view.counts[ANIMATED_IDS[k]] > 0) return true;
+    return false;
   }
 
   render(view) {
     const start = performance.now();
+    this.frame++;
     this._ensureBuffer(view.width, view.height);
-    if (view.version !== this.lastVersion) {
-      this._fill(view);
+    this._ensureLayout();
+
+    if (view !== this.lastView || view.version !== this.lastVersion || this._isAnimated(view)) {
+      fillPixels(view, this.pixels, this.palette, this.ramps, this.frame, this.reducedMotion);
       this.bufferCtx.putImageData(this.image, 0, 0);
+      this.lastView = view;
       this.lastVersion = view.version;
     }
 
     const { ctx, canvas } = this;
-    const l = computeLayout(view.width, view.height, canvas.width, canvas.height);
-    this.layout = l;
-    ctx.imageSmoothingEnabled = false; // canvas resize bu ayarı sıfırlar; her karede set edilir
+    const l = this.layout;
     ctx.fillStyle = this.frameColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = this.worldColor;
-    ctx.fillRect(l.offsetX, l.offsetY, l.drawW, l.drawH);
-    ctx.drawImage(this.buffer, l.offsetX, l.offsetY, l.drawW, l.drawH);
+    if (l.drawW > 0 && l.drawH > 0) {
+      this._ensureBackground();
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(this.background, l.offsetX, l.offsetY, l.drawW, l.drawH);
+      ctx.imageSmoothingEnabled = false; // canvas resize bu ayarı sıfırlar; her karede set edilir
+      ctx.drawImage(this.buffer, l.offsetX, l.offsetY, l.drawW, l.drawH);
+    }
     this.lastRenderMs = performance.now() - start;
   }
 }

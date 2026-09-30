@@ -132,15 +132,28 @@ Renderer.render(view, frameInfo)                                 ← state'i asl
 | Sand | ısı |
 | Plant | büyüme bütçesi |
 
-## 6. Renderer (planlandı — Phase 4, 8)
+## 6. Renderer (uygulandı — Phase 4; glow Phase 8)
 
-- **Sim buffer:** grid boyutunda bir `ImageData` ve üzerinde `Uint32Array` view. Renk `PALETTE[type * 32 + ton]` ile okunur. EMPTY şeffaftır.
+| Modül | Sorumluluk | DOM |
+| --- | --- | --- |
+| `render/layout.js` | `computeLayout` (tam sayı ölçek tercihi), `pointToCell`, `chooseGridSize` | yok |
+| `render/palette.js` | statik ton LUT'u (`256 × 32`), dinamik rampalar, `DYNAMIC`/`ANIMATED_IDS` | yok |
+| `render/pixels.js` | `fillPixels(view, out, pal, ramps, frame, reducedMotion)` | yok |
+| `render/background.js` | `ridgeProfile` (saf) + `paintBackground` (canvas) | kısmen |
+| `render/renderer.js` | canvas, tamponlar, katman birleştirme, `clientToCell` | var |
+
+- **Sim tamponu:** grid boyutunda `ImageData` ve üzerinde `Uint32Array` view.
+  - Statik renk: `PALETTE[type * 32 + (variant & 31)]`.
+  - Dinamik materyallerin rengi `life` (ömür, yanma, ısı) ve kozmetik titremeden hesaplanır. Titreme fizik RNG'sine dokunmaz.
+  - EMPTY şeffaftır.
+- **Yeniden doldurma:** yalnızca `view` kimliği ya da `version` değişince, veya canlanan materyal (ateş, lava, yanma) varken yapılır (reduced motion'da değil).
 - **Katman sırası:**
-  1. cache'li arka plan
-  2. sim canvas (`imageSmoothingEnabled = false`, tam sayı ölçek)
-  3. glow (`lighter`)
-  4. brush preview
-- **Değişiklik takibi:** sim buffer yalnızca `view.version` değişince yeniden doldurulur.
+  1. letterbox dolgusu
+  2. cache'li arka plan (yarım çözünürlük, smoothing açık)
+  3. sim tamponu (`imageSmoothingEnabled = false`)
+  4. brush preview (Phase 5)
+  5. glow (Phase 8)
+- **Grid boyutu:** açılışta bir kez seçilir. Resize yalnızca sunumu değiştirir.
 
 ## 7. Input (planlandı — Phase 5)
 

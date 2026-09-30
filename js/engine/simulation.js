@@ -58,6 +58,7 @@ export class Simulation {
       variant: w.variant,
       life: w.life,
       flags: w.flags,
+      counts: w.counts, // materyal başına hücre sayısı (salt-okunur; ör. renderer animasyon kararı)
       get tick() {
         return sim.tick;
       },

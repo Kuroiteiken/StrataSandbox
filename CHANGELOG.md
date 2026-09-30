@@ -5,6 +5,21 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) yaklaşımını 
 
 ## [Unreleased]
 
+### Added — Phase 4 (Renderer)
+
+- Dinamik renkler:
+  - ateş ömrüne göre sıcak → sönük, titreme
+  - lava nabzı
+  - yanan odun/bitki/yağın kömürleşmesi
+  - ısınan kumun kızarması
+- Procedural arka plan: alacakaranlık gradyanı, seed'li yıldızlar, katmanlı sırt siluetleri (cache'li).
+- Açılışta konteynıra göre sabit grid boyutu (`chooseGridSize`; masaüstü 90k, dokunmatik 40k hücre bütçesi).
+- `renderer.clientToCell`, `setReducedMotion`, layout cache'i.
+- Tampon yalnızca durum değişince (ya da canlanan materyal varken) yenileniyor.
+- `prefers-reduced-motion` desteği (titreme ve lava dalgası kapanır).
+- Saf render modülleri: `js/render/layout.js`, `js/render/pixels.js`.
+- Testler: render-layout, render-pixels, render-background, renderer (toplam 166).
+
 ### Added — Phase 3 (Reaction System)
 
 - `js/engine/reactions.js`:

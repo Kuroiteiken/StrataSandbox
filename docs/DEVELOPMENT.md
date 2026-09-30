@@ -197,20 +197,44 @@ node tools/check-paths.js  # path büyük/küçük harf + root-absolute kontrol�
 
 ### Phase 4 — Renderer
 
-- [ ] `palette.js`: renk rampaları → Uint32 LUT (endianness)
-- [ ] `renderer.js`:
-  - [ ] DPR (en fazla 2)
-  - [ ] tam sayı ölçek + letterbox
-  - [ ] katman birleştirme, `clientToCell`
-  - [ ] açılışta grid boyutu hesaplama (hücre bütçesi)
-- [ ] Dinamik renkler: fire, lava, yanma, ısınan kum
-- [ ] `background.js`: gradyan, strata siluetleri, yıldızlar; cache'li
-- [ ] `version` tabanlı "yalnızca değiştiyse yeniden doldur"
-- [ ] **Test:**
-  - [ ] LUT ve endianness
-  - [ ] ölçek ve `clientToCell` matematiği
-  - [ ] Renderer view'ı değiştirmez (hash)
-  - [ ] MCP ekran görüntüsü, DPR 1 ve 2
+- [x] `palette.js`:
+  - [x] statik ton LUT'u (endianness)
+  - [x] `gradient()`
+  - [x] dinamik rampalar: fire, lava, yanan odun/bitki/yağ, kum ısısı
+  - [x] `DYNAMIC` ve `ANIMATED_IDS` tabloları
+- [x] `pixels.js`: `fillPixels`:
+  - [x] saf fonksiyon, allocation yok
+  - [x] ateşte ömre göre renk + kozmetik titreme
+  - [x] lavada hücre fazı + kayan dalga
+  - [x] yanmada kararma (kömürleşme)
+  - [x] ısınan kumda kızarma
+- [x] `layout.js`:
+  - [x] `computeLayout`: tam sayı ölçek tercihi + letterbox
+  - [x] `pointToCell` (kırpma seçenekli)
+  - [x] `chooseGridSize`: açılışta sabit grid, tam sayı CSS px hücre, bütçe (masaüstü 90k / dokunmatik 40k)
+- [x] `renderer.js`:
+  - [x] DPR (en fazla 2, `main.js`)
+  - [x] katman birleştirme: cache'li arka plan → sim
+  - [x] `clientToCell`
+  - [x] layout cache'i
+  - [x] yalnızca durum değişince yeniden doldurma (`view` kimliği + `version`); canlanan materyal varken her karede
+  - [x] `setReducedMotion`
+- [x] `background.js`: gradyan, seed'li yıldızlar, 3 katmanlı sırt silueti + strata çizgileri; yarım çözünürlükte cache'li
+- [x] `sim.view.counts` (salt-okunur; animasyon kararı için)
+- [x] `prefers-reduced-motion` takibi (`main.js`): titreme ve lava dalgası kapanır
+- [x] **Test** (`render-layout`, `render-pixels`, `render-background`, `renderer`, `palette`; suite 166/166):
+  - [x] LUT ve endianness
+  - [x] ölçek, `pointToCell`, `chooseGridSize`
+  - [x] `clientToCell` (DPR 2, ofset)
+  - [x] Ateş: taze parlak / sönük koyu. Kömürleşme. Isınan kum kızarır.
+  - [x] Lava animasyonu var; reduced motion'da sabit
+  - [x] Renderer ve `fillPixels` durumu değiştirmez
+  - [x] Yeniden doldurma kuralları: durağan, yeni view, canlanan, reduced motion (sahte canvas)
+  - [x] Tarayıcı (Playwright MCP):
+    - [x] 1440×860'ta grid 282×197 (hücre 4 px), tam sayı ölçek
+    - [x] render yaklaşık 1,5 ms
+    - [x] görsel kontrol tamam
+  - [~] DPR 2 görsel kontrolü: matematiği testte doğrulandı; gerçek yüksek DPI ekranda manuel kontrol Phase 9/12 checklist'inde
 
 ### Phase 5 — Input / Brush / Undo
 
@@ -407,6 +431,15 @@ Uygulama sırasında plandan sapan ya da planın cevaplamadığı kararlar. Kal�
 - **2026-09-30 · Phase 3 — Phase 2 testleri reaksiyonlara uyarlandı.**
   - "Sand lavanın üstünde kalır" testi artık cama dönüşmeye izin veriyor.
   - "Reaksiyonsuz karışım" testi reaktif lava ve buharı çıkarıp Ash ekliyor.
+
+- **2026-09-30 · Phase 4 — Renderer saf modüllere bölündü.**
+  - Karar: `layout.js` (geometri), `pixels.js` (hücre → piksel) ve `background.js`'in profil fonksiyonu DOM'suz; Node'da test ediliyor. `renderer.js` yalnızca canvas yönetimi yapıyor.
+  - İnceleme bulgusu #9 kapandı: tampon, `view` kimliği değişince de yenileniyor.
+- **2026-09-30 · Phase 4 — Grid seçimi açılışta.**
+  - Karar: `chooseGridSize` hücreyi tam sayı CSS px seçiyor (en az 3) ve bütçeyi aşmayana kadar büyütüyor. Planda "üst sınır 6" vardı; büyük ekranlarda bütçeyi korumak için üst sınır kaldırıldı.
+  - En küçük grid 64×48.
+- **2026-09-30 · Phase 4 — Arka plan yarım çözünürlükte.**
+  - Karar: arka plan yarım çözünürlükte çizilip yumuşak büyütülüyor (bellek). Sim tamponu her zaman keskin (smoothing kapalı).
 
 ### Phase 0–1 bağımsız inceleme (2026-09-30)
 
