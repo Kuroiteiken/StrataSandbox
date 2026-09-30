@@ -1,26 +1,21 @@
 // Reaksiyon sistemi (ADR-003, ADR-004).
 // - Tek sahip: her etkileşim çiftini yalnızca bir taraf işler (tablo: ARCHITECTURE.md §5).
 // - Sahip hücre tick başına 8 komşusundan rastgele BİRİNİ örnekler.
-// - Sıcaklık alanı yok: yerel ısı/soğuma `life` sayaçlarında tutulur.
+// - Isı alışverişi (kaynatma, kum ısıtma, lav soğuması, yoğuşma) sıcaklık alanında (heat.js);
+//   burada yalnızca temas kuralları var.
 // - Dönüştürülen/oluşturulan hücre damgalanır (world.transform/set) → aynı tick'te zincirleme yok.
 // react() true dönerse hücre artık aynı materyal değildir; çağıran hareketi atlar.
 import { MAT, KIND, MATERIALS, spawnTemp } from './materials.js';
 
 const { FLAMMABILITY, BURNS_INTO, LIFE_MIN, LIFE_SPAN, EMIT, DOUSE, ASH_CHANCE, EXTINGUISH_TO } = MATERIALS;
-const { EMPTY, SAND, WATER, LAVA, STEAM, FIRE, STONE, GLASS, PLANT, ASH } = MAT;
+const { EMPTY, WATER, LAVA, STEAM, FIRE, PLANT, ASH } = MAT;
 
 // Oranlar (olasılıklar 0..1 → 0..256 eşik).
 const p = (x) => Math.round(x * 256);
 export const RATES = Object.freeze({
   fireBoil: p(0.5), // ateş komşu suyu buharlaştırıp söner
-  lavaBoil: p(0.6), // lava komşu suyu buharlaştırır
-  lavaQuench: 25, // su teması başına lava soğuma sayacı artışı
-  lavaAirCool: p(0.1), // havayla temas eden lavanın soğuma olasılığı (+1)
-  lavaSolidify: 200, // bu sayaca ulaşan lava taşa döner
-  sandHeatGain: 16, // lava kum komşusunu örneklediğinde kumun ısı artışı
-  glassHeat: 300, // bu ısıya ulaşan kum cama döner (kum tick başına 1 soğur)
-  condenseToWater: p(0.6), // buhar ömrü bitince suya dönme olasılığı (yoksa kaybolur)
   plantGrow: p(0.012), // bitkinin tick başına büyüme denemesi olasılığı (yavaş yayılım)
+  plantMinTemp: 5, // °C; bunun altında bitki büyümez
   maxFireSpawnPerTick: 400, // yanan materyallerin tick başına üretebileceği en fazla ateş
   maxGrowthPerTick: 24, // tick başına en fazla bitki büyümesi (dünya genelinde)
   maxClonesPerTick: 300, // çoğaltıcıların tick başına en fazla kopyası (dünya genelinde)
@@ -61,6 +56,15 @@ function ignite(world, rng, j, nt) {
   if (flammability !== 0 && roll(rng, flammability)) become(world, rng, j, BURNS_INTO[nt]);
 }
 
+const STEAM_TEMP = spawnTemp(STEAM, 0); // 105 °C
+
+// Tüm buhar üretimi buradan geçer (kaynama, ateş, söndürme). Buhar doğuş sıcaklığıyla başlar;
+// aksi halde suyun sıcaklığını alıp hemen yoğuşurdu. Alt proje 2: basınç kaynağı buraya bağlanacak.
+export function emitSteam(world, i) {
+  world.transform(i, STEAM, 0);
+  world.temp[i] = STEAM_TEMP;
+}
+
 // ---- Materyal kuralları ----
 
 // Ateş kısa ömürlü ve hareketli olduğundan tick başına FIRE_SAMPLES komşu örnekler
@@ -80,7 +84,7 @@ function reactFire(world, rng, i) {
     const nt = world.type[j];
     if (nt === WATER) {
       if (!roll(rng, RATES.fireBoil)) continue;
-      become(world, rng, j, STEAM);
+      emitSteam(world, j);
       vanish(world, i);
       return true;
     }
@@ -89,47 +93,10 @@ function reactFire(world, rng, i) {
   return false;
 }
 
-function reactSteam(world, rng, i) {
-  const life = world.life;
-  if (life[i] > 1) {
-    life[i]--;
-    return false;
-  }
-  if (roll(rng, RATES.condenseToWater)) become(world, rng, i, WATER);
-  else vanish(world, i);
-  return true;
-}
-
-// Lava soğuma sayacını artırır; eşiği geçerse taşa döner (true).
-function coolLava(world, i, amount) {
-  const v = world.life[i] + amount;
-  if (v >= RATES.lavaSolidify) {
-    world.transform(i, STONE, 0);
-    return true;
-  }
-  world.life[i] = v;
-  return false;
-}
-
+// Lav yalnızca temasla tutuşturur; kaynatma, kum ısıtma ve soğuma sıcaklık alanında.
 function reactLava(world, rng, i) {
   const j = sampleNeighbor(world, rng, i);
-  const nt = world.type[j];
-  if (nt === WATER) {
-    if (!roll(rng, RATES.lavaBoil)) return false;
-    become(world, rng, j, STEAM);
-    return coolLava(world, i, RATES.lavaQuench);
-  }
-  if (nt === SAND) {
-    // Lava kumu ısıtır (sahip: lava — büyük kum yığınlarının örneklemesinden ucuz).
-    const heat = world.life[j] + RATES.sandHeatGain;
-    if (heat >= RATES.glassHeat) world.transform(j, GLASS, 0);
-    else world.life[j] = heat;
-    return false;
-  }
-  if (nt === EMPTY) {
-    return roll(rng, RATES.lavaAirCool) ? coolLava(world, i, 1) : false;
-  }
-  ignite(world, rng, j, nt);
+  ignite(world, rng, j, world.type[j]);
   return false;
 }
 
@@ -155,7 +122,7 @@ function reactBurning(world, rng, i, t, state) {
   const nt = world.type[j];
   if (nt === WATER) {
     if (DOUSE[t] === 0 || !roll(rng, DOUSE[t])) return false;
-    become(world, rng, j, STEAM);
+    emitSteam(world, j);
     world.transform(i, EXTINGUISH_TO[t], 0);
     return true;
   }
@@ -164,7 +131,7 @@ function reactBurning(world, rng, i, t, state) {
 }
 
 function reactPlant(world, rng, i, state) {
-  if (state.growthBudget <= 0 || !roll(rng, RATES.plantGrow)) return false;
+  if (state.growthBudget <= 0 || world.temp[i] < RATES.plantMinTemp || !roll(rng, RATES.plantGrow)) return false;
   const budget = world.life[i];
   if (budget === 0) return false;
   const j = sampleNeighbor(world, rng, i);
@@ -225,8 +192,6 @@ export function react(world, rng, i, t, state) {
   switch (t) {
     case FIRE:
       return reactFire(world, rng, i);
-    case STEAM:
-      return reactSteam(world, rng, i);
     case LAVA:
       return reactLava(world, rng, i);
     case PLANT:

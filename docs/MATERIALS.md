@@ -112,12 +112,14 @@ Her hücrenin bir sıcaklığı (°C) olur ve ısı komşu hücrelere iletilir. 
 
 ### 4.1 Termal özellikler (başlangıç değerleri; uygulama sırasında ayarlanabilir)
 
-> Durum: doğuş sıcaklığı, iletkenlik, ısı kapasitesi ve kaynaklar **mevcut** (0.10.0 geliştirme, Görev 5). Kaynaklar (çoğaltıcı ve yutucu) K 0,06, C 4 değerini kullanır. "Sıcaklıkla davranış" sütunundaki faz geçişleri ve tutuşma Görev 7'de gelir.
+> Durum: doğuş sıcaklığı, iletkenlik, ısı kapasitesi, kaynaklar, faz geçişleri (gizli ısı), sıcaklıkla tutuşma ve buharlaşma **mevcut** (0.10.0 geliştirme, Görev 5 ve 7). Kaynaklar (çoğaltıcı ve yutucu) K 0,06, C 4 değerini kullanır. Suyun donması ve buz, kar, metal Görev 8'de gelir.
+>
+> Gizli ısı değerleri (kapasite × °C): su → buhar 1500, buhar → su 600 (%40'ı kaybolur), lav → taş 800, taş → lav 800, kum → cam 300.
 
 | Materyal | Doğuş sıcaklığı | İletkenlik K | Isı kapasitesi C | Sıcaklıkla davranış |
 |---|---|---|---|---|
 | Hava | ortam | 0,01 | 1 | Ortama yaklaşır. |
-| Kum | ortam | 0,04 | 3 | 700 °C'de cama döner. |
+| Kum | ortam | 0,04 | 3 | 550 °C'de cama döner (lavla uzun temas). |
 | Taş | ortam | 0,06 | 4 | 1500 °C'de lava döner. |
 | Su | ortam | 0,08 | 4 | −1 °C'de buza, 100 °C'de buhara döner. 35 °C üstünde ve üstü açıksa yavaşça buharlaşır. |
 | Yağ | ortam | 0,03 | 3 | 250 °C'de kendiliğinden tutuşur. |
@@ -180,10 +182,10 @@ Eşiklerde histerezis vardır (ör. donma −1 °C, erime +1 °C), böylece hüc
 
 | Mevcut kural (§3) | 0.10.0'da |
 |---|---|
-| Lav + su → buhar, soğuma sayacı | Isı iletimiyle olur: su ısınıp kaynar, lav soğuyup taşa döner. Taş dış yüzeyden içe doğru oluşur. |
-| Lav + hava → soğuma | Isı iletimiyle olur. |
-| Lav + kum → kum ısısı → cam | Isı iletimiyle olur: kum 700 °C'de cama döner. |
-| Buhar ömrü → yoğuşma | 95 °C'nin altına soğuyan buhar yoğuşur. Soğuk havada yağmur olarak düşer. |
+| Lav + su → buhar, soğuma sayacı | **Mevcut:** ısı iletimiyle olur: su ısınıp kaynar, lav soğuyup taşa döner. Taş dış yüzeyden içe doğru oluşur. |
+| Lav + hava → soğuma | **Mevcut:** ısı iletimiyle olur. |
+| Lav + kum → kum ısısı → cam | **Mevcut:** ısı iletimiyle olur; kum 550 °C'de cama döner. |
+| Buhar ömrü → yoğuşma | **Mevcut:** 95 °C'nin altına soğuyan buhar yoğuşur. Soğuk havada yağmur olarak düşer. |
 | Ateş ve yanan materyal + su → buhar | Kalır. Buhar 105 °C'de doğar. |
 | Ateş ve lav + yanıcı → tutuşma (temasla) | Kalır. Ek olarak sıcaklıkla kendiliğinden tutuşma gelir. |
 | Bitki büyümesi | Kalır. 5 °C'nin altında büyüme yok. |

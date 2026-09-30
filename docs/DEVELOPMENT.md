@@ -736,7 +736,7 @@ Spec: `docs/superpowers/specs/2026-09-30-sicaklik-sistemi-design.md` · Plan: `d
 - [x] Sıcaklık alanı veri modeli
 - [x] Isı geçişi (difüzyon, hava, kaynaklar, uyuyan satırlar)
 - [x] Isı görselleri ve termal görünüm
-- [ ] Faz geçişleri ve sayaç hilelerinin taşınması
+- [x] Faz geçişleri ve sayaç hilelerinin taşınması
 - [ ] Buz, Kar, Metal, Erimiş metal, Magma
 - [ ] Gün/gece döngüsü, sahne ortamları, gökyüzü
 - [ ] Isıt ve Soğut fırçaları

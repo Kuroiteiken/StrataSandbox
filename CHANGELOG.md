@@ -24,6 +24,9 @@ Hedef sürüm 0.10.0: sıcaklık sistemi, Buz, Kar, Metal, yeni sahneler ve kum 
 
 ### Changed
 
+- Faz geçişleri artık sıcaklık alanında ve gizli ısıyla çalışıyor: su 100 °C'de kaynıyor; buhar 95 °C'de yoğuşuyor ve bir kısmı kayboluyor; lav 750 °C'de taşa dönüyor (önce dış yüzeyi, ortası en son); kum 550 °C'de cama dönüyor; taş 1500 °C'de eriyor.
+- Sıcak ortamda (≥ 35 °C) açık su yüzeyi yavaşça buharlaşıyor. Odun (300 °C), yağ ve bitki (250 °C) sıcaklıkla kendiliğinden tutuşuyor; bitki 5 °C'nin altında büyümüyor.
+- Eski `life` sayaç hileleri (kum ısısı, lav soğuma sayacı, buhar zamanlayıcısı) kaldırıldı. Temasla tutuşma ve ateşin suyu buharlaştırması korundu; tüm buhar üretimi tek bir yoldan (`emitSteam`) geçiyor.
 - Kum saati yenilendi: kavisli iki cam hazne, dar boğaz, odun kapaklar ve direkler; cam ve odun şekli orta satıra göre tam simetrik. Üstte sınırsız çoğaltıcı, altta sınırsız yutucu olduğu için kum hiç durmadan akıyor. Kum camda takılmıyor. Sahne yüklenince bir ipucu duyuruluyor.
 - CI: yalnızca `docs/` altında değişiklik olduğunda test ve yayın akışı çalışmıyor (`paths-ignore`). Karışık push'larda akış yine çalışır.
 

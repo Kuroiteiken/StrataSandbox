@@ -65,7 +65,7 @@ Spec §2.8 ve §3.2'deki değerler "testlerle ayarlanır" diye verilmişti. Aşa
 | Değer | Spec | Plan | Gerekçe |
 |---|---|---|---|
 | Hava iletkenliği `K_AIR` | 0,02 | 0,01 | Lav üstündeki kum ve kabuk dengesi. 0,02'de kum hiç cam olmuyordu. |
-| Kum → Cam | 1000 °C, gizli ısı 450 | 700 °C, gizli ısı 300 | Havada yüzen kumun lavla denge sıcaklığı ~900 °C. Lav kabuk bağlamadan önce cam oluşabilmeli. |
+| Kum → Cam | 1000 °C, gizli ısı 450 | 550 °C, gizli ısı 300 (Görev 7 ölçümü; plan ilk hâli 700) | Havada yüzen kumun lavla denge sıcaklığı ~900 °C. Lav kabuk bağlamadan önce cam oluşabilmeli. |
 | Kum `conduct` | 0,03 | 0,04 | Aynı gerekçe. |
 | Taş → Lav | 1250 °C | 1500 °C | Dökümhane potası 1450 °C'lik erimiş metal taşır; pota erimemeli. |
 | Buhar → Su gizli ısısı | 300 | 600 | Eski 240–480 tick'lik buhar ömrüne yakın. Su altındaki kabarcık testi ve yağmur için gerekli. |

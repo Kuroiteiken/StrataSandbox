@@ -18,7 +18,7 @@ const MAX_TICKS_PER_FRAME = 8;
 // Böylece 50 ms @ 60 TPS gibi değerler kayan nokta hatası olmadan tam sayı çıkar.
 const TICK_UNIT = 1000;
 
-const { KIND: KIND_OF, REACTIVE, COOLS } = MATERIALS;
+const { KIND: KIND_OF, REACTIVE } = MATERIALS;
 const EMPTY = MAT.EMPTY;
 const POWDER = KIND.POWDER;
 const LIQUID = KIND.LIQUID;
@@ -163,7 +163,7 @@ export class Simulation {
     const w = this.world;
     w.ambient = this.ambient;
     w.beginTick();
-    const { type, stamp, life, stride, width, height } = w;
+    const { type, stamp, stride, width, height } = w;
     const clock = w.clock;
     const rng = this.rng;
     const parity = this.tick & 1;
@@ -186,7 +186,6 @@ export class Simulation {
           gasRows[y] = 1; // gazlar geçiş 2'de
           continue;
         }
-        if (COOLS[t] !== 0 && life[i] !== 0) life[i]--; // ısınan kum soğur (satır içi)
         if (REACTIVE[t] !== 0 && react(w, rng, i, t, rs)) continue;
         if (kind === POWDER) stepPowder(w, rng, i, t);
         else if (kind === LIQUID) stepLiquid(w, rng, i, t);

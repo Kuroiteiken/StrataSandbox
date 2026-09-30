@@ -75,9 +75,10 @@ test('Ateş suyla temas edince söner ve suyu buharlaştırır', () => {
     ~f~
     ~~~
   `, { seed: 'fw' });
+  const t = firstTickWhere(sim, 60, (s) => countMaterial(s, MAT.STEAM) >= 1);
+  assert.ok(t > 0, 'buhar oluşmadı');
   runTicks(sim, 60);
   assert.equal(countMaterial(sim, MAT.FIRE), 0);
-  assert.ok(countMaterial(sim, MAT.STEAM) >= 1, toAscii(sim));
 });
 
 test('Tek bir ateş bir tick\'te en fazla bir su hücresini buharlaştırır (tek sahip, tek örnek)', () => {
@@ -164,12 +165,13 @@ test('Lavaya uzun süre temas eden kum cama dönüşür, kısa temas dönüştü
   assert.ok(t > 0, 'uzun temasta cam oluşmadı');
 });
 
-test('Isınan kum lavadan uzaklaşınca soğur (ısı birikimi kalıcı değil)', () => {
+test('ısınan kum ısı kaynağından uzaklaşınca soğur (ısı kalıcı değil)', () => {
   const sim = new Simulation({ width: 6, height: 6, seed: 'cool' });
   sim.setCell(2, 5, MAT.SAND);
-  sim.world.life[sim.world.index(2, 5)] = 200;
-  runTicks(sim, 300);
-  assert.equal(sim.getCell(2, 5).life, 0);
+  sim.setTemp(2, 5, 600);
+  runTicks(sim, 3000);
+  assert.ok(sim.getCell(2, 5).temp < 30);
+  assert.equal(cellType(sim, 2, 5), MAT.SAND);
 });
 
 test('Yalnız kalan lava zamanla kabuk bağlar (havayla temas soğutur)', () => {
@@ -184,11 +186,16 @@ test('Yalnız kalan lava zamanla kabuk bağlar (havayla temas soğutur)', () => 
   assert.equal(countMaterial(sim, MAT.STONE), 6);
 });
 
-test('Lava gölünün içindeki lava hava görmediği sürece sıvı kalır', () => {
-  const sim = new Simulation({ width: 12, height: 8, seed: 'pool' });
-  fill(sim, 0, 0, 11, 7, MAT.LAVA);
-  runTicks(sim, 3000);
-  assert.equal(countMaterial(sim, MAT.LAVA), 96);
+test('lav dış yüzeyinden katılaşır; ortası en uzun süre sıvı kalır', () => {
+  const sim = new Simulation({ width: 16, height: 12, seed: 'crust-pool', debug: true });
+  fill(sim, 0, 4, 15, 11, MAT.STONE);
+  fill(sim, 3, 4, 12, 9, MAT.LAVA); // taşa oyulmuş, üstü açık havuz
+  const edge = [];
+  for (let x = 3; x <= 12; x++) edge.push([x, 4], [x, 9]);
+  for (let y = 5; y <= 8; y++) edge.push([3, y], [12, y]);
+  const t = firstTickWhere(sim, 20000, (s) => edge.filter(([x, y]) => cellType(s, x, y) === MAT.STONE).length >= edge.length / 2);
+  assert.ok(t > 0, 'kenar katılaşmadı');
+  assert.equal(cellType(sim, 7, 7), MAT.LAVA, 'orta hâlâ sıvı olmalı');
 });
 
 // ---------- Steam ----------
@@ -196,7 +203,7 @@ test('Lava gölünün içindeki lava hava görmediği sürece sıvı kalır', ()
 test('Kapalı kutudaki buhar zamanla yoğuşur ve suyun bir kısmı geri döner', () => {
   const sim = new Simulation({ width: 12, height: 10, seed: 'condense', debug: true });
   fill(sim, 0, 0, 11, 3, MAT.STEAM); // 48 buhar
-  runTicks(sim, 1200);
+  runTicks(sim, 4000);
   assert.equal(countMaterial(sim, MAT.STEAM), 0, toAscii(sim));
   const water = countMaterial(sim, MAT.WATER);
   assert.ok(water >= 15 && water < 48, `geri dönen su=${water}`);
@@ -262,11 +269,11 @@ test('Reaksiyonlar deterministiktir: aynı seed aynı sonucu verir', () => {
   assert.deepEqual(run(), run());
 });
 
-test('Boyanan ateş ve buhar spawn anında pozitif ömürle başlar', () => {
+test('boyanan ateş pozitif ömürle, buhar kaynama noktasının üstünde başlar', () => {
   const sim = new Simulation({ width: 4, height: 4 });
   sim.setCell(1, 1, MAT.FIRE);
   sim.setCell(2, 2, MAT.STEAM);
   assert.ok(sim.getCell(1, 1).life > 0);
-  assert.ok(sim.getCell(2, 2).life > 0);
+  assert.ok(sim.getCell(2, 2).temp >= 100);
   assert.equal(cellType(sim, 1, 1), MAT.FIRE);
 });

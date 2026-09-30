@@ -53,25 +53,33 @@ export const MAT = Object.freeze({
 //   conduct:   iletkenlik K (iki hücre arası k = min(K_i, K_j)); varsayılan 0,02
 //   capacity:  ısı kapasitesi C (≥ 1); varsayılan 2. Kararlılık için K/C ≤ 0,25 (derlemede doğrulanır)
 //   source:    sabit kaynak sıcaklığı °C (hücre bunun altına inmez: ateş, yanma, magma)
-//   cools:     life (ısı) her tick 1 azalır; tarama döngüsünde satır içi yapılır (react() çağrısı yok)
+// Faz ve sıcaklık kuralları (ADR-015; heat.js uygular):
+//   phase:        { up?: { at, into, latent, vanish? }, down?: {...} }. Eşiği aşan hücrenin sıcaklığı
+//                 eşikte sabitlenir, fazla ısı life'ta "ilerleme" olarak birikir; latent'e ulaşınca
+//                 into olur (vanish olasılığıyla boşalır). life bu materyallerde yalnızca ilerlemedir.
+//   ignitesAt:    bu sıcaklığın üstünde tick başına IGNITE_CHANCE ile burnsInto olur
+//   evaporatesAt: bu sıcaklığın üstünde, üstü boşsa yavaşça buharlaşıp kaybolur (su)
 export const MATERIAL_DEFS = [
   { id: MAT.EMPTY, key: 'EMPTY', name: 'Empty', kind: KIND.NONE, density: 5, color: null, conduct: 0.01, capacity: 1 },
   { id: MAT.WALL, key: 'WALL', name: 'Wall', kind: KIND.STATIC, density: 255, color: '#000000', internal: true, conduct: 0.01, capacity: 1 },
-  { id: MAT.SAND, key: 'SAND', name: 'Sand', kind: KIND.POWDER, density: 20, color: '#d9bb82', cools: true, conduct: 0.04, capacity: 3 },
-  { id: MAT.STONE, key: 'STONE', name: 'Stone', kind: KIND.STATIC, density: 255, color: '#6e6964', conduct: 0.06, capacity: 4 },
-  { id: MAT.WATER, key: 'WATER', name: 'Water', kind: KIND.LIQUID, density: 10, color: '#3f7fc2', dispersion: 5, spread: 1, drag: 0.5, conduct: 0.08, capacity: 4 },
+  { id: MAT.SAND, key: 'SAND', name: 'Sand', kind: KIND.POWDER, density: 20, color: '#d9bb82', conduct: 0.04, capacity: 3, phase: { up: { at: 550, into: MAT.GLASS, latent: 300 } } },
+  { id: MAT.STONE, key: 'STONE', name: 'Stone', kind: KIND.STATIC, density: 255, color: '#6e6964', conduct: 0.06, capacity: 4, phase: { up: { at: 1500, into: MAT.LAVA, latent: 800 } } },
+  { id: MAT.WATER, key: 'WATER', name: 'Water', kind: KIND.LIQUID, density: 10, color: '#3f7fc2', dispersion: 5, spread: 1, drag: 0.5, conduct: 0.08, capacity: 4,
+    phase: { up: { at: 100, into: MAT.STEAM, latent: 1500 } }, evaporatesAt: 35 },
   {
     id: MAT.OIL, key: 'OIL', name: 'Oil', kind: KIND.LIQUID, density: 8, color: '#6a5424',
-    dispersion: 2, spread: 0.6, drag: 0.6, flammable: 1, burnsInto: MAT.BURNING_OIL, conduct: 0.03, capacity: 3,
+    dispersion: 2, spread: 0.6, drag: 0.6, flammable: 1, burnsInto: MAT.BURNING_OIL, conduct: 0.03, capacity: 3, ignitesAt: 250,
   },
-  { id: MAT.LAVA, key: 'LAVA', name: 'Lava', kind: KIND.LIQUID, density: 30, color: '#e4531e', dispersion: 1, spread: 0.2, drag: 0.9, reactive: true, temp: 1150, conduct: 0.04, capacity: 4 },
-  { id: MAT.STEAM, key: 'STEAM', name: 'Steam', kind: KIND.GAS, density: 2, color: '#c8d2da', drift: 0.45, life: [240, 480], reactive: true, temp: 105, conduct: 0.02, capacity: 1 },
+  { id: MAT.LAVA, key: 'LAVA', name: 'Lava', kind: KIND.LIQUID, density: 30, color: '#e4531e', dispersion: 1, spread: 0.2, drag: 0.9, reactive: true, temp: 1150, conduct: 0.04, capacity: 4,
+    phase: { down: { at: 750, into: MAT.STONE, latent: 800 } } },
+  { id: MAT.STEAM, key: 'STEAM', name: 'Steam', kind: KIND.GAS, density: 2, color: '#c8d2da', drift: 0.45, temp: 105, conduct: 0.02, capacity: 1,
+    phase: { down: { at: 95, into: MAT.WATER, latent: 600, vanish: 0.4 } } },
   { id: MAT.FIRE, key: 'FIRE', name: 'Fire', kind: KIND.GAS, density: 3, color: '#ff8a2a', drift: 0.3, rise: 0.65, life: [10, 26], reactive: true, temp: 900, source: 900, conduct: 0.05, capacity: 1 },
-  { id: MAT.WOOD, key: 'WOOD', name: 'Wood', kind: KIND.STATIC, density: 255, color: '#7a5232', flammable: 0.25, burnsInto: MAT.BURNING_WOOD, conduct: 0.02, capacity: 3 },
+  { id: MAT.WOOD, key: 'WOOD', name: 'Wood', kind: KIND.STATIC, density: 255, color: '#7a5232', flammable: 0.25, burnsInto: MAT.BURNING_WOOD, conduct: 0.02, capacity: 3, ignitesAt: 300 },
   { id: MAT.GLASS, key: 'GLASS', name: 'Glass', kind: KIND.STATIC, density: 255, color: '#a9d6d4', conduct: 0.05, capacity: 3 },
   {
     id: MAT.PLANT, key: 'PLANT', name: 'Plant', kind: KIND.STATIC, density: 255, color: '#4c9a3a',
-    life: [8, 8], flammable: 0.5, burnsInto: MAT.BURNING_PLANT, reactive: true, conduct: 0.02, capacity: 3,
+    life: [8, 8], flammable: 0.5, burnsInto: MAT.BURNING_PLANT, reactive: true, conduct: 0.02, capacity: 3, ignitesAt: 250,
   },
   {
     id: MAT.BURNING_WOOD, key: 'BURNING_WOOD', name: 'Burning Wood', kind: KIND.STATIC, density: 255, color: '#9a4a1e',
@@ -120,6 +128,19 @@ function displaceChance(mover, target) {
   }
 }
 
+function compilePhaseEdge(def, edge, name, AT, INTO, LATENT, VANISH, targets) {
+  if (!edge) return;
+  const { at, into, latent, vanish = 0 } = edge;
+  if (!Number.isFinite(at)) throw new RangeError(`Geçersiz faz eşiği (${def.key}.${name})`);
+  if (!Number.isInteger(latent) || latent < 1 || latent > 65534) throw new RangeError(`Gizli ısı 1..65534 olmalı (${def.key}.${name})`);
+  if (!(vanish >= 0 && vanish <= 1)) throw new RangeError(`Geçersiz vanish (${def.key}.${name})`);
+  AT[def.id] = at;
+  INTO[def.id] = into;
+  LATENT[def.id] = latent;
+  VANISH[def.id] = toByte(vanish);
+  targets.push([`${def.key}.${name}`, into]);
+}
+
 const DEFAULT_CONDUCT = 0.02;
 const DEFAULT_CAPACITY = 2;
 
@@ -131,7 +152,6 @@ export function compileMaterials(defs) {
   const DRIFT = new Uint8Array(256);
   const RISE = new Uint8Array(256);
   const REACTIVE = new Uint8Array(256);
-  const COOLS = new Uint8Array(256);
   const FLAMMABILITY = new Uint8Array(256);
   const BURNS_INTO = new Uint8Array(256);
   const LIFE_MIN = new Uint16Array(256);
@@ -145,6 +165,18 @@ export function compileMaterials(defs) {
   const CAP = new Float32Array(256);
   const INV_CAP = new Float32Array(256);
   const SOURCE_TEMP = new Float32Array(256).fill(-Infinity);
+  const UP_AT = new Float32Array(256).fill(Infinity);
+  const UP_INTO = new Uint8Array(256);
+  const UP_LATENT = new Uint16Array(256);
+  const UP_VANISH = new Uint8Array(256);
+  const DOWN_AT = new Float32Array(256).fill(-Infinity);
+  const DOWN_INTO = new Uint8Array(256);
+  const DOWN_LATENT = new Uint16Array(256);
+  const DOWN_VANISH = new Uint8Array(256);
+  const HAS_PHASE = new Uint8Array(256);
+  const IGNITE_AT = new Float32Array(256).fill(Infinity);
+  const EVAP_AT = new Float32Array(256).fill(Infinity);
+  const phaseTargets = []; // [yer, into] — tüm tanımlar kaydedildikten sonra doğrulanır
   const DISPLACE = new Uint8Array(256 * 256);
   const byId = new Array(256).fill(null);
   const byKey = {};
@@ -165,7 +197,6 @@ export function compileMaterials(defs) {
     DRIFT[def.id] = toByte(def.drift ?? 0);
     RISE[def.id] = toByte(def.rise ?? 1);
     REACTIVE[def.id] = def.reactive ? 1 : 0;
-    COOLS[def.id] = def.cools ? 1 : 0;
     FLAMMABILITY[def.id] = toByte(def.flammable ?? 0);
     BURNS_INTO[def.id] = def.burnsInto ?? 0;
     if (def.life) {
@@ -192,8 +223,25 @@ export function compileMaterials(defs) {
       if (!Number.isFinite(def.temp)) throw new RangeError(`Geçersiz doğuş sıcaklığı (${def.key})`);
       SPAWN_TEMP[def.id] = def.temp;
     }
+    if (def.phase) {
+      compilePhaseEdge(def, def.phase.up, 'up', UP_AT, UP_INTO, UP_LATENT, UP_VANISH, phaseTargets);
+      compilePhaseEdge(def, def.phase.down, 'down', DOWN_AT, DOWN_INTO, DOWN_LATENT, DOWN_VANISH, phaseTargets);
+      if (def.phase.up && def.phase.down && !(def.phase.up.at > def.phase.down.at)) {
+        throw new RangeError(`Faz eşik sırası bozuk: up.at > down.at olmalı (${def.key})`);
+      }
+      HAS_PHASE[def.id] = 1;
+    }
+    if (def.ignitesAt !== undefined) {
+      if (!def.burnsInto) throw new Error(`ignitesAt için burnsInto gerekli (${def.key})`);
+      IGNITE_AT[def.id] = def.ignitesAt;
+    }
+    if (def.evaporatesAt !== undefined) EVAP_AT[def.id] = def.evaporatesAt;
     if (def.flammable && !def.burnsInto) throw new Error(`Yanıcı materyalin burnsInto değeri yok (${def.key})`);
     if (def.kind === KIND.GAS) gasIds.push(def.id);
+  }
+
+  for (const [where, into] of phaseTargets) {
+    if (!byId[into]) throw new Error(`Faz hedef materyali tanımsız: ${into} (${where})`);
   }
 
   for (const mover of defs) {
@@ -210,7 +258,6 @@ export function compileMaterials(defs) {
     DRIFT,
     RISE,
     REACTIVE,
-    COOLS,
     FLAMMABILITY,
     BURNS_INTO,
     LIFE_MIN,
@@ -224,6 +271,17 @@ export function compileMaterials(defs) {
     CAP,
     INV_CAP,
     SOURCE_TEMP,
+    UP_AT,
+    UP_INTO,
+    UP_LATENT,
+    UP_VANISH,
+    DOWN_AT,
+    DOWN_INTO,
+    DOWN_LATENT,
+    DOWN_VANISH,
+    HAS_PHASE,
+    IGNITE_AT,
+    EVAP_AT,
     DISPLACE,
     GAS_IDS: Object.freeze(gasIds),
     defs: byId,

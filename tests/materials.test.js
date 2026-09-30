@@ -107,6 +107,27 @@ test('Her materyalin bir key ile bulunabilir tanımı vardır', () => {
   assert.equal(MATERIALS.defs[MAT.STONE].key, 'STONE');
 });
 
+test('faz tanımı doğrulanır: gizli ısı aralığı, eşik sırası, hedef materyal, tutuşmada burnsInto', () => {
+  const E = { id: 0, key: 'EMPTY', name: 'E', kind: KIND.NONE, density: 5 };
+  const S = (phase, extra = {}) => ({ id: 1, key: 'X', name: 'X', kind: KIND.STATIC, density: 255, phase, ...extra });
+  assert.throws(() => compileMaterials([E, S({ up: { at: 10, into: 0, latent: 70000 } })]), /Gizli ısı/);
+  assert.throws(() => compileMaterials([E, S({ up: { at: 10, into: 0, latent: 5 }, down: { at: 20, into: 0, latent: 5 } })]), /eşik/);
+  assert.throws(() => compileMaterials([E, S({ up: { at: 10, into: 99, latent: 5 } })]), /hedef/);
+  assert.throws(() => compileMaterials([E, S(undefined, { ignitesAt: 300 })]), /burnsInto/);
+});
+
+test('su, buhar, lav, kum ve taş faz tablolarında', () => {
+  assert.equal(MATERIALS.UP_AT[MAT.WATER], 100);
+  assert.equal(MATERIALS.UP_INTO[MAT.WATER], MAT.STEAM);
+  assert.equal(MATERIALS.DOWN_AT[MAT.STEAM], 95);
+  assert.equal(MATERIALS.DOWN_INTO[MAT.LAVA], MAT.STONE);
+  assert.equal(MATERIALS.UP_INTO[MAT.SAND], MAT.GLASS);
+  assert.equal(MATERIALS.UP_AT[MAT.STONE], 1500);
+  assert.equal(MATERIALS.IGNITE_AT[MAT.WOOD], 300);
+  assert.equal(MATERIALS.EVAP_AT[MAT.WATER], 35);
+  assert.equal(MATERIALS.UP_AT[MAT.GLASS], Infinity);
+});
+
 test('kararsız ısı iletimi (K/C > 0,25) ve 1\'den küçük ısı kapasitesi derleme hatası verir', () => {
   const base = { id: 0, key: 'EMPTY', name: 'E', kind: KIND.NONE, density: 5 };
   assert.throws(() => compileMaterials([{ ...base, conduct: 0.3, capacity: 1 }]), /K\/C/);
