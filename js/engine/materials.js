@@ -45,10 +45,11 @@ export const MAT = Object.freeze({
 //   burn:      yanan durumlar için { emit: üstüne ateş üretme, douse: suyla sönme, ash: kül bırakma,
 //              extinguishTo: sönünce olacağı materyal }
 //   hidden:    materyal seçicide gösterilmez (programatik olarak yazılabilir)
+//   cools:     life (ısı) her tick 1 azalır; tarama döngüsünde satır içi yapılır (react() çağrısı yok)
 export const MATERIAL_DEFS = [
   { id: MAT.EMPTY, key: 'EMPTY', name: 'Empty', kind: KIND.NONE, density: 5, color: null },
   { id: MAT.WALL, key: 'WALL', name: 'Wall', kind: KIND.STATIC, density: 255, color: '#000000', internal: true },
-  { id: MAT.SAND, key: 'SAND', name: 'Sand', kind: KIND.POWDER, density: 20, color: '#d9bb82', reactive: true },
+  { id: MAT.SAND, key: 'SAND', name: 'Sand', kind: KIND.POWDER, density: 20, color: '#d9bb82', cools: true },
   { id: MAT.STONE, key: 'STONE', name: 'Stone', kind: KIND.STATIC, density: 255, color: '#6e6964' },
   { id: MAT.WATER, key: 'WATER', name: 'Water', kind: KIND.LIQUID, density: 10, color: '#3f7fc2', dispersion: 5, spread: 1, drag: 0.5 },
   {
@@ -116,6 +117,7 @@ export function compileMaterials(defs) {
   const DRIFT = new Uint8Array(256);
   const RISE = new Uint8Array(256);
   const REACTIVE = new Uint8Array(256);
+  const COOLS = new Uint8Array(256);
   const FLAMMABILITY = new Uint8Array(256);
   const BURNS_INTO = new Uint8Array(256);
   const LIFE_MIN = new Uint16Array(256);
@@ -144,6 +146,7 @@ export function compileMaterials(defs) {
     DRIFT[def.id] = toByte(def.drift ?? 0);
     RISE[def.id] = toByte(def.rise ?? 1);
     REACTIVE[def.id] = def.reactive ? 1 : 0;
+    COOLS[def.id] = def.cools ? 1 : 0;
     FLAMMABILITY[def.id] = toByte(def.flammable ?? 0);
     BURNS_INTO[def.id] = def.burnsInto ?? 0;
     if (def.life) {
@@ -176,6 +179,7 @@ export function compileMaterials(defs) {
     DRIFT,
     RISE,
     REACTIVE,
+    COOLS,
     FLAMMABILITY,
     BURNS_INTO,
     LIFE_MIN,

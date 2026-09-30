@@ -5,6 +5,19 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) yaklaşımını 
 
 ## [Unreleased]
 
+### Performance — Phase 10
+
+- Fizik yaklaşık 2 kat hızlandı (400×225 Benchmark: ~4 ms → ~2 ms/tick):
+  - Yerleşmiş toz parçacıkları artık RNG tüketmiyor (zarsız ön kontrol).
+  - Kum soğuması tarama döngüsünde satır içi yapılıyor.
+  - Gaz geçişi yalnızca gaz bulunan satırları tarıyor.
+- `npm run bench` (`tools/bench.js`): headless benchmark (median / p95 / max ms/tick).
+- Active chunk sistemi v1'de gerekmedi (ADR-005).
+
+### Changed
+
+- `?debug=1` artık her tick değişmez kontrolü yapmıyor; bunun için `?invariants=1` var.
+
 ### Added — Phase 9 (Mobil / Erişilebilirlik)
 
 - Dar ekranda materyal seçici yatay kayan şerit. "Sahne ve diğer ayarlar" açılır bölümü dar ekranda kapalı başlar.

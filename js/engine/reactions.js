@@ -128,12 +128,6 @@ function reactLava(world, rng, i) {
   return false;
 }
 
-function reactSand(world, i) {
-  // Isınan kum lava teması kesilince soğur (RNG'siz, ucuz).
-  if (world.life[i] > 0) world.life[i]--;
-  return false;
-}
-
 function reactBurning(world, rng, i, t, state) {
   const life = world.life;
   if (life[i] <= 1) {
@@ -184,8 +178,6 @@ export function react(world, rng, i, t, state) {
       return reactSteam(world, rng, i);
     case LAVA:
       return reactLava(world, rng, i);
-    case SAND:
-      return reactSand(world, i);
     case PLANT:
       return reactPlant(world, rng, i, state);
     case MAT.BURNING_WOOD:

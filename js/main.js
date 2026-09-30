@@ -18,7 +18,8 @@ document.title = APP_NAME;
 for (const el of document.querySelectorAll('[data-app-name]')) el.textContent = APP_NAME;
 
 const params = new URLSearchParams(location.search);
-const debug = params.get('debug') === '1';
+const debug = params.get('debug') === '1'; // debug paneli + window.__strata
+const invariants = params.get('invariants') === '1'; // her tick dünya değişmezi kontrolü (yavaş)
 
 // Tercihler; URL parametreleri (?scene=, ?seed=) kayıtlı tercihlerin önüne geçer.
 const storage = safeLocalStorage();
@@ -34,7 +35,7 @@ const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
 const initialRect = viewport.getBoundingClientRect();
 const grid = chooseGridSize(initialRect.width, initialRect.height, coarsePointer ? CELL_BUDGET.mobile : CELL_BUDGET.desktop);
 
-const sim = new Simulation({ width: grid.width, height: grid.height, seed: prefs.seed, debug });
+const sim = new Simulation({ width: grid.width, height: grid.height, seed: prefs.seed, debug: invariants });
 const renderer = new Renderer(canvas, { seed: prefs.seed });
 
 let cursor = null; // { x, y } | null

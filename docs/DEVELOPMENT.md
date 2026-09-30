@@ -439,17 +439,25 @@ node tools/check-paths.js  # path büyük/küçük harf + root-absolute kontrol�
 
 ### Phase 10 — Performance
 
-- [ ] `tools/bench.js` + `npm run bench`
-- [ ] Profil:
-  - [ ] allocation yok
-  - [ ] lokal typed array referansları
-  - [ ] RNG inline
-  - [ ] u32 eşikler
-- [ ] Frame bütçesi, tick üst sınırı, mobil hücre bütçesi kalibrasyonu
-- [ ] Active chunk kararı (ADR-005 eşikleri)
-- [ ] **Test:**
-  - [ ] benchmark karşılaştırması
-  - [ ] chunk eklenirse fizik suite'i ve korunum
+- [x] `tools/bench.js` + `npm run bench`:
+  - [x] Benchmark sahnesi; 400×225, 320×180 ve 200×200 grid'de median/p95/max ms/tick
+  - [x] deterministik durum hash'i
+- [x] Profil (V8 `--cpu-prof`) → iki sıcak nokta bulundu ve giderildi:
+  - [x] **Yerleşmiş tozlar RNG tüketmiyor.** Köşegen girilebilirliği önce zarsız kontrol ediliyor; RNG yalnızca iki yön de açıksa ya da olasılıksal geçişte çekiliyor. Bias testleri geçiyor.
+  - [x] **Kum soğuması satır içi.** Her kum tanesi için `react()` çağrısı yerine `COOLS` tablosu kullanılıyor.
+  - [x] Gaz geçişi yalnızca birinci geçişte gaz görülen satırları tarıyor; tarama yönü satır başına seçiliyor
+- [x] Hot loop'ta allocation yok (tick içinde nesne oluşturulmuyor); typed array'ler lokal değişkenlerde
+- [x] Frame bütçesi: kare başına 8 ms fizik, en fazla 8 tick (Phase 1). Ağır sahnede 4× hız tutmazsa efektif hız zarifçe düşüyor (TPS göstergesi).
+- [x] `?invariants=1` ayrıldı: `?debug=1` artık her tick değişmez kontrolü yapmıyor (ölçümleri şişiriyordu)
+- [x] **Active chunk kararı (ADR-005): v1'de gerekmiyor.**
+  - 400×225'te ~44k parçacıkta tick yaklaşık 2 ms; eşik yaklaşık 6 ms.
+  - Gerçek mobil cihaz ölçümü eşiği aşarsa yeniden değerlendirilecek.
+- [x] **Test:**
+  - [x] `tests/bench.test.js` (araç alanları, determinizm)
+  - [x] Tüm fizik suite'i optimizasyon sonrası 267/267
+  - [x] A/B karşılaştırma (dönüşümlü çalıştırma): HEAD 3,6–4,9 ms → yeni 1,9–2,3 ms
+  - [x] Tarayıcı (Chrome 154, 320×207, ~32k parçacık): tick medyanı 3,0 ms, render medyanı 2,3 ms
+- [ ] Mobil hücre bütçesi kalibrasyonu: gerçek cihaz ölçümü gerekiyor (Phase 12 checklist)
 
 ### Phase 11 — GitHub Pages
 
@@ -597,6 +605,12 @@ Uygulama sırasında plandan sapan ya da planın cevaplamadığı kararlar. Kal�
   - Karar: ölçüt rAF aralığı değil, kare iş süresi (fizik + render).
   - Neden: 30 Hz ekranlarda ya da arka plana düşürülen pencerede aralık yükten bağımsız olarak uzundur; yanlış düşüşe yol açardı.
 
+- **2026-09-30 · Phase 10 — Active chunk ertelendi.**
+  - Karar: active chunk sistemi uygulanmadı (ADR-005 eşiği aşılmadı; yaklaşık 2 ms'ye karşı 6 ms).
+  - Ek gerekçe: optimizasyondan sonra yerleşmiş kum RNG tüketmiyor; ileride chunk eklenirse uyuyan bölgelerin determinizme etkisi de azalmış oldu.
+- **2026-09-30 · Phase 10 — Değişmez kontrolü ayrı bayrakta.**
+  - Karar: `?debug=1` yalnızca debug panelini ve `window.__strata`'yı açıyor. Her tick yapılan değişmez kontrolü `?invariants=1` ile ayrı açılıyor.
+
 ### Phase 0–1 bağımsız inceleme (2026-09-30)
 
 Taze bağlamlı bir reviewer ajanı `ade40c2..f0956b6` aralığını inceledi. Critical bulgu çıkmadı.
@@ -683,4 +697,9 @@ Benchmark sahnesi (Phase 7) ve `tools/bench.js` (Phase 10) hazır olduğunda dol
 
 | Tarih | Commit | Makine / tarayıcı | Grid | Parçacık | ms/tick (median) | ms/tick (p95) | Not |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| — | — | — | — | — | — | — | — |
+| 2026-09-30 | 42e4fd0 | Win10 x64, Node 22.17 | 400×225 | 43 918 | 5,99 (tekrarlarda 3,6–4,9) | 9,45 | optimizasyon öncesi; makine gürültülü |
+| 2026-09-30 | 42e4fd0 | Win10 x64, Node 22.17 | 320×180 | 28 214 | 4,44 | 9,20 | optimizasyon öncesi |
+| 2026-09-30 | Phase 10 | Win10 x64, Node 22.17 | 400×225 | 43 911 | 1,87–2,27 (en iyi 3 tur) | 3,6–5,0 | RNG'siz yerleşme + satır içi soğuma + gaz satırları |
+| 2026-09-30 | Phase 10 | Win10 x64, Node 22.17 | 320×180 | 28 211 | 2,27 | 3,57 | |
+| 2026-09-30 | Phase 10 | Win10 x64, Node 22.17 | 200×200 | 19 917 | 1,78 | 3,78 | |
+| 2026-09-30 | Phase 10 | Chrome 154 (Playwright) | 320×207 | 32 466 | 3,0 | 4,5 | render medyanı 2,3 ms (glow: high) |

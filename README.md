@@ -88,7 +88,9 @@ npm test        # tüm testler
 - `tools/serve.js` doğru MIME tiplerini gönderen, sıfır bağımlılıklı küçük bir sunucudur.
 - Windows'ta `python -m http.server` bazen `.js` dosyalarını yanlış MIME tipiyle sunar. Bu yüzden önerilmez.
 
-Debug modu için adrese `?debug=1` ekle: `http://127.0.0.1:8080/?debug=1`
+- Debug paneli: `?debug=1`.
+- Her tick dünya değişmezi kontrolü (yavaş): `?invariants=1`.
+- Headless performans ölçümü: `npm run bench`.
 
 ## GitHub Pages yayını
 

@@ -63,6 +63,9 @@ Burada yalnızca gerçekten önemli teknik kararlar tutulur. Her kayıt dört ba
 - **Alternatif:** Phase 1'den itibaren 32×32 active chunk.
 - **Sonuç:** Ertelendi. Karar Phase 10'da benchmark ile verilecek.
   - **Eşik:** masaüstünde 1× hızda tick süresi yaklaşık 6 ms'yi aşarsa ya da mobilde hedef FPS tutmazsa chunk sistemi eklenir.
+- **Phase 10 sonucu:** v1'de gerekmiyor.
+  - İki optimizasyondan sonra (RNG'siz yerleşme kontrolü, satır içi soğuma) Benchmark sahnesinde 400×225 ve ~44k parçacıkta tick yaklaşık 2 ms; tarayıcıda 320×207 için yaklaşık 3 ms.
+  - Gerçek mobil ölçüm eşiği aşarsa yeniden açılacak.
 
 ## ADR-006 — Fixed timestep, limitli accumulator
 

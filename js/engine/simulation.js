@@ -16,7 +16,7 @@ const MAX_TICKS_PER_FRAME = 8;
 // Böylece 50 ms @ 60 TPS gibi değerler kayan nokta hatası olmadan tam sayı çıkar.
 const TICK_UNIT = 1000;
 
-const { KIND: KIND_OF, GAS_IDS, REACTIVE } = MATERIALS;
+const { KIND: KIND_OF, GAS_IDS, REACTIVE, COOLS } = MATERIALS;
 const EMPTY = MAT.EMPTY;
 const POWDER = KIND.POWDER;
 const LIQUID = KIND.LIQUID;
@@ -50,6 +50,7 @@ export class Simulation {
     this._acc = 0;
     this._now = now;
     this._reactions = createReactionState();
+    this._gasRows = new Uint8Array(height); // geçiş 2'de taranacak satırlar
 
     this._hold = null; // basılı tutma: { x, y, brush } — tick başına yeniden uygulanır
     this._strokeDirty = false;
@@ -131,7 +132,7 @@ export class Simulation {
   _tickOnce() {
     const w = this.world;
     w.beginTick();
-    const { type, stamp, stride, width, height } = w;
+    const { type, stamp, life, stride, width, height } = w;
     const clock = w.clock;
     const rng = this.rng;
     const parity = this.tick & 1;
@@ -139,34 +140,41 @@ export class Simulation {
     beginReactionTick(rs);
 
     // Geçiş 1 — aşağıdan yukarı: reaktif hücreler (statikler dahil), tozlar ve sıvılar.
+    // Gaz görülen satırlar işaretlenir; geçiş 2 yalnızca onları tarar. Bu geçişte yeri
+    // değişen ya da oluşan gazlar zaten damgalıdır (bu tick işlenmeleri gerekmez).
+    const gasRows = this._gasRows;
     for (let y = height - 1; y >= 0; y--) {
-      const rowStart = (y + 1) * stride + 1;
       const leftToRight = ((y ^ parity) & 1) === 0; // tick XOR satır paritesi
-      for (let n = 0; n < width; n++) {
-        const i = leftToRight ? rowStart + n : rowStart + width - 1 - n;
+      const dir = leftToRight ? 1 : -1;
+      let i = (y + 1) * stride + (leftToRight ? 1 : width);
+      for (let n = 0; n < width; n++, i += dir) {
         const t = type[i];
         if (t === EMPTY || stamp[i] === clock) continue;
         const kind = KIND_OF[t];
-        if (kind === GAS) continue; // gazlar geçiş 2'de
+        if (kind === GAS) {
+          gasRows[y] = 1; // gazlar geçiş 2'de
+          continue;
+        }
+        if (COOLS[t] !== 0 && life[i] !== 0) life[i]--; // ısınan kum soğur (satır içi)
         if (REACTIVE[t] !== 0 && react(w, rng, i, t, rs)) continue;
         if (kind === POWDER) stepPowder(w, rng, i, t);
         else if (kind === LIQUID) stepLiquid(w, rng, i, t);
       }
     }
 
-    // Geçiş 2 — yukarıdan aşağı: gazlar. Dünyada gaz yoksa tamamen atlanır.
-    if (this._gasCount() > 0) {
-      for (let y = 0; y < height; y++) {
-        const rowStart = (y + 1) * stride + 1;
-        const leftToRight = ((y ^ parity) & 1) === 0;
-        for (let n = 0; n < width; n++) {
-          const i = leftToRight ? rowStart + n : rowStart + width - 1 - n;
-          const t = type[i];
-          if (t === EMPTY || stamp[i] === clock) continue;
-          if (KIND_OF[t] !== GAS) continue;
-          if (REACTIVE[t] !== 0 && react(w, rng, i, t, rs)) continue;
-          stepGas(w, rng, i, t);
-        }
+    // Geçiş 2 — yukarıdan aşağı: gazlar (yalnızca gaz bulunan satırlar).
+    for (let y = 0; y < height; y++) {
+      if (gasRows[y] === 0) continue;
+      gasRows[y] = 0;
+      const leftToRight = ((y ^ parity) & 1) === 0;
+      const dir = leftToRight ? 1 : -1;
+      let i = (y + 1) * stride + (leftToRight ? 1 : width);
+      for (let n = 0; n < width; n++, i += dir) {
+        const t = type[i];
+        if (t === EMPTY || stamp[i] === clock) continue;
+        if (KIND_OF[t] !== GAS) continue;
+        if (REACTIVE[t] !== 0 && react(w, rng, i, t, rs)) continue;
+        stepGas(w, rng, i, t);
       }
     }
 

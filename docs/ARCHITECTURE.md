@@ -207,11 +207,17 @@ Renderer.render(view, frameInfo)                                 ← state'i asl
 | Benchmark | seed'den bağımsız sabit yük (performans karşılaştırması) |
 | Boş | — |
 
-## 9. Performans yaklaşımı
+## 9. Performans yaklaşımı (uygulandı — Phase 10)
 
-- **Hot loop:** obje allocation yoktur; typed array'ler lokal değişkenlerde tutulur.
-- **Tarama:** full-grid, boş ve inert hücreler erken atlanır. Active-chunk sistemi ölçüme göre Phase 10'da değerlendirilecek (ADR-005).
-- **Görsel kalite:** kalite düşürülürken önce dekoratif efektler azaltılır. Fizik doğruluğu korunur.
+- **Hot loop:**
+  - Obje allocation yok; typed array'ler lokal değişkenlerde; lookup tabloları.
+  - Yerleşmiş tozlar RNG tüketmez (zarsız ön kontrol).
+  - Kum soğuması satır içi yapılır.
+  - Gaz geçişi yalnızca gaz görülen satırları tarar.
+- **Full-grid tarama:** boş hücreler erken atlanır. Active-chunk sistemi v1'de gerekmedi: Benchmark sahnesinde 400×225 ve ~44k parçacıkta ~2 ms/tick (ADR-005).
+- **Ölçüm:** `npm run bench` headless ölçer; tarayıcıda `?debug=1` paneli fizik ve render sürelerini gösterir. Sonuçlar DEVELOPMENT.md benchmark log'undadır.
+- **Frame bütçesi:** kare başına en fazla 8 ms fizik ve 8 tick. Yetişilemezse efektif hız zarifçe düşer.
+- **Görsel kalite:** kalite düşürülürken önce dekoratif efektler azaltılır (otomatik kalite, Phase 8). Fizik doğruluğu korunur.
 
 ## 10. Geliştirme araçları (uygulandı — Phase 0)
 

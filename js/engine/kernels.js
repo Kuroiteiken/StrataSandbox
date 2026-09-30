@@ -30,15 +30,45 @@ function tryDiagonal(world, rng, t, i, base, side) {
   return true;
 }
 
+// j hücresine girme olasılığı (0..255), olasılık zarı atılmadan: stamp kuralı dahil.
+// Yerleşmiş (hiçbir yere gidemeyen) parçacıklar böylece hiç RNG tüketmez.
+function entryChance(world, t, j) {
+  const target = world.type[j];
+  const chance = DISPLACE[t * 256 + target];
+  if (chance === 0) return 0;
+  if (target !== EMPTY && world.stamp[j] === world.clock) return 0;
+  return chance;
+}
+
+// Köşegen girilebilirliği (zar atılmadan): yan hücre statikse 0.
+function diagonalChance(world, t, i, base, side) {
+  if (KIND_OF[world.type[i + side]] === STATIC) return 0;
+  return entryChance(world, t, base + side);
+}
+
+const roll = (rng, chance) => chance === 255 || (rng.nextU32() & 255) < chance;
+
 export function stepPowder(world, rng, i, t) {
   const below = i + world.stride;
-  if (canEnter(world, rng, t, below)) {
+  const down = entryChance(world, t, below);
+  if (down !== 0 && roll(rng, down)) {
     world.swap(i, below);
     return;
   }
-  const first = rng.bit() === 1 ? 1 : -1;
-  if (tryDiagonal(world, rng, t, i, below, first)) return;
-  tryDiagonal(world, rng, t, i, below, -first);
+  const left = diagonalChance(world, t, i, below, -1);
+  const right = diagonalChance(world, t, i, below, 1);
+  if (left === 0 && right === 0) return; // yerleşmiş: RNG tüketme
+  let side;
+  if (left === 0) side = 1;
+  else if (right === 0) side = -1;
+  else side = rng.bit() === 1 ? 1 : -1; // iki yön de açık: rastgele (bias yok)
+  const first = side === 1 ? right : left;
+  if (roll(rng, first)) {
+    world.swap(i, below + side);
+    return;
+  }
+  const second = side === 1 ? left : right;
+  if (second !== 0 && roll(rng, second)) world.swap(i, below - side);
 }
 
 // Yatay akış: en fazla n hücre, yalnızca boş hücreler üzerinden. İlk dolu hücrede
