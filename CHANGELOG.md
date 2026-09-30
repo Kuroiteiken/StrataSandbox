@@ -5,6 +5,18 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) yaklaşımını 
 
 ## [Unreleased]
 
+### Added — Phase 11 (GitHub Pages)
+
+- Path denetleyicisi artık şunları da tarıyor:
+  - template-literal import, `new URL(…, import.meta.url)`, `fetch`, `Worker`
+  - CSS `url()`/`@import`, HTML `srcset`
+  - Yorumları yok sayıyor.
+- Open Graph başlık ve açıklaması, `color-scheme`.
+
+### Changed
+
+- GitHub Actions: Pages izinleri yalnızca deploy işinde; deploy yalnızca `main`.
+
 ### Performance — Phase 10
 
 - Fizik yaklaşık 2 kat hızlandı (400×225 Benchmark: ~4 ms → ~2 ms/tick):

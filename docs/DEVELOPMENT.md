@@ -461,10 +461,24 @@ node tools/check-paths.js  # path büyük/küçük harf + root-absolute kontrol�
 
 ### Phase 11 — GitHub Pages
 
-- [ ] Root-absolute URL taraması (`tools/check-paths.js`, CI'da)
-- [ ] Favicon, meta, `theme-color`
-- [ ] Yayındaki URL'de MCP smoke testi
-- [ ] README'nin deployment bölümü
+- [x] Root-absolute URL ve harf büyüklüğü taraması (`tools/check-paths.js`, `npm test` ile CI'da):
+  - [x] JS: import/export, `import()` (template literal dahil), `new URL(…, import.meta.url)`, `fetch`/`Worker` (belgeye göre)
+  - [x] HTML: `src`/`href`/`srcset`
+  - [x] CSS: `url()`/`@import`
+  - [x] yorumlar yok sayılıyor; `href="./"` yanlış alarmı giderildi
+- [x] Favicon, meta description, `theme-color`, `color-scheme`, Open Graph başlık ve açıklama
+- [x] `.github/workflows/pages.yml`:
+  - [x] test → deploy
+  - [x] varsayılan izin `contents: read`
+  - [x] Pages izinleri ve concurrency yalnızca deploy işinde
+  - [x] deploy yalnızca `main`
+- [x] Senin adımların: repo oluşturuldu, Pages (GitHub Actions modu) açık
+- [x] Yayındaki URL'de smoke testi (Playwright, taze tarayıcı bağlamı):
+  - [x] 30 modül yüklendi
+  - [x] konsol hatası ve başarısız istek yok
+  - [x] simülasyon çalışıyor
+  - [x] `docs/`, `tests/`, `tools/`, `.claude/` ve `package.json` yayında yok (404)
+- [x] README'nin deployment bölümü
 
 ### Phase 12 — Final QA ve v1.0.0
 

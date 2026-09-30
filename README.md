@@ -94,10 +94,13 @@ npm test        # tüm testler
 
 ## GitHub Pages yayını
 
+- Yayın adresi: <https://kuroiteiken.github.io/StrataSandbox/>
 - `main` branch'ine yapılan her push'ta `.github/workflows/pages.yml` çalışır.
 - Workflow önce testleri Linux'ta çalıştırır. Linux, büyük/küçük harfe duyarlı olduğu için path hataları burada yakalanır.
 - Ardından yalnızca uygulama dosyalarını GitHub Pages'e yayınlar: `index.html`, `css/`, `js/`, `assets/`.
 - Repo ayarlarında Pages kaynağı **GitHub Actions** olmalıdır.
+- Pull request'lerde yalnızca testler çalışır; yayın yalnızca `main`'den yapılır.
+- GitHub Pages dosyaları yaklaşık 10 dakika önbellekler. Yeni yayından hemen sonra eski sürümü görürsen sayfayı zorla yenile (Ctrl+F5).
 - Tüm path'ler relative'dir. Bu sayede uygulama `username.github.io/repo-adı/` alt dizininde sorunsuz çalışır.
 
 ## Ekran görüntüleri
