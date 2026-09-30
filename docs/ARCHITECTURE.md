@@ -53,7 +53,7 @@ Renderer.render(view, frameInfo)                                 ← state'i asl
 - Index hesabı: `index(x, y) = (y + 1) * (W + 2) + (x + 1)`.
 - Grid boyutu açılışta bir kez belirlenir. Viewport resize'ı yalnızca sunum ölçeğini değiştirir (ADR-002).
 
-## 3. Simulation tick (uygulandı — Phase 1; gaz geçişi Phase 2)
+## 3. Simulation tick (uygulandı — Phase 1–2)
 
 - **Geçişler:** Her tick iki taramadan oluşur.
   1. Aşağıdan yukarı: tozlar, sıvılar ve reaktif statikler.
@@ -69,13 +69,28 @@ Renderer.render(view, frameInfo)                                 ← state'i asl
   - Frame başına tick sayısı ve fizik bütçesi sınırlıdır.
   - Sınıra takılınca birikmiş borç silinir (ADR-006).
 
-## 4. Materyal sistemi (kısmen uygulandı — Phase 1: toz kuralları; sıvı/gaz Phase 2)
+## 4. Materyal sistemi (uygulandı — Phase 1–2; reaksiyonlar Phase 3)
 
 - **Tanımlar:** `js/engine/materials.js` her materyali tek bir kayıtta tanımlar: id, ad, tür, yoğunluk, renk ve davranış parametreleri.
 - **Derleme:** Başlangıçta bu kayıtlar hot loop'un kullandığı düz lookup tablolarına dönüştürülür:
   - `KIND`, `DENSITY`
+  - `DISPERSION`, `SPREAD` (sıvı), `DRIFT` (gaz)
+  - `GAS_IDS`: gaz geçişini atlama kararı için
   - `DISPLACE` (256×256): "mover → target" yer değiştirme olasılığı
 - **Hareket:** tür bazlı genel çekirdekler yapar (`stepPowder`, `stepLiquid`, `stepGas`). Materyale özgü davranış yalnızca reaktif materyallerde çağrılır.
+- **Sıvılar** (`stepLiquid`, geçiş 1):
+  - Önce aşağı düşer. Serbest düşüş viskoziteden bağımsızdır.
+  - Sonra `flags` bit0'daki kalıcı yönle köşegen dener.
+  - Sonra `SPREAD` olasılığıyla en fazla `DISPERSION` hücre yatay akar:
+    - Yalnızca boş hücreler üzerinden akar ve ilk dolu hücrede durur. Böylece duvardan tünel oluşmaz ve kenar çerçevesi aşılmaz.
+    - Altı açık bir hücreye gelince orada durur.
+    - Önü tıkanınca yön bit'i döner.
+  - Yön bit'i spawn'da hash ile dengeli tohumlanır.
+- **Gazlar** (`stepGas`, geçiş 2, yukarıdan aşağı):
+  - Yükselir; `DRIFT` olasılığıyla önce köşegeni dener.
+  - Tavana takılınca yatay kıpırdar.
+  - Sıvı↔gaz değişimi yalnızca sıvının gaza düşmesiyle olur; sıvılar gaz hücresine yatay giremez.
+- **Yoğunluk sırası:** Steam 2 < Fire 3 < hava 5 < Oil 8 < Water 10 < Sand 20 < Lava 30. Statikler 255'tir.
 
 | Faz sırası | gaz / hava | < sıvı | < toz | < statik |
 |---|---|---|---|---|

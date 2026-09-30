@@ -116,21 +116,36 @@ node tools/check-paths.js  # path büyük/küçük harf + root-absolute kontrol�
 
 ### Phase 2 — Temel materyallerin hareket fiziği
 
-- [ ] `stepLiquid`: düşme, köşegen, dispersion taraması, kalıcı yön bit'i, altı boş hücrede durma
-- [ ] Water (5), Oil (2), Lava (1 + düşük yayılma olasılığı, serbest düşüş)
-- [ ] Toz→sıvı olasılıksal batma; sıvı–sıvı katmanlaşma
-- [ ] `stepGas` (ikinci geçiş): yükselme, yatay drift; Steam ve Fire hareketi
-- [ ] Statikler: Stone, Wood, Glass, Plant
-- [ ] Spawn anında materyale göre `life` başlatma
-- [ ] **Test:**
-  - [ ] Sand su ve yağ içinden batar
-  - [ ] Oil, Water'ın üstünde kalır
-  - [ ] Steam ve Fire yükselir
-  - [ ] Dam-break sonrası su yüzeyi varyansı eşiğin altındadır
-  - [ ] Çapraz duvardan sızıntı olmaz
-  - [ ] Statikler yer değiştirmez
-  - [ ] Kütle korunur
-  - [ ] Sağ/sol simetri vardır
+- [x] `stepLiquid`:
+  - [x] serbest düşüş (viskoziteden bağımsız)
+  - [x] kalıcı yön bit'iyle köşegen
+  - [x] dispersion taraması (yalnızca boş hücreler üzerinden, ilk dolu hücrede durur, altı açık hücrede durur)
+  - [x] önü tıkanınca yön değiştirme
+- [x] Water (dispersion 5), Oil (2, spread 0.6), Lava (1, spread 0.2, drag 0.9)
+- [x] Toz→sıvı olasılıksal batma (`1 − drag`); sıvı–sıvı yoğunluk katmanlaşması; kum lavada batmaz
+- [x] `stepGas` (ikinci geçiş, yukarıdan aşağı):
+  - [x] yükselme, drift olasılığıyla köşegen, tavanda yatay kıpırdama
+  - [x] Steam ve Fire hareketi
+  - [x] dünyada gaz yoksa geçiş atlanır
+- [x] Statikler: Stone, Wood, Glass, Plant
+- [x] Yön bit'i spawn'da `spawnHash` ile dengeli tohumlanıyor (sim RNG'si tüketilmez); `transform` bit0'ı koruyor
+- [~] Spawn anında materyale göre `life` başlatma → Phase 3'e taşındı (ömür ve zamanlayıcılar reaksiyonlarla birlikte anlam kazanıyor)
+- [x] **Test** (`tests/fluids.test.js`, `tests/materials.test.js`; suite 120/120; mutasyonlarla doğrulandı):
+  - [x] Sand su ve yağ içinden batar, lavada kalır
+  - [x] Oil, Water'ın üstünde kalır (3000 tick, her sütunda)
+  - [x] Steam ve Fire yükselir; gaz sütunu birlikte yükselir; su altındaki kabarcık yüzeye çıkar
+  - [x] Kabarcık tick başına en fazla 1 hücre yükselir (Phase 1'den devreden çift hareket testi)
+  - [x] Dam-break sonrası sütun yükseklik farkı ≤ 1
+  - [x] Viskozite: su > yağ > lava; lava 40 tick'te ≤ 25 hücre
+  - [x] Tek hücrelik duvardan tünel yok; çapraz köşeden sızıntı yok (sıvı ve gaz)
+  - [x] Kenardaki sıvı çerçeveyi aşmaz (debug değişmezleri)
+  - [x] Statikler yer değiştirmez
+  - [x] Karışık kutuda her materyalin miktarı korunur
+  - [x] Sağ/sol simetri:
+    - [x] damla yönü dengesi (bölme duvarı)
+    - [x] musluk simetrisi (birden çok seed)
+  - [x] Tarayıcı (Playwright MCP): sıvılar, gazlar ve statikler görsel olarak doğru; değişmezler temiz
+  - [x] Performans (Node): demo sahnesinde 240×135, yaklaşık 6,8k parçacık; medyan 0,26 ms/tick, p95 0,40 ms
 
 ### Phase 3 — Reaction System
 
@@ -336,6 +351,22 @@ Uygulama sırasında plandan sapan ya da planın cevaplamadığı kararlar. Kal�
 - **2026-09-29 · Phase 1 — Değişmez kontrolü her tick'te.**
   - Karar: `?debug=1` modunda `checkInvariants` her tick çalışıyor. 240×135'te maliyeti düşük.
   - Grid büyürse örnekleme aralığı eklenebilir.
+
+- **2026-09-30 · Phase 2 — Sıvılar gaz hücresine yatay giremez.**
+  - Karar: sıvılar yalnızca boş hücreye yatay akar; sıvı↔gaz değişimi yalnızca dikeyde olur.
+  - Neden: dipteki su kabarcıkla yana yer değiştirip onu stamp'liyordu. Üstteki su kabarcığa düşemiyor, kabarcık dipte hapsoluyordu (kabarcık testi kırmızıydı).
+  - Yanlışsa maliyeti: gaz bulutuna yandan dayanan su bir tick gecikmeyle yayılır; gaz zaten yükselip çekilir.
+- **2026-09-30 · Phase 2 — Köşegen kuralı tüm hareketli türlerde aynı.**
+  - Karar: köşegen kuralı toz, sıvı ve gazda aynı: yan hücre STATIC ise köşegen yok. Yan hücre sıvı ya da toz olsa bile köşegene izin var.
+  - Neden: yalnızca katı duvarlardaki çapraz boşluktan sızıntıyı önlemek hedefleniyor.
+- **2026-09-30 · Phase 2 — Yön bit'i spawn hash'inden.**
+  - Karar: sıvı yön bit'i `setCell`'de spawn hash'inin 8. bitinden alınıyor; `transform` bit0'ı koruyor (inceleme bulgusu #3).
+  - Neden: bit hep 0 başlasaydı yeni sıvılar hep sola akar, kalıcı bias oluşurdu. Mutasyon testi bunu yakalıyor.
+- **2026-09-30 · Phase 2 — `life` başlatma Phase 3'e taşındı.**
+  - Neden: ömür ve zamanlayıcılar (Fire, Steam, yanma) reaksiyonlarla anlam kazanıyor. Phase 2'de `life` 0.
+- **2026-09-30 · Phase 2 — Tarayıcı FPS ölçümü güvenilir değil.**
+  - Gözlem: Playwright'ın açtığı pencere örtülü/arka planda olduğunda Chrome rAF'i ~1 Hz'e düşürüyor (ana thread boşta; saniyede 211 `setTimeout`).
+  - Karar: fizik maliyeti Node'da ölçülüyor. Gerçek FPS ölçümü Phase 10 benchmark'ı ve manuel testle yapılacak.
 
 ### Phase 0–1 bağımsız inceleme (2026-09-30)
 

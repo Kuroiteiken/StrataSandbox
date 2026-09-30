@@ -5,6 +5,31 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) yaklaşımını 
 
 ## [Unreleased]
 
+### Added — Phase 2 (Temel materyaller)
+
+- Yeni materyaller:
+  - **Water**, **Oil**, **Lava** (sıvı)
+  - **Steam**, **Fire** (gaz)
+  - **Wood**, **Glass**, **Plant** (statik)
+- Sıvı parametreleri: `dispersion`, `spread` (viskozite), `drag`. Gaz parametresi: `drift`.
+- `stepLiquid`:
+  - serbest düşüş
+  - kalıcı yön bit'iyle köşegen ve yatay akış (duvardan tünel yok, kenar çerçevesi aşılmaz)
+  - viskozite yalnızca yayılmayı yavaşlatır
+- `stepGas`: ikinci (yukarıdan aşağı) geçişte yükselme, sürüklenme ve tavanda kıpırdama. Dünyada gaz yoksa geçiş atlanır.
+- Yoğunluk tabanlı yer değiştirme:
+  - kum su ve yağda olasılıksal batar, lavada yüzer
+  - yağ suyun üstünde yüzer
+  - buhar kabarcıkları sudan yükselir
+- Testler: `tests/fluids.test.js` ve genişletilmiş `tests/materials.test.js` (toplam 120).
+
+### Fixed
+
+- `update(NaN)` fiziği kalıcı olarak durduruyordu. NaN, undefined ve negatif `dt` artık 0 sayılıyor.
+- Kesirli koordinatla yapılan `setCell` materyal sayaçlarını bozuyordu.
+- `onFrame` içindeki bir hata rAF döngüsünü kalıcı olarak durduruyordu.
+- `?debug=0` debug modunu açıyordu. Artık yalnızca `?debug=1` açıyor.
+
 ### Added — Phase 1 (Simulation Core)
 
 - `js/engine/rng.js`: cyrb128 seed hash + sfc32 PRNG. Ayrı stream'ler, state kaydet/yükle. Engine'de `Math.random` kullanılmıyor.

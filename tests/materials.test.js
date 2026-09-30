@@ -31,6 +31,53 @@ test('KIND ve DENSITY tabloları tanımlardan derlenir', () => {
   assert.ok(MATERIALS.DENSITY[MAT.SAND] > MATERIALS.DENSITY[MAT.EMPTY]);
 });
 
+test('Sıvılar boşluğa ve gaza girebilir, tozu ve statikleri itemez', () => {
+  for (const liquid of [MAT.WATER, MAT.OIL, MAT.LAVA]) {
+    assert.equal(displace(liquid, MAT.EMPTY), 255);
+    assert.equal(displace(liquid, MAT.STEAM), 255);
+    assert.equal(displace(liquid, MAT.SAND), 0, 'sıvı tozu yerinden edemez');
+    assert.equal(displace(liquid, MAT.STONE), 0);
+    assert.equal(displace(liquid, MAT.WOOD), 0);
+  }
+});
+
+test('Ağır sıvı hafif sıvının altına olasılıksal geçer, tersi olmaz', () => {
+  const waterIntoOil = displace(MAT.WATER, MAT.OIL);
+  assert.ok(waterIntoOil > 0 && waterIntoOil < 255, `water→oil=${waterIntoOil}`);
+  assert.equal(displace(MAT.OIL, MAT.WATER), 0, 'yağ suyun altına geçemez');
+  assert.ok(displace(MAT.LAVA, MAT.WATER) > 0);
+  assert.equal(displace(MAT.WATER, MAT.LAVA), 0);
+});
+
+test('Sand su ve yağ içinde olasılıksal batar, lavada batmaz', () => {
+  for (const liquid of [MAT.WATER, MAT.OIL]) {
+    const c = displace(MAT.SAND, liquid);
+    assert.ok(c > 0 && c < 255, `sand→${liquid}=${c}`);
+  }
+  assert.equal(displace(MAT.SAND, MAT.LAVA), 0, 'kum lavadan hafif, üstünde kalır');
+  assert.equal(displace(MAT.SAND, MAT.STEAM), 255);
+});
+
+test('Gazlar yalnızca havaya ve daha ağır gaza doğru yükselir', () => {
+  assert.equal(displace(MAT.STEAM, MAT.EMPTY), 255);
+  assert.equal(displace(MAT.FIRE, MAT.EMPTY), 255);
+  assert.equal(displace(MAT.STEAM, MAT.FIRE), 255, 'buhar ateşten hafif');
+  assert.equal(displace(MAT.FIRE, MAT.STEAM), 0);
+  assert.equal(displace(MAT.STEAM, MAT.WATER), 0, 'sıvı-gaz değişimi sıvının düşmesiyle olur');
+  assert.equal(displace(MAT.STEAM, MAT.SAND), 0);
+});
+
+test('Yoğunluk sırası planla uyumlu: gaz < hava < yağ < su < kum < lava', () => {
+  const d = (m) => MATERIALS.DENSITY[m];
+  assert.ok(d(MAT.STEAM) < d(MAT.FIRE) && d(MAT.FIRE) < d(MAT.EMPTY));
+  assert.ok(d(MAT.EMPTY) < d(MAT.OIL) && d(MAT.OIL) < d(MAT.WATER));
+  assert.ok(d(MAT.WATER) < d(MAT.SAND) && d(MAT.SAND) < d(MAT.LAVA));
+});
+
+test('Wood, Glass, Plant statiktir', () => {
+  for (const m of [MAT.WOOD, MAT.GLASS, MAT.PLANT]) assert.equal(MATERIALS.KIND[m], KIND.STATIC);
+});
+
 test('Aynı id iki kez tanımlanırsa derleme hata verir', () => {
   assert.throws(
     () => compileMaterials([

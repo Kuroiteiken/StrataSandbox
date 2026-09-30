@@ -59,13 +59,14 @@ export class World {
     this.stamp[i] = this.clock;
   }
 
-  // Materyal değiştirir; parçacığın kozmetik tonu (variant) korunur.
+  // Materyal değiştirir. Kozmetik ton ve sıvı akış yönü bit'i (bit0) korunur;
+  // diğer flag bitleri materyale özgü olduğundan temizlenir.
   transform(i, type, life) {
     this.counts[this.type[i]]--;
     this.counts[type]++;
     this.type[i] = type;
     this.life[i] = life;
-    this.flags[i] = 0;
+    this.flags[i] &= 1;
     this.stamp[i] = this.clock;
   }
 

@@ -3,7 +3,7 @@
 import { World } from './world.js';
 import { Rng } from './rng.js';
 import { MAT, KIND, MATERIALS } from './materials.js';
-import { stepPowder } from './kernels.js';
+import { stepPowder, stepLiquid, stepGas } from './kernels.js';
 
 export const SPEEDS = Object.freeze([0.5, 1, 2, 4]);
 
@@ -14,17 +14,22 @@ const MAX_TICKS_PER_FRAME = 8;
 // Böylece 50 ms @ 60 TPS gibi değerler kayan nokta hatası olmadan tam sayı çıkar.
 const TICK_UNIT = 1000;
 
-const { KIND: KIND_OF } = MATERIALS;
+const { KIND: KIND_OF, GAS_IDS } = MATERIALS;
 const EMPTY = MAT.EMPTY;
+const POWDER = KIND.POWDER;
+const LIQUID = KIND.LIQUID;
+const GAS = KIND.GAS;
 
 const defaultNow = () => performance.now();
 
-// Kozmetik ton: sim RNG'sini tüketmez, böylece boyama/palet fiziği etkilemez (ADR-008).
-function cosmeticVariant(i, salt) {
+// Spawn hash'i: kozmetik ton (düşük 8 bit) ve sıvı akış yönü bit'i (bit 8).
+// Sim RNG'sini tüketmez; böylece boyama ve palet fizik dizisini değiştirmez (ADR-008).
+// Yön bit'i spawn'da hep aynı olsaydı kalıcı bir sol/sağ bias oluşurdu.
+function spawnHash(i, salt) {
   let h = Math.imul(i ^ Math.imul(salt, 0x9e3779b1), 0x85ebca6b);
   h ^= h >>> 13;
   h = Math.imul(h, 0xc2b2ae35);
-  return (h ^ (h >>> 16)) & 255;
+  return (h ^ (h >>> 16)) >>> 0;
 }
 
 export class Simulation {
@@ -118,7 +123,7 @@ export class Simulation {
     const rng = this.rng;
     const parity = this.tick & 1;
 
-    // Geçiş 1 — aşağıdan yukarı: tozlar (Phase 2: sıvılar, reaktif statikler).
+    // Geçiş 1 — aşağıdan yukarı: tozlar ve sıvılar (düşen her şey).
     for (let y = height - 1; y >= 0; y--) {
       const rowStart = (y + 1) * stride + 1;
       const leftToRight = ((y ^ parity) & 1) === 0; // tick XOR satır paritesi
@@ -126,14 +131,36 @@ export class Simulation {
         const i = leftToRight ? rowStart + n : rowStart + width - 1 - n;
         const t = type[i];
         if (t === EMPTY || stamp[i] === clock) continue;
-        if (KIND_OF[t] === KIND.POWDER) stepPowder(w, rng, i, t);
+        const kind = KIND_OF[t];
+        if (kind === POWDER) stepPowder(w, rng, i, t);
+        else if (kind === LIQUID) stepLiquid(w, rng, i, t);
       }
     }
-    // Geçiş 2 — yukarıdan aşağı: gazlar (Phase 2).
+
+    // Geçiş 2 — yukarıdan aşağı: gazlar. Dünyada gaz yoksa tamamen atlanır.
+    if (this._gasCount() > 0) {
+      for (let y = 0; y < height; y++) {
+        const rowStart = (y + 1) * stride + 1;
+        const leftToRight = ((y ^ parity) & 1) === 0;
+        for (let n = 0; n < width; n++) {
+          const i = leftToRight ? rowStart + n : rowStart + width - 1 - n;
+          const t = type[i];
+          if (t === EMPTY || stamp[i] === clock) continue;
+          if (KIND_OF[t] === GAS) stepGas(w, rng, i, t);
+        }
+      }
+    }
 
     this.tick++;
     this.version++;
     if (this.debug) this._assertInvariants();
+  }
+
+  _gasCount() {
+    const counts = this.world.counts;
+    let n = 0;
+    for (let k = 0; k < GAS_IDS.length; k++) n += counts[GAS_IDS[k]];
+    return n;
   }
 
   _assertInvariants() {
@@ -150,7 +177,8 @@ export class Simulation {
     const def = MATERIALS.defs[material];
     if (!def || def.internal) return false;
     const i = w.index(x, y);
-    w.set(i, material, cosmeticVariant(i, this.version), 0, 0);
+    const h = spawnHash(i, this.version);
+    w.set(i, material, h & 255, 0, (h >>> 8) & 1);
     this.version++;
     return true;
   }

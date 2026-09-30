@@ -7,6 +7,14 @@ export const CHAR_TO_MAT = {
   '.': MAT.EMPTY,
   S: MAT.SAND,
   '#': MAT.STONE,
+  '~': MAT.WATER,
+  o: MAT.OIL,
+  L: MAT.LAVA,
+  s: MAT.STEAM,
+  f: MAT.FIRE,
+  W: MAT.WOOD,
+  G: MAT.GLASS,
+  P: MAT.PLANT,
 };
 const MAT_TO_CHAR = Object.fromEntries(Object.entries(CHAR_TO_MAT).map(([c, m]) => [m, c]));
 

@@ -1,7 +1,6 @@
 // Composition root: config, simulation, renderer ve uygulama katmanını bağlar.
 import { APP_NAME, DEFAULT_GRID, DEFAULT_SEED } from './config.js';
 import { Simulation } from './engine/simulation.js';
-import { MAT } from './engine/materials.js';
 import { Renderer } from './render/renderer.js';
 import { createLoop } from './app/loop.js';
 import { buildDemo, demoSources } from './scenes/demo.js';
@@ -35,7 +34,7 @@ const loop = createLoop({
   onFrame(dt) {
     const ticks = sim.update(dt, PHYSICS_BUDGET_MS);
     if (ticks > 0 && sim.tick < DEMO_POUR_TICKS) {
-      for (const s of sources) sim.setCell(s.x, s.y, MAT.SAND);
+      for (const s of sources) sim.setCell(s.x, s.y, s.material);
     }
     renderer.render(sim.view);
   },
