@@ -104,3 +104,13 @@ test('kaynaklar deterministiktir', () => {
   };
   assert.equal(run(), run());
 });
+
+// Görev 12 doğrulaması: kaynaklar sıcaklık alanıyla uyumlu (davranış Görev 4'te bağlandı).
+test('çoğaltıcının kopyası doğuş sıcaklığıyla doğar (lav 1150 °C)', () => {
+  const sim = new Simulation({ width: 12, height: 12, seed: 'hot-clone' });
+  source(sim, 6, 2, MAT.CLONER, { learn: MAT.LAVA, budget: 1 });
+  for (let t = 0; t < 400 && countMaterial(sim, MAT.LAVA) === 0; t++) sim.step();
+  let lavaTemp = 0;
+  for (let y = 0; y < 12; y++) for (let x = 0; x < 12; x++) if (sim.getCell(x, y).material === MAT.LAVA) lavaTemp = sim.getCell(x, y).temp;
+  assert.ok(lavaTemp > 1000, `lav ${lavaTemp} °C`);
+});
