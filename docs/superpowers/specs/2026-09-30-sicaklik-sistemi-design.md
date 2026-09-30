@@ -30,6 +30,7 @@ Kullanıcının isteği şuydu: "ortam sıcaklığı gibi şeyleri ekle, ekstra 
   - mevcut fiziğin sıcaklığa bağlanması: lav kabuğu, buharlaşma, kendiliğinden tutuşma
 - Lav soğuyup taşa dönmeli.
 - Yaklaşım A seçildi: tam çözünürlüklü sıcaklık alanı.
+- Kum saati, Vaha ve Volkan gibi yeni hazır sahneler eklenmeli. Kum saati sahnesinin iyileştirilmesi gerekiyor (§7).
 
 ### 1.2 Varsayımlar (kullanıcı onayladı)
 
@@ -349,7 +350,17 @@ dayLabel(p)    : Gece (p < 0.2 ya da p ≥ 0.8), Sabah (< 0.4), Öğle (< 0.6), 
 - **Undo:** değişiklik varsa stroke "kirli" sayılır ve undo noktası oluşur.
 - **Sağ tık:** her zaman silgidir.
 
-### 5.2 Materyal seçici
+### 5.2 Ters çevirme
+
+`sim.flipVertical()` tüm dünyayı dikey olarak aynalar: `y` satırı `H−1−y` satırına gider.
+
+- **Kapsam:** `type`, `variant`, `life`, `flags` ve `temp` alanlarının hepsi aynalanır. Parçacık sayıları değişmez.
+- **Undo:** işlem `clear` gibi geri alınabilir; öncesinde snapshot alınır.
+- **Arayüz:** Simülasyon bölümünde "Ters çevir" düğmesi, kısayolu `F`.
+- **Kullanım:** kum saatinde kum bitince çevrilir ve kum yeniden akar. Diğer sahnelerde de çalışır; örneğin göl yukarıdan dökülür.
+- **Çift çevirme:** iki kez çevirmek dünyayı birebir ilk hâline döndürür.
+
+### 5.3 Materyal seçici
 
 - **`catalog.js`:** her kayda `category` alanı eklenir. `CATEGORIES` sırası: `powder` Toz, `liquid` Sıvı, `gas` Gaz, `solid` Katı, `tool` Araç.
 
@@ -370,9 +381,10 @@ dayLabel(p)    : Gece (p < 0.2 ya da p ≥ 0.8), Sabah (< 0.4), Öğle (< 0.6), 
   - Mevcutlar aynen kalır: `1`–`0`, `G`.
   - Yeniler: `B` Buz, `K` Kar, `M` Metal, `E` Erimiş metal, `H` Isıt, `C` Soğut.
   - `T` termal görünümü açıp kapatır; bu bir eylemdir (`toggleThermal`), materyal değildir.
+  - `F` dünyayı ters çevirir (§5.2).
   - Mevcut `S` (fırça şekli), `.` ve `?` ile çakışma yoktur. Yardım diyaloğu güncellenir.
 
-### 5.3 Ortam bölümü
+### 5.4 Ortam bölümü
 
 Simülasyon bölümünün altına, her zaman görünür bir "Ortam" bölümü eklenir:
 
@@ -381,14 +393,14 @@ Simülasyon bölümünün altına, her zaman görünür bir "Ortam" bölümü ek
 - anlık durum, örneğin "Öğle · 28 °C"; stats ile aynı sıklıkta, 400 ms'de bir güncellenir
 - "Termal görünüm" düğmesi (`aria-pressed`)
 
-### 5.4 Durum göstergeleri
+### 5.5 Durum göstergeleri
 
 - Başlıktaki durum satırına "Ortam" değeri eklenir.
 - Hassas işaretçili cihazlarda (`pointer: fine`) "İmleç" değeri gösterilir, örneğin "Su · 12 °C".
 - Debug paneline imleç sıcaklığı eklenir.
 - `getCell` sonucuna `temp` alanı eklenir.
 
-### 5.5 Tercihler (`storage.js`)
+### 5.6 Tercihler (`storage.js`)
 
 - `DEFAULT_PREFS` içine `dayCycle: false` eklenir; `sanitizePrefs` bunu doğrular.
 - Ortam sıcaklığı ve termal görünüm saklanmaz: ortam her sahnede o sahnenin varsayılanına döner.
@@ -439,6 +451,77 @@ Simülasyon bölümünün altına, her zaman görünür bir "Ortam" bölümü ek
     - baca çevresindeki buz ve kar yavaşça erir
     - metal çubuk ısıyı iletir
     - gece ortam daha da soğur
+
+### 7.1 Kum saati iyileştirmesi
+
+**Mevcut sorunlar** (2026-09-30 ölçümü):
+
+- İki düz üçgen, kutunun içinde bir "X" gibi görünüyor, kum saatine benzemiyor.
+- Kum bitince sahne ölüyor; çevirme yok.
+- Üst ve alt hazne dünyanın ortasına göre tam simetrik değil.
+- Üstte bir tane kum takılı kalıyor.
+- Akış doğru; 400×225'te kum yaklaşık 25 saniyede tamamen boşalıyor.
+
+**Yeni tasarım:**
+
+- **Kavisli hazneler:**
+  - Haznenin yarım genişliği `w(u) = neck + A · smoothstep(u)` ile hesaplanır. `u`, boğazdan kapağa doğru 0'dan 1'e gider.
+  - Bu profil boğaza doğru daralan, kapağa yakın yerde dikleşen yuvarlak bir hazne verir.
+  - `A ≤ 0,66 · L` şartı duvar eğimini satır başına en fazla 1 hücrede tutar. `L` hazne yüksekliğidir. Böylece kum duvarda takılmaz.
+- **Tam simetri:**
+  - Önce üst yarı üretilir, alt yarı dünyanın orta satırına göre aynalanır (`y → H−1−y`).
+  - Böylece çevirme (§5.2) şekli birebir korur; grid yüksekliğinin tek ya da çift olması fark etmez.
+- **Boğaz:** 2 hücre genişliğinde, 2–3 satır uzunluğunda bir tüp. Hedef boşalma süresi 400×225'te 1× hızda 30–60 saniye.
+- **Çerçeve:**
+  - üstte ve altta 3 satır kalınlığında odun kapak
+  - iki yanda odun direk; direkler camdan 2 hücre uzakta
+- **Kum miktarı:** üst haznenin yaklaşık %85'i.
+- **İpucu:** sahne yüklenince duyuru bölgesine (`aria-live`) "Kum bitince Ters çevir (F)" yazılır.
+
+### 7.2 Yeni sahne: Dökümhane
+
+`js/scenes/foundry.js`; `id: 'foundry'`, ad "Dökümhane", ortam 20.
+
+**İçerik:**
+
+- Solda yüksekte, magma kaynağının üstünde duran taştan bir pota. Potanın içinde erimiş metal var.
+- Potanın yan duvarında bir yarık. Oradan eğimli bir taş oluk başlar.
+- Oluk, basamaklı bir kalıp sırasına iner: taştan U biçimli 3 kalıp. Biri dolunca taşar ve sıradakini doldurur.
+- Sonda bir su teknesi. Oraya ulaşan metal suyu kaynatır ve hızla katılaşır.
+- Zeminde istiflenmiş metal külçeler ve akışın içinden geçen bir metal kiriş. Kiriş ısınıp kızarır.
+
+**Beklenen davranış:**
+
+- Erimiş metal kalıplara akar, soğur ve metal olur.
+- Potada kalan metal katılaşır ama magma üstünde kızgın kalır. Magma 1200 °C'de, metalin katılaşma eşiği 1300 °C. Isıt fırçası metali yeniden eritir.
+
+### 7.3 Yeni sahne: Mağara
+
+`js/scenes/cave.js`; `id: 'cave'`, ad "Mağara", ortam 12.
+
+**İçerik:**
+
+- Neredeyse tamamen taş bir dünya. Aritmetik value noise ile oyulmuş bir ana tünel ve birkaç oda var. Üstte ince bir yüzey açıklığı var.
+- En alçak odada bir yeraltı gölü.
+- Gölün yanında, taşın içinde magma kaynaklı bir lav cebi. Arada ince bir taş duvar var. Duvar ısınınca göl kenarı kaynar ve buhar tünel boyunca yükselir: bir kaplıca etkisi.
+- Tavandan sarkan taş sarkıtlar.
+- Odun maden destekleri: dikmeler ve kirişler.
+- Taşın içinde bir yağ cebi.
+- Tünel tabanında kum birikintileri.
+
+**Alt proje 2 ile ilişkisi:** bu sahne ilerideki patlatma ve kazı mekaniklerinin sahnesi olacak.
+
+### 7.4 Sahne sırası ve sonraki alt projeler
+
+**Seçicideki sıra:** Volkan, Kum saati, Vaha, Buzul, Dökümhane, Mağara, Kaos Lab, Boş. Benchmark gizli kalır.
+
+**Sonraki alt projelerin sahneleri** (bu belgenin kapsamı dışında):
+
+| Alt proje | Sahneler |
+|---|---|
+| 2. Basınç ve patlama | Maden ocağı (patlatma), Gayzer |
+| 3. Kimya | Laboratuvar |
+| 4. Toprak ve yaşam | Orman ya da Bahçe |
 
 ---
 
@@ -504,8 +587,20 @@ Simülasyon bölümünün altına, her zaman görünür bir "Ortam" bölümü ek
 
 **Sahneler:**
 
-- Buzul sahnesi seed ve grid determinizmini sağlar (7 boyut).
+- Buzul, Dökümhane ve Mağara seed ve grid determinizmini sağlar (7 boyut); üretim < 250 ms.
 - Volkan regresyon testi ve magma testi.
+- **Kum saati:**
+  - Üretilen dünya kendi aynasına eşittir.
+  - Üst hazne boşalır: 400×225'te 1× hızda 30–60 s içinde kumun %99,5'i alta geçer.
+  - Çevrilince kum yeniden akar.
+  - Toplam kum korunur.
+- **Dökümhane:** 3000 tick sonunda metal sayısı artar, erimiş metal azalır, kalıplar dolar. Erimiş metal oluk dışına taşmaz.
+- **Mağara:** göl suyu mağaradan dışarı sızmaz. Lav cebi ile göl arasındaki duvar yerinde kalır.
+- **Ters çevirme:**
+  - İki kez çevirmek aynı hash'i verir.
+  - Undo çevirmeyi geri alır.
+  - Parçacık sayıları korunur.
+  - Sıcaklık da aynalanır.
 
 **Arayüz ve render:**
 
@@ -550,6 +645,7 @@ Simülasyon bölümünün altına, her zaman görünür bir "Ortam" bölümü ek
 
 ## 12. Uygulama sırası (plan için taslak)
 
+0. Kum saati iyileştirmesi ve ters çevirme (`flipVertical`, düğme, `F`). Sıcaklıktan bağımsız olduğu için önce yapılır; sıcaklık gelince `flipVertical` alanı da aynalar.
 1. `world.temp` ve `tempNext`; `swap`, `set` ve `clear`; undo; hash yardımcısı.
 2. `heat.js`: difüzyon, hava, kenar, kaynaklar, uyuyan satırlar ve bunların testleri.
 3. Termal tanım alanları, derleyici doğrulamaları, faz mekanizması, tutuşma, buharlaşma.
@@ -558,5 +654,5 @@ Simülasyon bölümünün altına, her zaman görünür bir "Ortam" bölümü ek
 6. `climate.js` ve Simulation ortam API'si; sahnelere `ambient` alanı.
 7. Render: akkorluk, lav, soğuk su, termal görünüm, gökyüzü.
 8. Arayüz: sekmeler, Ortam bölümü, araçlar, kısayollar, durum göstergeleri, tercihler, yardım.
-9. Buzul sahnesi ve volkan magma kaynağı.
+9. Buzul, Dökümhane ve Mağara sahneleri; volkan magma kaynağı.
 10. Performans ölçümü, dokümanlar, tarayıcı smoke testi, sürüm.
