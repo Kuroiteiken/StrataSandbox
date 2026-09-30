@@ -1,9 +1,15 @@
 name: Test ve GitHub Pages yayını
 
+# Yalnızca docs/ altı değiştiyse test ve yayın gerekmez (docs yayınlanmaz, testlere girmez).
+# Karışık bir push'ta (docs + kod) akış yine çalışır.
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'docs/**'
   pull_request:
+    paths-ignore:
+      - 'docs/**'
   workflow_dispatch:
 
 # Varsayılan olarak yalnızca okuma; Pages izinleri sadece deploy işinde.
