@@ -3,6 +3,7 @@
 import { MAT } from '../engine/materials.js';
 import { PICKER } from './catalog.js';
 import { SHADES, packRGBA } from '../render/palette.js';
+import { getScene } from '../scenes/index.js';
 
 const SWATCH = 6; // numune dokusu (hücre); CSS ile büyütülür
 
@@ -77,7 +78,10 @@ export function createControls(doc, { palette, scenes, actions }) {
   undo.addEventListener('click', () => actions.undo());
   $('btn-clear').addEventListener('click', () => actions.clear());
   const quality = $('quality-select');
-  quality.addEventListener('change', () => actions.setQuality(quality.value));
+  quality.addEventListener('change', () => {
+    actions.setQuality(quality.value);
+    quality.blur();
+  });
 
   // Sahne ve seed
   const sceneSelect = $('scene-select');
@@ -87,7 +91,11 @@ export function createControls(doc, { palette, scenes, actions }) {
     opt.textContent = s.name;
     sceneSelect.append(opt);
   }
-  sceneSelect.addEventListener('change', () => actions.setScene(sceneSelect.value));
+  // Seçimden sonra odak bırakılır; aksi halde select odakta kalıp tüm kısayolları yutar.
+  sceneSelect.addEventListener('change', () => {
+    actions.setScene(sceneSelect.value);
+    sceneSelect.blur();
+  });
   const seedInput = $('seed-input');
   seedInput.addEventListener('change', () => actions.setSeed(seedInput.value.trim()));
   let committedSeed = '';
@@ -106,6 +114,15 @@ export function createControls(doc, { palette, scenes, actions }) {
   $('btn-capture').addEventListener('click', () => actions.capture());
   $('btn-help').addEventListener('click', () => actions.help());
 
+  // Fareyle tıklanan butonlar odağı bırakır: sonraki Space pause yapsın, butonu tekrar
+  // tetiklemesin (ör. "Yeniden üret" dünyayı silerdi). Klavyeyle etkinleştirmede (detail 0)
+  // odak korunur (erişilebilirlik).
+  for (const el of doc.querySelectorAll('#panel button, #panel summary')) {
+    el.addEventListener('click', (e) => {
+      if (e.detail > 0) el.blur();
+    });
+  }
+
   return {
     sync(state) {
       for (const [key, { label, input }] of cards) {
@@ -123,6 +140,13 @@ export function createControls(doc, { palette, scenes, actions }) {
       for (const r of speeds) r.checked = Number(r.value) === state.speed;
       undo.disabled = !state.canUndo;
       quality.value = state.quality;
+      // Seçicide olmayan (ör. yalnızca debug'da listelenen) aktif sahne için seçenek ekle.
+      if (![...sceneSelect.options].some((o) => o.value === state.scene)) {
+        const opt = doc.createElement('option');
+        opt.value = state.scene;
+        opt.textContent = getScene(state.scene).name;
+        sceneSelect.append(opt);
+      }
       sceneSelect.value = state.scene;
       committedSeed = state.seed;
       if (doc.activeElement !== seedInput) seedInput.value = state.seed;

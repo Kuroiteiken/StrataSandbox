@@ -32,7 +32,7 @@ const viewport = document.getElementById('viewport');
 
 // Sabit iç grid: yalnızca açılışta, konteynır boyutuna göre (ADR-002).
 const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
-const initialRect = viewport.getBoundingClientRect();
+const initialRect = canvas.getBoundingClientRect();
 const grid = chooseGridSize(initialRect.width, initialRect.height, coarsePointer ? CELL_BUDGET.mobile : CELL_BUDGET.desktop);
 
 const sim = new Simulation({ width: grid.width, height: grid.height, seed: prefs.seed, debug: invariants });
@@ -67,6 +67,7 @@ attachPointer(canvas, {
   renderer,
   sim,
   getBrush: () => app.brush(),
+  onStrokeEnd: () => app.actions.refresh(), // panel (ör. Geri al butonu) güncellensin
   onCursor(cell, pointerType) {
     cursor = cell;
     // Touch'ta önizleme gereksiz (parmak zaten altını kapatır).
@@ -79,11 +80,13 @@ const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 renderer.setReducedMotion(reducedMotion.matches);
 reducedMotion.addEventListener('change', (e) => renderer.setReducedMotion(e.matches));
 
+// Canvas'ın kendisi ölçülür (viewport kenarlığı dahil değil): backing store CSS kutusuyla
+// birebir eşleşir, tarayıcı her karede yeniden örneklemez (tam sayı ölçek keskin kalır).
 const resize = () => {
-  const rect = viewport.getBoundingClientRect();
+  const rect = canvas.getBoundingClientRect();
   renderer.resize(rect.width, rect.height, Math.min(window.devicePixelRatio || 1, MAX_DPR));
 };
-new ResizeObserver(resize).observe(viewport);
+new ResizeObserver(resize).observe(canvas);
 resize();
 
 // DPR değişimi (pencere başka monitöre taşınınca ya da tarayıcı zoom'u): boyut değişmeden de olur.

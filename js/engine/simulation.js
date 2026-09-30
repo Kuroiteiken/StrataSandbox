@@ -16,7 +16,7 @@ const MAX_TICKS_PER_FRAME = 8;
 // Böylece 50 ms @ 60 TPS gibi değerler kayan nokta hatası olmadan tam sayı çıkar.
 const TICK_UNIT = 1000;
 
-const { KIND: KIND_OF, GAS_IDS, REACTIVE, COOLS } = MATERIALS;
+const { KIND: KIND_OF, REACTIVE, COOLS } = MATERIALS;
 const EMPTY = MAT.EMPTY;
 const POWDER = KIND.POWDER;
 const LIQUID = KIND.LIQUID;
@@ -194,13 +194,6 @@ export class Simulation {
   // aynı seed + aynı tick'te aynı hücre her zaman aynı ton/yön/ömrü alır (sahne determinizmi).
   _spawnSalt() {
     return Math.imul(this.tick + 1, 0x9e3779b1) ^ this._seedSalt;
-  }
-
-  _gasCount() {
-    const counts = this.world.counts;
-    let n = 0;
-    for (let k = 0; k < GAS_IDS.length; k++) n += counts[GAS_IDS[k]];
-    return n;
   }
 
   _assertInvariants() {

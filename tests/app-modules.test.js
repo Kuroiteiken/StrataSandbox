@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { MAT } from '../js/engine/materials.js';
 import { PICKER, pickerByKey, pickerByShortcut } from '../js/app/catalog.js';
 import { DEFAULT_PREFS, sanitizePrefs, loadPrefs, savePrefs } from '../js/app/storage.js';
-import { keyToAction, shouldIgnoreTarget } from '../js/app/keyboard.js';
+import { keyToAction, shouldIgnoreTarget, attachKeyboard } from '../js/app/keyboard.js';
 import { formatCount, formatStats, createRateMeter } from '../js/app/stats.js';
 import { SCENES, getScene, DEFAULT_SCENE_ID } from '../js/scenes/index.js';
 import { Simulation } from '../js/engine/simulation.js';
@@ -168,4 +168,47 @@ test('her sahne yüklendikten sonra geri alınacak bir undo noktası kalmaz', ()
     assert.equal(sim.canUndo, false, scene.id);
     sim.step(); // debug değişmezleri
   }
+});
+
+// ---- attachKeyboard: odak durumuna göre Space ----
+
+function keyboardHarness() {
+  const listeners = {};
+  const target = { addEventListener: (t, fn) => (listeners[t] = fn), removeEventListener() {} };
+  const actions = [];
+  attachKeyboard(target, (a) => actions.push(a.type));
+  const press = (key, focused, extra = {}) => {
+    const e = { key, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, repeat: false, defaultPrevented: false, target: focused, preventDefault() { this.defaultPrevented = true; }, ...extra };
+    listeners.keydown(e);
+    return e;
+  };
+  return { press, actions };
+}
+
+const focusable = (tagName, { focusVisible, type } = {}) => ({ tagName, type, matches: (sel) => sel === ':focus-visible' && Boolean(focusVisible) });
+
+test('odakta buton yokken (fareyle tıklanan butonlar odağı bırakır) Space pause yapar', () => {
+  const { press, actions } = keyboardHarness();
+  const e = press(' ', { tagName: 'BODY', matches: () => false });
+  assert.deepEqual(actions, ['togglePause']);
+  assert.equal(e.defaultPrevented, true, 'sayfa kaydırması engellenmeli');
+});
+
+test('klavyeyle odaklanılmış butonda Space butonu tetikler (erişilebilirlik)', () => {
+  const { press, actions } = keyboardHarness();
+  const e = press(' ', focusable('BUTTON'));
+  assert.deepEqual(actions, []);
+  assert.equal(e.defaultPrevented, false);
+});
+
+test('seçili radyo (materyal kartı) odaktayken Space pause yapar', () => {
+  const { press, actions } = keyboardHarness();
+  press(' ', focusable('INPUT', { type: 'radio', focusVisible: true }));
+  assert.deepEqual(actions, ['togglePause']);
+});
+
+test('yardım diyaloğu açıkken kısayollar arka plandaki sayfayı değiştirmez', () => {
+  const { press, actions } = keyboardHarness();
+  press('3', { tagName: 'BUTTON', matches: () => false, closest: (sel) => (sel === 'dialog[open]' ? {} : null) });
+  assert.deepEqual(actions, []);
 });

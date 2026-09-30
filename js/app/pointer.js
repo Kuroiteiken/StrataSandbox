@@ -8,7 +8,7 @@ import { MAT } from '../engine/materials.js';
 const PRIMARY = 0;
 const SECONDARY = 2;
 
-export function attachPointer(canvas, { renderer, sim, getBrush, onCursor = () => {} }) {
+export function attachPointer(canvas, { renderer, sim, getBrush, onCursor = () => {}, onStrokeEnd = () => {} }) {
   let active = null; // { id, last: {x, y}, brush }
 
   const toCell = (e, clamp) => renderer.clientToCell(e.clientX, e.clientY, { clamp });
@@ -23,6 +23,7 @@ export function attachPointer(canvas, { renderer, sim, getBrush, onCursor = () =
       // capture zaten bırakılmış olabilir
     }
     active = null;
+    onStrokeEnd();
   };
 
   const handlers = {
@@ -59,6 +60,11 @@ export function attachPointer(canvas, { renderer, sim, getBrush, onCursor = () =
         onCursor(toCell(e, false), e.pointerType);
         return;
       }
+      // pointerup kaçtıysa (ör. capture alınamadı) buton bırakılmış hareket stroke'u bitirir.
+      if (e.buttons === 0) {
+        finish(e);
+        return;
+      }
       const samples = typeof e.getCoalescedEvents === 'function' ? e.getCoalescedEvents() : null;
       const events = samples && samples.length > 0 ? samples : [e];
       for (const sample of events) {
@@ -73,6 +79,7 @@ export function attachPointer(canvas, { renderer, sim, getBrush, onCursor = () =
 
     pointerup: finish,
     pointercancel: finish,
+    lostpointercapture: finish,
 
     pointerleave(e) {
       if (!active) onCursor(null, e.pointerType);

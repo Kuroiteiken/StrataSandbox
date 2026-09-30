@@ -17,6 +17,11 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) yaklaşımını 
 
 ### Fixed
 
+- Çizimden sonra panel "Geri al" butonu aktifleşmiyordu.
+- Fareyle tıklanan bir butonda Space butonu yeniden tetikliyordu; ör. "Yeniden üret" dünyayı siliyordu. Seçim kutusundan sonra kısayollar çalışmıyordu. Artık fareyle tıklanan butonlar ve select'ler odağı bırakıyor; diyalog açıkken kısayollar engelleniyor.
+- Canvas kenarlık dahil ölçüldüğü için her karede yeniden örnekleniyordu; pikseller artık keskin.
+- Kaçan `pointerup` ya da kaybolan pointer capture durumunda materyal akmaya devam ediyordu.
+- `?scene=benchmark` ziyaretinden sonra sahne seçicisi boş kalıyordu.
 - Volkan: dar ve dikey gridlerde lav, baca koniden geniş kaldığı için sol yamaca taşıyordu. Koni artık düz tepeli (yamuk).
 - Bitki büyümesi çok hızlıydı; yavaşlatıldı (olasılık 0,012, bütçe 8).
 

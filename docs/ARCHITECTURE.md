@@ -57,7 +57,7 @@ Renderer.render(view, frameInfo)                                 ← state'i asl
 
 - **Geçişler:** Her tick iki taramadan oluşur.
   1. Aşağıdan yukarı: tozlar, sıvılar ve reaktif statikler.
-  2. Yukarıdan aşağı: gazlar. Dünyada gaz yoksa bu geçiş atlanır.
+  2. Yukarıdan aşağı: gazlar. Yalnızca birinci geçişte gaz görülen satırlar taranır.
 - **Yatay yön:** tick paritesi XOR satır paritesi. Kalıcı sağa/sola akış bias'ı oluşmaz.
 - **Stamp kuralları:**
   - Yer değiştiren iki hücre de stamp'lenir.
@@ -151,8 +151,8 @@ Renderer.render(view, frameInfo)                                 ← state'i asl
   1. letterbox dolgusu
   2. cache'li arka plan (yarım çözünürlük, smoothing açık)
   3. sim tamponu (`imageSmoothingEnabled = false`)
-  4. brush preview (Phase 5)
-  5. glow (Phase 8)
+  4. glow (`lighter`)
+  5. brush preview
 - **Grid boyutu:** açılışta bir kez seçilir. Resize yalnızca sunumu değiştirir.
 - **Glow:**
   - `fillPixels`, isteğe bağlı bir ışık tamponunu aynı döngüde doldurur (ateş, lav, yanma; alfa = yoğunluk).

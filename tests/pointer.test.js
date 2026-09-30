@@ -64,14 +64,16 @@ function setup(brush = { material: MAT.STONE, size: 1, shape: 'square', replace:
   const canvas = fakeCanvas();
   const sim = new Simulation({ width: W, height: H, debug: true });
   const cursors = [];
+  const strokeEnds = [];
   const input = attachPointer(canvas, {
     renderer: fakeRenderer,
     sim,
     getBrush: () => brush,
     onCursor: (cell, type) => cursors.push([cell, type]),
+    onStrokeEnd: () => strokeEnds.push(sim.canUndo),
   });
   const fire = (type, e) => canvas.handlers[type](e);
-  return { canvas, sim, input, fire, cursors };
+  return { canvas, sim, input, fire, cursors, strokeEnds };
 }
 
 test('basıp sürükleyip bırakmak boşluksuz bir çizgi boyar ve undo noktası oluşturur', () => {
@@ -178,4 +180,32 @@ test('detach tüm dinleyicileri kaldırır', () => {
   const { input, canvas } = setup();
   input.detach();
   assert.deepEqual(Object.keys(canvas.handlers), []);
+});
+
+test('stroke bitince onStrokeEnd çağrılır (panel undo durumunu güncelleyebilsin)', () => {
+  const { fire, strokeEnds } = setup();
+  fire('pointerdown', ev(3, 3));
+  fire('pointerup', ev(3, 3));
+  assert.deepEqual(strokeEnds, [true], 'stroke sonunda canUndo true olmalı');
+  fire('pointerdown', ev(8, 8));
+  fire('pointercancel', ev(8, 8));
+  assert.equal(strokeEnds.length, 2);
+});
+
+test('pointer capture kaybolursa stroke biter ve akış durur', () => {
+  const { sim, fire, strokeEnds } = setup({ material: MAT.SAND, size: 1, shape: 'square', replace: false });
+  fire('pointerdown', ev(20, 0));
+  fire('lostpointercapture', ev(20, 0));
+  assert.equal(strokeEnds.length, 1);
+  const n = countMaterial(sim, MAT.SAND);
+  runTicks(sim, 10);
+  assert.equal(countMaterial(sim, MAT.SAND), n, 'hold durmalıydı');
+});
+
+test('buton bırakılmış halde gelen pointermove (kaçan pointerup) çizimi bitirir, boyamaz', () => {
+  const { sim, fire, strokeEnds } = setup();
+  fire('pointerdown', ev(2, 2, { buttons: 1 }));
+  fire('pointermove', ev(15, 2, { buttons: 0 }));
+  assert.equal(strokeEnds.length, 1);
+  assert.equal(countMaterial(sim, MAT.STONE), 1, 'buton basılı değilken çizgi çekilmemeli');
 });

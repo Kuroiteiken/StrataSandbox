@@ -80,6 +80,7 @@
   width: 100%;
   height: 100%;
   touch-action: none; /* dokunmada sayfa kaydırma/zoom yok */
+  image-rendering: pixelated; /* olası kesirli CSS ölçeğinde bile keskin hücreler */
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;

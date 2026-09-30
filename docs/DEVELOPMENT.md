@@ -692,6 +692,39 @@ Taze bağlamlı bir reviewer ajanı `ade40c2..f0956b6` aralığını inceledi. C
   - `serve.test.js`'e `%5c` (ters bölü) traversal vakası
 - `getStats`'ta `tps` alanı yok (plandaki API'de var). Phase 6 stats paneliyle eklenecek.
 
+### Phase 2–12 bağımsız inceleme (2026-09-30)
+
+Taze bağlamlı bir reviewer ajanı `f0956b6..34969c5` aralığını inceledi. Critical bulgu çıkmadı. Reviewer, gas-row atlamasının ve undo determinizminin doğruluğunu kod çalıştırarak teyit etti.
+
+**Düzeltilenler** (önce kırmızı test, sonra yeşil; suite 280/280; tarayıcıda doğrulandı):
+
+- **Çizimden sonra "Geri al" butonu aktifleşmiyordu.**
+  - Düzeltme: pointer'a `onStrokeEnd` eklendi, panel her stroke sonunda senkronlanıyor.
+  - Test: `stroke bitince onStrokeEnd çağrılır`.
+- **Fareyle tıklanan bir butonda Space butonu yeniden tetikliyordu** ("Yeniden üret" dünyayı geri alınamaz şekilde siliyordu). Seçim kutusundan sonra tüm kısayollar yutuluyordu.
+  - İlk deneme (`:focus-visible`) Chrome'da çalışmadı: tuşa basılınca odak "görünür" sayılıyor.
+  - Düzeltme: panel butonları fareyle tıklanınca (`detail > 0`) odağı bırakıyor; odakta buton varsa klavyeyle gelinmiştir ve Space butonu tetikler. Radyolarda Space her zaman pause yapıyor. Select'ler seçimden sonra odağı bırakıyor. Diyalog açıkken kısayollar engelleniyor.
+  - Testler: `app-modules` altındaki Space ve diyalog testleri; tarayıcı doğrulaması.
+- **Canvas kenarlık dahil ölçülüyordu**; tarayıcı her karede yeniden örnekliyor, tam sayı ölçeğin keskinliği kayboluyordu.
+  - Düzeltme: canvas'ın kendisi ölçülüyor ve gözleniyor; ek olarak `image-rendering: pixelated`.
+- **Kaybolan `pointerup` durumunda akış durmuyordu** (reviewer: Minor; "materyal durmadan akar" etkisi nedeniyle Important'a yükseltildi).
+  - Düzeltme: `lostpointercapture` ve `buttons === 0` olan hareket stroke'u bitiriyor.
+  - Testler: iki pointer testi.
+- **`?scene=benchmark` sonrası sahne seçicisi boş kalıyordu** (tercihe sızan gizli sahne; Important'a yükseltildi).
+  - Düzeltme: seçicide olmayan aktif sahne için seçenek dinamik olarak ekleniyor.
+- **CI kırılganlığı:** duvar saati testinin eşiği 60 ms'den 250 ms'ye çıkarıldı; bench testindeki tautoloji kaldırıldı.
+- **Ölü kod ve doküman uyumsuzlukları:** `_gasCount` kaldırıldı. ARCHITECTURE'da gaz geçişinin satır bazlı atlanması ve katman sırası (glow → önizleme) düzeltildi.
+
+**Ertelenen minor'lar** (kullanıcı etkisi düşük; sonraki sürüm):
+
+- Debug TPS göstergesi undo ya da sahne yüklemesinden sonra negatif görünebiliyor (tick sıfırlanıyor). Yalnızca debug paneli etkileniyor.
+- Tick başına global bitki ve ateş bütçesi satır tarama sırasıyla harcanıyor. Bütçe dolduğunda alt satırlar önceliklidir; yalnızca yoğun yükte fark edilir.
+- Stroke sürerken Ctrl+Z basılırsa, stroke bitince undo noktası stroke öncesine kurulur (kenar durum).
+- Oynat butonu hem `aria-pressed` hem değişen etiket kullanıyor; ikisinden biri seçilmeli.
+- Tercih kaydı 300 ms gecikmeli; sekme o arada kapanırsa son değişiklik kaybolabilir (`pagehide` ile flush edilebilir).
+- Küçük kare başı allocation'lar (layout/arka plan anahtar string'leri, glow kaynak dizisi, `paintLine` kapanışı); per-cell döngüde değil.
+- "Benchmark seed'den bağımsız" ifadesi yalnızca yerleşim için doğru; tonlar ve RNG seed'e bağlı. `bench.js` sabit seed kullandığı için etkisiz.
+
 ---
 
 ## Manuel test checklist

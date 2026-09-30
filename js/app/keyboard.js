@@ -56,15 +56,22 @@ export function shouldIgnoreTarget(target) {
 
 const NO_REPEAT = new Set(['togglePause', 'undo', 'help', 'cycleShape']);
 
+// Panel butonları fareyle tıklanınca odağı bırakır (controls.js). Bu yüzden odakta bir buton
+// varsa klavyeyle gelinmiştir; Space o butonu tetiklesin (erişilebilirlik).
+function isFocusedButton(target) {
+  const tag = target?.tagName;
+  return tag === 'BUTTON' || tag === 'SUMMARY' || (tag === 'INPUT' && ['button', 'submit', 'checkbox'].includes(String(target.type)));
+}
+
 export function attachKeyboard(target, dispatch) {
   const onKeyDown = (e) => {
     if (e.defaultPrevented || shouldIgnoreTarget(e.target)) return;
+    if (e.target?.closest?.('dialog[open]')) return; // açık diyalog kendi tuşlarını yönetir
     const action = keyToAction(e);
     if (!action) return;
     if (e.repeat && NO_REPEAT.has(action.type)) return;
-    // Odaklı bir butonda Space butonu tetiklesin (erişilebilirlik); pause'u değil.
-    const tag = e.target?.tagName;
-    if (action.type === 'togglePause' && (tag === 'BUTTON' || tag === 'SUMMARY' || (tag === 'INPUT' && e.target.type !== 'range'))) return;
+    // Odaktaki butonda Space butonu tetikler; radyolarda (materyal, şekil, hız) pause'dur.
+    if (action.type === 'togglePause' && isFocusedButton(e.target)) return;
     e.preventDefault();
     dispatch(action);
   };

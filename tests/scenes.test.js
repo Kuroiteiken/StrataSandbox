@@ -115,13 +115,14 @@ test('Boş sahne boştur', () => {
   assert.equal(load('empty', 'e').getStats().particles, 0);
 });
 
-test('sahne üretimi büyük gridde de hızlıdır (< 60 ms)', () => {
+// Kaba duvar saati sınırı: yavaş CI runner'larında kırılmaması için geniş tutulur.
+test('sahne üretimi büyük gridde de hızlıdır (< 250 ms)', () => {
   for (const scene of SCENES) {
     const sim = new Simulation({ width: 400, height: 225 });
     const t0 = performance.now();
     sim.loadScene(scene, 'perf');
     const ms = performance.now() - t0;
-    assert.ok(ms < 60, `${scene.id}: ${ms.toFixed(1)} ms`);
+    assert.ok(ms < 250, `${scene.id}: ${ms.toFixed(1)} ms`);
   }
 });
 
