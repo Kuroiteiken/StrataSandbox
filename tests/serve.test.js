@@ -58,3 +58,11 @@ test('geliştirme sırasında önbelleğe alınmaz', async () => {
   const res = await fetch(`${rootBase}/tools/serve.js`);
   assert.equal(res.headers.get('cache-control'), 'no-store');
 });
+
+test('ters bölü (%5c) ile kök dışına çıkma denemesi de reddedilir', async () => {
+  for (const attempt of ['..%5cpackage.json', '%2e%2e%5cpackage.json', '..%5c..%5cpackage.json']) {
+    const res = await fetch(`${jsBase}/${attempt}`);
+    assert.ok(res.status === 403 || res.status === 404, `${attempt}: ${res.status}`);
+    assert.doesNotMatch(await res.text(), /strata-sandbox/);
+  }
+});

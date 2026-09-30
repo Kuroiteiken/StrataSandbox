@@ -12,25 +12,26 @@ export function volcano(sim, rng) {
   const ground = new Float32Array(W);
   for (let x = 0; x < W; x++) ground[x] = H * 0.86 + (groundNoise[x] - 0.5) * H * 0.05;
 
-  // Koni profili: tepe noktasından iki yana doğrusal iniş + gürültü.
+  // Koni: yamuk profil. Düz tepe (plato) krater ve bacayı her grid oranında taşın içinde
+  // tutacak kadar geniştir; dikey/dar gridlerde bile lav havaya açılmaz.
   const cx = W * (0.52 + (rng.next() - 0.5) * 0.08);
-  const half = W * 0.27;
-  const peak = H * 0.3;
-  const coneNoise = valueNoise(W, sim.seed, 'volcano-cone', 10);
-  const top = new Float32Array(W);
-  for (let x = 0; x < W; x++) {
-    const d = Math.abs(x - cx) / half;
-    const cone = d < 1 ? peak + d * (ground[x] - peak) + (coneNoise[x] - 0.5) * H * 0.03 : Infinity;
-    top[x] = Math.min(ground[x], cone);
-  }
-
-  // Kesik koni: tepede krater platosu (krater koninin içine oyulur; lav havada durmaz).
   const cxi = Math.round(cx);
   const craterW = Math.max(2, S(0.06));
   const craterD = Math.max(2, S(0.05));
-  const plateauY = Math.round(peak) + craterD;
-  for (let x = cxi - craterW - 3; x <= cxi + craterW + 3; x++) {
-    if (x >= 0 && x < W) top[x] = Math.max(top[x], plateauY);
+  const half = W * 0.27;
+  const topHalf = Math.min(half * 0.6, craterW + 4);
+  const plateauY = Math.round(H * 0.3) + craterD;
+  const coneNoise = valueNoise(W, sim.seed, 'volcano-cone', 10);
+  const top = new Float32Array(W);
+  for (let x = 0; x < W; x++) {
+    const dx = Math.abs(x - cx);
+    let cone = Infinity;
+    if (dx <= topHalf) cone = plateauY;
+    else if (dx < half) {
+      const u = (dx - topHalf) / (half - topHalf);
+      cone = plateauY + u * (ground[x] - plateauY) + (coneNoise[x] - 0.5) * H * 0.03 * u;
+    }
+    top[x] = Math.min(ground[x], cone);
   }
 
   // Göl havzası (sol): zemini alçalt.
@@ -61,9 +62,19 @@ export function volcano(sim, rng) {
   disk(sim, cxi, chamberY, chamberR, MAT.LAVA);
   const vent = Math.max(1, S(0.015));
   rect(sim, cxi - vent, plateauY + 1, cxi + vent, chamberY, MAT.LAVA);
+  // Çanak yalnızca taşın içine oyulur ve dış tarafta en az 2 hücrelik taş kenar bırakır;
+  // dik konilerde (dar/dikey grid) çanak ucunun havaya taşıp sol yamaca akması önlenir.
+  const isStone = (x, y) => sim.getCell(x, y)?.material === MAT.STONE;
   for (let y = plateauY + 1; y <= plateauY + craterD; y++) {
     const w = Math.max(vent, Math.round(craterW * (1 - (y - plateauY - 1) / (craterD + 1))));
-    rect(sim, cxi - w, y, cxi + w, y, MAT.LAVA);
+    // İçeriden dışarıya: dış kenar kontrolü henüz değiştirilmemiş (özgün) taşa bakar.
+    for (const out of [-1, 1]) {
+      for (let k = out === -1 ? 0 : 1; k <= w; k++) {
+        const x = cxi + out * k;
+        if (!(isStone(x, y) && isStone(x + out, y) && isStone(x + 2 * out, y))) break;
+        sim.setCell(x, y, MAT.LAVA);
+      }
+    }
   }
   // Sağ kenardaki yarık: lav buradan sağ yamaçtan aşağı süzülür (sol kenar sağlam).
   for (let x = cxi; x <= cxi + craterW + 4 && x < W; x++) {

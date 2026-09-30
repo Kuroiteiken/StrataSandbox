@@ -38,3 +38,16 @@ test('engine modülleri DOM olmadan yüklenir ve Math.random çağırmadan simü
   }
   assert.equal(randomCalls, 0);
 });
+
+// Statik tarama: çalışma yolunda tetiklenmeyen dallarda bile yasak API kullanılmasın.
+test('engine kaynak kodu tarayıcıya özgü API ve Math.random içermez', () => {
+  const forbidden = /\b(Math\.random|document\.|window\.|localStorage|sessionStorage|requestAnimationFrame|navigator\.)/;
+  for (const file of fs.readdirSync(engineDir).filter((f) => f.endsWith('.js'))) {
+    const code = fs
+      .readFileSync(path.join(engineDir, file), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|\s)\/\/[^\n]*/g, '$1');
+    const hit = code.match(forbidden);
+    assert.equal(hit, null, `${file}: yasak kullanım "${hit?.[0]}"`);
+  }
+});

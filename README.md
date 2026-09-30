@@ -3,11 +3,9 @@
 Tarayıcıda çalışan, grid tabanlı bir **materyal ve fizik sandbox'ı**. Kum, su, yağ, lava, ateş, buhar, bitki ve daha fazlasını simülasyon alanına çizip birbirleriyle nasıl etkileştiklerini izleyebilirsin. Simülasyon gerçek bir cellular automaton'dur: her hücre her tick'te fizik kurallarına göre güncellenir.
 
 - **Canlı sürüm:** <https://kuroiteiken.github.io/StrataSandbox/>
-- **Durum:** Erken geliştirme aşamasında. Güncel ilerleme [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)'de.
+- **Durum:** v0.9.0. Tüm fazlar tamamlandı; gerçek cihaz ve tarayıcı testleri sonrası v1.0.0 olacak. Ayrıntılar: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ## Özellikler
-
-> Aşağıdaki liste v1 hedefidir. Tamamlananlar DEVELOPMENT.md'de `[x]` ile işaretlenir.
 
 - **Materyaller:**
   - Sand, Water, Stone, Wood, Fire, Steam, Oil, Lava, Plant, Glass
@@ -105,7 +103,20 @@ npm test        # tüm testler
 
 ## Ekran görüntüleri
 
-*(Görsel sürüm hazır olduğunda eklenecek.)*
+![Volkan sahnesi: kraterden taşan lav ağaçları tutuşturur, magma odası ışıldar](docs/screenshots/strata-volcano.png)
+
+| Kum saati | Vaha | Mobil |
+| --- | --- | --- |
+| ![Kum saati: kum dar boğazdan gerçek fizikle akar](docs/screenshots/strata-hourglass.png) | ![Vaha: kum tepeleri, gölet ve palmiyeler](docs/screenshots/strata-oasis.png) | ![Mobil görünüm](docs/screenshots/strata-mobile.png) |
+
+## Bilinen sınırlamalar
+
+- **Basınç yok:** Sıvılar yalnızca yerel kurallarla akar. U şeklindeki bir boruda iki kol eşitlenmez (cellular automaton sınırlaması).
+- **Sıcaklık alanı yok (v1):** Isı etkileşimleri temas tabanlıdır (ADR-003). Buz, kar ve metal gibi materyaller eklenirken yeniden değerlendirilecek.
+- **Undo tek seviyelidir:** Dünyayı son çizimden önceki ana döndürür. Çizimden sonra geçen simülasyon süresi de geri alınır (ADR-010).
+- **Grid boyutu açılışta seçilir:** Ekran döndürülünce ya da pencere büyütülünce dünya korunur ama kenarlarda boşluk kalabilir. Yeni boyut için sayfayı yenilemek gerekir.
+- **Aynı seed farklı grid boyutunda farklı sahne üretir:** Birebir aynılık (sahne, seed, genişlik, yükseklik) dörtlüsüyle garanti edilir.
+- **Yayın önbelleği:** GitHub Pages dosyaları yaklaşık 10 dakika önbellekler. Yeni yayından hemen sonra zorla yenileme (Ctrl+F5) gerekebilir.
 
 ## Roadmap
 

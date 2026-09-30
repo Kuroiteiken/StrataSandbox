@@ -5,6 +5,21 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) yaklaşımını 
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-09-30
+
+İlk tam sürüm adayı: Phase 0–12 tamamlandı. v1.0.0 gerçek cihaz ve tarayıcı testlerinden sonra etiketlenecek.
+
+### Added — Phase 12 (Final QA)
+
+- `tools/soak.js`: dayanıklılık testi (değişmezler, parçacık sınırı, bellek büyümesi).
+- README'ye ekran görüntüleri (`docs/screenshots/`) ve "Bilinen sınırlamalar" bölümü.
+- Engine için statik kaynak taraması testi; sunucu için ters bölü traversal testi.
+
+### Fixed
+
+- Volkan: dar ve dikey gridlerde lav, baca koniden geniş kaldığı için sol yamaca taşıyordu. Koni artık düz tepeli (yamuk).
+- Bitki büyümesi çok hızlıydı; yavaşlatıldı (olasılık 0,012, bütçe 8).
+
 ### Added — Phase 11 (GitHub Pages)
 
 - Path denetleyicisi artık şunları da tarıyor:

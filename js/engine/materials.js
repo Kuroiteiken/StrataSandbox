@@ -63,7 +63,7 @@ export const MATERIAL_DEFS = [
   { id: MAT.GLASS, key: 'GLASS', name: 'Glass', kind: KIND.STATIC, density: 255, color: '#a9d6d4' },
   {
     id: MAT.PLANT, key: 'PLANT', name: 'Plant', kind: KIND.STATIC, density: 255, color: '#4c9a3a',
-    life: [12, 12], flammable: 0.5, burnsInto: MAT.BURNING_PLANT, reactive: true,
+    life: [8, 8], flammable: 0.5, burnsInto: MAT.BURNING_PLANT, reactive: true,
   },
   {
     id: MAT.BURNING_WOOD, key: 'BURNING_WOOD', name: 'Burning Wood', kind: KIND.STATIC, density: 255, color: '#9a4a1e',

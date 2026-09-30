@@ -482,11 +482,26 @@ node tools/check-paths.js  # path büyük/küçük harf + root-absolute kontrol�
 
 ### Phase 12 — Final QA ve v1.0.0
 
-- [ ] Tarayıcı ve cihaz manuel checklist'i
-- [ ] 30 dakikalık uzun koşu
-- [ ] Dokümanlar güncel
-- [ ] Known Issues
-- [ ] `v1.0.0` tag'i
+- [x] Uzun koşu (dayanıklılık, `node --expose-gc tools/soak.js`):
+  - [x] Volkan, Benchmark ve Kaos sahneleri 36 000'er tick (60 TPS'de 10 dakikalık simülasyon)
+  - [x] değişmez hatası yok, parçacık sayısı sınırlı
+  - [x] GC sonrası heap büyümesi +0,01–0,02 MB (sızıntı yok)
+- [x] Tarayıcı uzun koşusu (Chrome, canlı site): 3000 kare adım + render, kare başına ~3,5 ms, heap +0,5 MB (GC'siz ölçüm dalgalanması)
+- [x] İnceleme ertelemelerinin kapanışı:
+  - [x] engine statik kaynak taraması testi
+  - [x] `serve` ters bölü traversal testi
+  - [x] path denetleyicisi kapsamı
+  - [x] workflow izinleri
+- [x] Final QA'da bulunan ve düzeltilen hatalar:
+  - [x] **Volkan lavı dar/dikey gridlerde sol yamaca taşıyordu.**
+    - Sebep: baca, dik koninin tepesinden genişti.
+    - Çözüm: yamuk koni (geniş plato) ve içeriden dışarıya oyulan çanak.
+    - Regresyon testi: 7 grid boyutu × 4 seed.
+  - [x] **Bitki gölü çok hızlı kaplıyordu.** Büyüme olasılığı 0,05 → 0,012, bütçe 12 → 8 ("yavaş yayılmalı" gereksinimi).
+- [x] Dokümanlar güncel: README ekran görüntüleri ve bilinen sınırlamalar, ARCHITECTURE, DECISIONS, CHANGELOG 0.9.0
+- [x] Known Issues listesi (README "Bilinen sınırlamalar")
+- [ ] **Senin adımın — manuel checklist:** Firefox, Safari, iOS Safari, Android Chrome; gerçek cihazda touch/stylus (aşağıdaki "Manuel test checklist")
+- [ ] **`v1.0.0` tag'i:** manuel checklist tamamlanınca (senin onayınla)
 
 ---
 
@@ -624,6 +639,13 @@ Uygulama sırasında plandan sapan ya da planın cevaplamadığı kararlar. Kal�
   - Ek gerekçe: optimizasyondan sonra yerleşmiş kum RNG tüketmiyor; ileride chunk eklenirse uyuyan bölgelerin determinizme etkisi de azalmış oldu.
 - **2026-09-30 · Phase 10 — Değişmez kontrolü ayrı bayrakta.**
   - Karar: `?debug=1` yalnızca debug panelini ve `window.__strata`'yı açıyor. Her tick yapılan değişmez kontrolü `?invariants=1` ile ayrı açılıyor.
+
+- **2026-09-30 · Phase 12 — Sürüm 0.9.0, v1.0.0 etiketi yok.**
+  - Karar: sürüm 0.9.0 olarak işaretlendi; v1.0.0 etiketi atılmadı.
+  - Neden: plan, v1.0.0'ı gerçek cihaz ve tarayıcı testlerinden sonraya koyuyor. Bu ortamda yalnızca Chromium (Playwright) test edilebildi.
+- **2026-09-30 · Phase 12 — Bitki büyüme hızı yavaşlatıldı.**
+  - Karar: `plantGrow` 0,012, bitki bütçesi 8.
+  - Neden: görsel QA'da Volkan'daki göl yaklaşık 12 saniyede tamamen bitkiyle kaplanıyordu.
 
 ### Phase 0–1 bağımsız inceleme (2026-09-30)
 

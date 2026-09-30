@@ -20,7 +20,7 @@ export const RATES = Object.freeze({
   sandHeatGain: 16, // lava kum komşusunu örneklediğinde kumun ısı artışı
   glassHeat: 300, // bu ısıya ulaşan kum cama döner (kum tick başına 1 soğur)
   condenseToWater: p(0.6), // buhar ömrü bitince suya dönme olasılığı (yoksa kaybolur)
-  plantGrow: p(0.05), // bitkinin tick başına büyüme denemesi olasılığı
+  plantGrow: p(0.012), // bitkinin tick başına büyüme denemesi olasılığı (yavaş yayılım)
   maxFireSpawnPerTick: 400, // yanan materyallerin tick başına üretebileceği en fazla ateş
   maxGrowthPerTick: 24, // tick başına en fazla bitki büyümesi (dünya genelinde)
 });

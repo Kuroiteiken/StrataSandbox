@@ -54,6 +54,18 @@ test('Volcano taş, lav, kum, su, bitki ve odun içerir', () => {
   }
 });
 
+test('Volcano lavı yalnızca sağ yarıktan taşar; sol taraftaki göle ulaşmaz', () => {
+  for (const [w, h] of [[320, 180], [124, 142], [165, 318], [280, 207], [100, 300], [64, 48], [400, 225]]) {
+    for (const seed of ['l1', 'l2', 'l3', 'readme']) {
+      const sim = load('volcano', seed, w, h);
+      runTicks(sim, 600);
+      let leftLava = 0;
+      for (let y = 0; y < h; y++) for (let x = 0; x < Math.floor(w * 0.22); x++) if (cellType(sim, x, y) === MAT.LAVA) leftLava++;
+      assert.equal(leftLava, 0, `${w}×${h} seed ${seed}: sol bölgede ${leftLava} lav hücresi`);
+    }
+  }
+});
+
 test('Volcano ve Oasis seed ile değişir', () => {
   assert.notEqual(typeHash(load('volcano', 'a')), typeHash(load('volcano', 'b')));
   assert.notEqual(typeHash(load('oasis', 'a')), typeHash(load('oasis', 'b')));
