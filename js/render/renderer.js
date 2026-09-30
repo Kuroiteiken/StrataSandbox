@@ -145,6 +145,37 @@ export class Renderer {
     ctx.restore();
   }
 
+  // PNG yakalama: arka plan + simülasyon (fırça önizlemesi hariç), mevcut çizim
+  // boyutunda. Native canvas API; harici kütüphane yok.
+  capture(view) {
+    this._ensureBuffer(view.width, view.height);
+    this._ensureLayout();
+    if (view !== this.lastView || view.version !== this.lastVersion) {
+      fillPixels(view, this.pixels, this.palette, this.ramps, this.frame, this.reducedMotion);
+      this.bufferCtx.putImageData(this.image, 0, 0);
+      this.lastView = view;
+      this.lastVersion = view.version;
+    }
+    const w = Math.max(view.width, this.layout.drawW);
+    const h = Math.max(view.height, this.layout.drawH);
+    const out = document.createElement('canvas');
+    out.width = w;
+    out.height = h;
+    const ctx = out.getContext('2d');
+    this._ensureBackground();
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(this.background, 0, 0, w, h);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(this.buffer, 0, 0, w, h);
+    return new Promise((resolve, reject) => {
+      out.toBlob((blob) => {
+        out.width = 0; // bellek
+        if (blob) resolve(blob);
+        else reject(new Error('PNG oluşturulamadı'));
+      }, 'image/png');
+    });
+  }
+
   render(view) {
     const start = performance.now();
     this.frame++;

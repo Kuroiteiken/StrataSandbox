@@ -252,6 +252,8 @@ test('Ateş parçacığı yükselir', () => {
     .....
     ..f..
   `);
+  // Hareketi ölç, ömrü değil (ateşin spawn ömrü 10–26 tick).
+  sim.world.life[sim.world.index(2, 3)] = 500;
   runTicks(sim, 20);
   let top = false;
   for (let x = 0; x < 5; x++) if (cellType(sim, x, 0) === MAT.FIRE) top = true;

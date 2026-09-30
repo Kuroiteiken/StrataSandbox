@@ -4,6 +4,9 @@
 // Proje adı: değiştirmek için burası, index.html <title> ve README yeterli.
 export const APP_NAME = 'Strata Sandbox';
 
+// Dosya adlarında kullanılan kısa ad (ör. yakalanan PNG).
+export const APP_SLUG = 'strata';
+
 // localStorage anahtarı bilinçli olarak addan bağımsızdır: ad değişince
 // kullanıcı tercihleri kaybolmaz.
 export const STORAGE_KEY = 'fsbox.prefs.v1';

@@ -38,7 +38,7 @@ Tarayıcıda çalışan, grid tabanlı bir **materyal ve fizik sandbox'ı**. Kum
 
 ## Kontroller ve kısayollar
 
-> Planlanan kısayollar. Uygulandıkça bu tablo güncellenir.
+> Uygulamadaki "Kısayollar" diyaloğu (`?`) aynı listeyi gösterir.
 
 | Tuş | İşlev |
 | --- | --- |

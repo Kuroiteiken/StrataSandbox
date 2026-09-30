@@ -9,7 +9,7 @@ Burada yalnızca gerçekten önemli teknik kararlar tutulur. Her kayıt dört ba
 
 ---
 
-### ADR-001 — Vanilla JS + native ES modules, build yok
+## ADR-001 — Vanilla JS + native ES modules, build yok
 
 - **Karar:** React/Vue gibi framework ya da Vite gibi bir build sistemi kullanılmayacak. Kod doğrudan tarayıcıda çalışan ES module'lerdir.
 - **Neden:**
@@ -21,7 +21,7 @@ Burada yalnızca gerçekten önemli teknik kararlar tutulur. Her kayıt dört ba
 - **Sonuç:** Reddedildi. Bu ölçekte belirgin bir kazanç sağlamıyor.
   - **Yeniden değerlendirme şartı:** modül sayısı yaklaşık 60'ı geçerse ya da yükleme waterfall'u ölçülebilir bir sorun olursa.
 
-### ADR-002 — Sabit iç grid; resize yalnızca sunumu değiştirir
+## ADR-002 — Sabit iç grid; resize yalnızca sunumu değiştirir
 
 - **Karar:** Fizik grid'inin boyutu açılışta, konteynıra ve cihazın hücre bütçesine göre bir kez belirlenir. Sonraki viewport değişiklikleri yalnızca görsel ölçeği etkiler.
 - **Neden:**
@@ -32,7 +32,7 @@ Burada yalnızca gerçekten önemli teknik kararlar tutulur. Her kayıt dört ba
 - **Sonuç:** Reddedildi. State kaybı ya da yeniden örnekleme karmaşıklığı getirir.
   - **Bedeli:** ekran döndüğünde kenarlarda boşluk (letterbox) kalır.
 
-### ADR-003 — v1'de per-cell sıcaklık alanı yok
+## ADR-003 — v1'de per-cell sıcaklık alanı yok
 
 - **Karar:** Reaksiyonlar temas tabanlı çalışır. Yerel ısı ve soğuma `life` sayaçlarında tutulur; örneğin lavaya dokunan kumun ısısı birikir. Tüm reaksiyonlar `heat`/`cool`/`ignite`/`transform` primitive'lerinden geçer.
 - **Neden:**
@@ -42,7 +42,7 @@ Burada yalnızca gerçekten önemli teknik kararlar tutulur. Her kayıt dört ba
 - **Alternatif:** Her hücre için `Int16Array temperature`.
 - **Sonuç:** Ertelendi. Ice, Snow ya da Metal eklendiğinde yeniden değerlendirilecek. Sıcaklık alanı primitive'lerin arkasına eklenebilir.
 
-### ADR-004 — Reaksiyonlarda "tek sahip" kuralı
+## ADR-004 — Reaksiyonlarda "tek sahip" kuralı
 
 - **Karar:** Her etkileşim çiftini yalnızca bir taraf işler; örneğin Lava↔Water etkileşimini Lava işler. Sahip hücre, her tick 8 komşusundan rastgele birini örnekler.
 - **Neden:**
@@ -54,7 +54,7 @@ Burada yalnızca gerçekten önemli teknik kararlar tutulur. Her kayıt dört ba
   - Ateş tick başına 2 komşu örnekler. Kısa ömürlü ve hareketli olduğu için tek örnekle yakıtı çoğu zaman tutuşturamıyordu.
   - Kum ısınmasını lava yönetir; kum yalnızca soğur. Büyük kum yığınlarında örnekleme maliyetini önler. Tablo: ARCHITECTURE.md §5.
 
-### ADR-005 — v1'de full-grid update; active chunk ölçüme göre
+## ADR-005 — v1'de full-grid update; active chunk ölçüme göre
 
 - **Karar:** Tüm grid her tick taranır; boş ve inert hücreler erkenden atlanır. Tüm yazmalar world primitive'lerinden geçer, böylece `markActive()` sonradan tek bir noktaya eklenebilir.
 - **Neden:**
@@ -64,7 +64,7 @@ Burada yalnızca gerçekten önemli teknik kararlar tutulur. Her kayıt dört ba
 - **Sonuç:** Ertelendi. Karar Phase 10'da benchmark ile verilecek.
   - **Eşik:** masaüstünde 1× hızda tick süresi yaklaşık 6 ms'yi aşarsa ya da mobilde hedef FPS tutmazsa chunk sistemi eklenir.
 
-### ADR-006 — Fixed timestep, limitli accumulator
+## ADR-006 — Fixed timestep, limitli accumulator
 
 - **Karar:** Taban hız 60 TPS; hız çarpanı tick aralığını değiştirir (0.5×–4×).
   - `dt` en fazla 100 ms'ye kırpılır.
@@ -77,7 +77,7 @@ Burada yalnızca gerçekten önemli teknik kararlar tutulur. Her kayıt dört ba
 - **Alternatif:** Frame'e bağlı fizik; hızlandırmada parçacığın tick başına birden fazla hücre ilerlemesi.
 - **Sonuç:** Reddedildi.
 
-### ADR-007 — İki geçişli tick ve stamp kuralları
+## ADR-007 — İki geçişli tick ve stamp kuralları
 
 - **Karar:**
   - Birinci geçiş aşağıdan yukarı yapılır, ikinci geçiş yukarıdan aşağı ve yalnızca gazlar için.
@@ -93,12 +93,12 @@ Burada yalnızca gerçekten önemli teknik kararlar tutulur. Her kayıt dört ba
 - **Alternatif:** Tek geçiş; gazlar için ayrı bir tarama olmaması.
 - **Sonuç:** Reddedildi. Tek geçişte gazlar tırtıl gibi yükselir.
 
-### ADR-008 — Seed'li PRNG: sfc32 + cyrb128, ayrı stream'ler
+## ADR-008 — Seed'li PRNG: sfc32 + cyrb128, ayrı stream'ler
 
 - **Karar:**
   - String seed cyrb128 ile hash'lenir, çıkan değerle sfc32 başlatılır.
   - Sahne, fizik ve input için ayrı stream'ler kullanılır.
-  - Kozmetik ton `hash(index, version)` ile hesaplanır; sim RNG'si tüketilmez.
+  - Spawn anındaki kozmetik ton, sıvı yön bit'i ve ömür `hash(index, tick, seed)` ile hesaplanır. Sim RNG'si tüketilmez ve sonuç çağrı geçmişinden bağımsızdır (sahne determinizmi).
   - Engine'de `Math.random` kullanılmaz. Testler bunu, çağrıldığında hata fırlatan bir stub'la doğrular.
 - **Neden:**
   - Debug edilebilirlik ve deterministik sahneler.
@@ -107,7 +107,7 @@ Burada yalnızca gerçekten önemli teknik kararlar tutulur. Her kayıt dört ba
 - **Alternatif:** `Math.random`; tek bir global stream.
 - **Sonuç:** Reddedildi.
 
-### ADR-009 — Renderer: ImageData + Uint32 LUT + katmanlı birleştirme
+## ADR-009 — Renderer: ImageData + Uint32 LUT + katmanlı birleştirme
 
 - **Karar:**
   - Grid boyutunda tek bir `ImageData` kullanılır; renkler Uint32 palet tablosundan okunur.
@@ -120,7 +120,7 @@ Burada yalnızca gerçekten önemli teknik kararlar tutulur. Her kayıt dört ba
 - **Alternatif:** Her parçacık için `fillRect`; WebGL.
 - **Sonuç:** Reddedildi. WebGL gereksiz karmaşıklık getirir.
 
-### ADR-010 — Undo: stroke başında snapshot
+## ADR-010 — Undo: stroke başında snapshot
 
 - **Karar:** Her stroke'un başında dünyanın önceden ayrılmış buffer'lara tam kopyası alınır. Kopyaya type, variant, life, flags, RNG state ve tick dahildir.
   - Undo tek seviyelidir ve dünyayı çizimden hemen önceki ana döndürür.
@@ -130,7 +130,7 @@ Burada yalnızca gerçekten önemli teknik kararlar tutulur. Her kayıt dört ba
 - **Sonuç:** Reddedildi.
   - **Bilinen bedel:** çizimden sonra geçen simülasyon süresi de geri alınır.
 
-### ADR-011 — GitHub Pages: Actions workflow ile yalnızca uygulama dosyaları
+## ADR-011 — GitHub Pages: Actions workflow ile yalnızca uygulama dosyaları
 
 - **Karar:** `.github/workflows/pages.yml` akışı şöyledir:
   1. Her `main` push'unda testler Linux'ta çalışır.
@@ -143,14 +143,14 @@ Burada yalnızca gerçekten önemli teknik kararlar tutulur. Her kayıt dört ba
 - **Alternatif:** `main` branch / root + `.nojekyll` (ilk plan).
 - **Sonuç:** Planı revize eder. Branch yayını reddedildi.
 
-### ADR-012 — Küçük harfli dosya adları + path denetleyicisi
+## ADR-012 — Küçük harfli dosya adları + path denetleyicisi
 
 - **Karar:** Tüm dosya adları küçük harfle yazılır; sınıf adları kod içinde PascalCase kalır. `tools/check-paths.js`, import'ları ve HTML path'lerini diskteki gerçek adlarla karşılaştırır.
 - **Neden:** Geliştirme Windows'ta yapılıyor ve Windows büyük/küçük harf ayırmaz. GitHub Pages ise ayırır; yanlış harfle yazılmış bir import yalnızca yayında 404 verir.
 - **Alternatif:** PascalCase dosya adları ve dikkatli olmak.
 - **Sonuç:** Reddedildi.
 
-### ADR-013 — Sıfır bağımlılıklı yerel sunucu
+## ADR-013 — Sıfır bağımlılıklı yerel sunucu
 
 - **Karar:** Yerel geliştirme için `tools/serve.js` kullanılır (`npm run serve`).
 - **Neden:**

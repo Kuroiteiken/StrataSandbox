@@ -1,0 +1,157 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { MAT } from '../js/engine/materials.js';
+import { Simulation } from '../js/engine/simulation.js';
+import { createApp, randomSeed } from '../js/app/app.js';
+import { DEFAULT_PREFS, loadPrefs, isValidSeed } from '../js/app/storage.js';
+import { STORAGE_KEY } from '../js/config.js';
+import { hashView } from './helpers.js';
+
+function fakeDoc() {
+  const announcer = { textContent: '' };
+  const dialog = {
+    open: false,
+    showModal() {
+      this.open = true;
+    },
+  };
+  return {
+    announcer,
+    dialog,
+    getElementById: (id) => ({ announcer, 'help-dialog': dialog })[id] ?? null,
+  };
+}
+
+function memoryStorage() {
+  const data = {};
+  return { data, getItem: (k) => data[k] ?? null, setItem: (k, v) => (data[k] = String(v)) };
+}
+
+function setup(prefs = {}) {
+  const sim = new Simulation({ width: 80, height: 50, debug: true });
+  const renderer = { seeds: [], setBackground(seed) { this.seeds.push(seed); } };
+  const storage = memoryStorage();
+  const doc = fakeDoc();
+  const app = createApp({ sim, renderer, prefs: { ...DEFAULT_PREFS, ...prefs }, storage, doc });
+  app.load();
+  return { sim, renderer, storage, doc, app };
+}
+
+test('hız değişimi desteklenen sıraya göre ilerler ve uçlarda durur', () => {
+  const { app, sim } = setup({ speed: 1 });
+  app.actions.changeSpeed(1);
+  assert.equal(sim.speed, 2);
+  app.actions.changeSpeed(1);
+  app.actions.changeSpeed(1);
+  assert.equal(sim.speed, 4);
+  for (let k = 0; k < 5; k++) app.actions.changeSpeed(-1);
+  assert.equal(sim.speed, 0.5);
+});
+
+test('şekil döngüsü Daire → Kare → Sprey → Daire', () => {
+  const { app } = setup({ brushShape: 'circle' });
+  const seen = [];
+  for (let k = 0; k < 3; k++) {
+    app.actions.cycleShape();
+    seen.push(app.state.brushShape);
+  }
+  assert.deepEqual(seen, ['square', 'spray', 'circle']);
+});
+
+test('fırça boyutu 1..16 dışına çıkmaz', () => {
+  const { app } = setup({ brushSize: 15 });
+  app.actions.changeBrushSize(5);
+  assert.equal(app.state.brushSize, 16);
+  app.actions.setBrushSize(-3);
+  assert.equal(app.state.brushSize, 1);
+});
+
+test('step simülasyonu duraklatır ve tam olarak bir tick ilerletir', () => {
+  const { app, sim } = setup();
+  const t = sim.tick;
+  app.actions.step();
+  assert.equal(sim.isPaused, true);
+  assert.equal(sim.tick, t + 1);
+  app.actions.step();
+  assert.equal(sim.tick, t + 2);
+});
+
+test('togglePause duraklatır/sürdürür ve ekran okuyucuya duyurur', () => {
+  const { app, sim, doc } = setup();
+  app.actions.togglePause();
+  assert.equal(sim.isPaused, true);
+  assert.match(doc.announcer.textContent, /Duraklat/);
+  app.actions.togglePause();
+  assert.equal(sim.isPaused, false);
+});
+
+test('geçersiz seed reddedilir, geçerli seed sahneyi o seed ile yeniden üretir', () => {
+  const { app, sim, renderer } = setup({ seed: 'first' });
+  assert.equal(app.actions.setSeed('bad seed!'), false);
+  assert.equal(app.state.seed, 'first');
+  assert.equal(app.actions.setSeed('second'), true);
+  assert.equal(sim.seed, 'second');
+  assert.equal(renderer.seeds.at(-1), 'second');
+});
+
+test('aynı sahne + seed ile yeniden üretmek aynı başlangıç dünyasını verir', () => {
+  const { app, sim } = setup({ scene: 'demo', seed: 'repeat' });
+  const h = hashView(sim);
+  sim.paintAt(10, 10, { material: MAT.STONE, size: 8, shape: 'square' });
+  app.actions.regenerate();
+  assert.equal(hashView(sim), h);
+});
+
+test('newSeed geçerli ve farklı bir seed üretir', () => {
+  const { app } = setup({ seed: 'orig' });
+  app.actions.newSeed();
+  assert.notEqual(app.state.seed, 'orig');
+  assert.ok(isValidSeed(app.state.seed));
+  for (let k = 0; k < 50; k++) assert.ok(isValidSeed(randomSeed()));
+});
+
+test('tercihler gecikmeli olarak kaydedilir ve geri okunabilir', async () => {
+  const { app, storage } = setup();
+  app.actions.setMaterial('LAVA');
+  app.actions.setBrushSize(11);
+  app.actions.setBrushShape('spray');
+  assert.equal(storage.data[STORAGE_KEY], undefined, 'hemen yazılmamalı (debounce)');
+  await new Promise((r) => setTimeout(r, 400));
+  const saved = loadPrefs(storage, STORAGE_KEY);
+  assert.equal(saved.material, 'LAVA');
+  assert.equal(saved.brushSize, 11);
+  assert.equal(saved.brushShape, 'spray');
+});
+
+test('fırça durumu engine brush nesnesine çevrilir (silgi = EMPTY)', () => {
+  const { app } = setup({ material: 'ERASER', brushSize: 4, brushShape: 'square' });
+  assert.deepEqual(app.brush(), { material: MAT.EMPTY, size: 4, shape: 'square', replace: false });
+  app.actions.setReplace(true);
+  assert.equal(app.brush().replace, true);
+});
+
+test('klavye eylemleri uygulama eylemlerine dağıtılır', () => {
+  const { app, sim, doc } = setup();
+  app.dispatch({ type: 'material', key: 'WATER' });
+  assert.equal(app.state.material, 'WATER');
+  app.dispatch({ type: 'togglePause' });
+  assert.equal(sim.isPaused, true);
+  app.dispatch({ type: 'help' });
+  assert.equal(doc.dialog.open, true);
+  sim.beginStroke();
+  sim.paintAt(5, 5, { material: MAT.STONE, size: 2, shape: 'square' });
+  sim.endStroke();
+  app.dispatch({ type: 'undo' });
+  assert.equal(sim.canUndo, false);
+});
+
+test('clear geri alınabilir ve bunu duyurur', () => {
+  const { app, sim, doc } = setup();
+  const before = sim.getStats().particles;
+  assert.ok(before > 0, 'demo sahnesi boş olmamalı');
+  app.actions.clear();
+  assert.equal(sim.getStats().particles, 0);
+  assert.match(doc.announcer.textContent, /Geri al/);
+  app.actions.undo();
+  assert.equal(sim.getStats().particles, before);
+});

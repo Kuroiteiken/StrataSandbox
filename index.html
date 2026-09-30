@@ -8,26 +8,136 @@
   <meta name="theme-color" content="#14110e">
   <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./css/base.css">
+  <link rel="stylesheet" href="./css/layout.css">
+  <link rel="stylesheet" href="./css/controls.css">
   <script type="module" src="./js/main.js"></script>
 </head>
 <body>
   <div class="app">
     <header class="app-header">
-      <h1 class="app-title"><span data-app-name>Strata Sandbox</span></h1>
-      <p class="app-subtitle">materyal fiziği</p>
+      <div class="brand">
+        <h1 class="app-title"><span data-app-name>Strata Sandbox</span></h1>
+        <p class="app-subtitle">materyal fiziği</p>
+      </div>
+      <dl class="readout" aria-label="Durum">
+        <div><dt>Parçacık</dt><dd data-stat="particles">0</dd></div>
+        <div><dt>FPS</dt><dd data-stat="fps">0</dd></div>
+        <div><dt>Grid</dt><dd data-stat="grid">–</dd></div>
+        <div><dt>Hız</dt><dd data-stat="speed">1×</dd></div>
+        <div><dt>Seed</dt><dd data-stat="seed">–</dd></div>
+      </dl>
     </header>
 
     <main class="stage" id="stage">
       <div class="viewport" id="viewport">
-        <canvas id="world-canvas" role="img" aria-label="Simülasyon alanı"></canvas>
+        <canvas id="world-canvas" role="img" aria-label="Simülasyon alanı. Fare, dokunma ya da kalemle materyal çizin; sağ tık siler."></canvas>
       </div>
     </main>
 
     <aside class="panel" id="panel" aria-label="Kontroller">
-      <p class="panel-note">Kontroller yapım aşamasında.</p>
+      <section class="panel-section" aria-labelledby="h-material">
+        <h2 class="section-title" id="h-material">Materyal</h2>
+        <div class="specimens" id="material-picker" role="radiogroup" aria-labelledby="h-material"></div>
+      </section>
+
+      <section class="panel-section" aria-labelledby="h-brush">
+        <h2 class="section-title" id="h-brush">Fırça</h2>
+        <label class="field" for="brush-size">
+          <span class="field-label">Boyut <output id="brush-size-out" for="brush-size">6</output> <kbd>[</kbd> <kbd>]</kbd></span>
+          <input type="range" id="brush-size" min="1" max="16" step="1" value="6">
+        </label>
+        <fieldset class="segmented" id="brush-shape">
+          <legend class="field-label">Şekil <kbd>S</kbd></legend>
+          <label><input type="radio" name="brush-shape" value="circle" checked><span>Daire</span></label>
+          <label><input type="radio" name="brush-shape" value="square"><span>Kare</span></label>
+          <label><input type="radio" name="brush-shape" value="spray"><span>Sprey</span></label>
+        </fieldset>
+        <label class="toggle">
+          <input type="checkbox" id="brush-replace">
+          <span>Üzerine yaz <kbd>Shift</kbd></span>
+        </label>
+      </section>
+
+      <section class="panel-section" aria-labelledby="h-sim">
+        <h2 class="section-title" id="h-sim">Simülasyon</h2>
+        <div class="button-row">
+          <button type="button" class="btn" id="btn-play" aria-pressed="false">Duraklat <kbd>Space</kbd></button>
+          <button type="button" class="btn" id="btn-step">Adım <kbd>.</kbd></button>
+        </div>
+        <fieldset class="segmented" id="speed">
+          <legend class="field-label">Hız <kbd>−</kbd> <kbd>+</kbd></legend>
+          <label><input type="radio" name="speed" value="0.5"><span>0.5×</span></label>
+          <label><input type="radio" name="speed" value="1" checked><span>1×</span></label>
+          <label><input type="radio" name="speed" value="2"><span>2×</span></label>
+          <label><input type="radio" name="speed" value="4"><span>4×</span></label>
+        </fieldset>
+        <div class="button-row">
+          <button type="button" class="btn" id="btn-undo" title="Dünyayı son çizimden önceki ana döndürür">Geri al <kbd>Ctrl Z</kbd></button>
+          <button type="button" class="btn btn-danger" id="btn-clear">Temizle</button>
+        </div>
+      </section>
+
+      <section class="panel-section" aria-labelledby="h-scene">
+        <h2 class="section-title" id="h-scene">Sahne</h2>
+        <label class="field" for="scene-select">
+          <span class="field-label">Sahne</span>
+          <select id="scene-select"></select>
+        </label>
+        <label class="field" for="seed-input">
+          <span class="field-label">Seed</span>
+          <input id="seed-input" type="text" maxlength="32" spellcheck="false" autocomplete="off" autocapitalize="off" pattern="[A-Za-z0-9_\-]{1,32}" aria-describedby="seed-hint">
+        </label>
+        <p class="hint" id="seed-hint">Harf, rakam, - ve _ (en fazla 32). Aynı seed aynı sahneyi üretir.</p>
+        <div class="button-row">
+          <button type="button" class="btn" id="btn-regenerate">Yeniden üret</button>
+          <button type="button" class="btn" id="btn-new-seed">Yeni seed</button>
+        </div>
+      </section>
+
+      <section class="panel-section">
+        <div class="button-row">
+          <button type="button" class="btn" id="btn-capture">Görüntü al</button>
+          <button type="button" class="btn" id="btn-help" aria-haspopup="dialog">Kısayollar <kbd>?</kbd></button>
+        </div>
+      </section>
+
+      <section class="panel-section debug-panel" id="debug-panel" aria-labelledby="h-debug" hidden>
+        <h2 class="section-title" id="h-debug">Debug</h2>
+        <dl class="readout readout-grid">
+          <div><dt>Fizik ms</dt><dd data-stat="physicsMs">–</dd></div>
+          <div><dt>Render ms</dt><dd data-stat="renderMs">–</dd></div>
+          <div><dt>TPS</dt><dd data-stat="tps">–</dd></div>
+          <div><dt>Aktif hücre</dt><dd data-stat="activeCells">–</dd></div>
+          <div><dt>Kalite</dt><dd data-stat="quality">–</dd></div>
+          <div><dt>İmleç</dt><dd data-stat="cursorCell">–</dd></div>
+          <div><dt>Materyal</dt><dd data-stat="cursorMaterial">–</dd></div>
+        </dl>
+      </section>
     </aside>
   </div>
 
+  <dialog class="dialog" id="help-dialog" aria-labelledby="help-title">
+    <h2 class="section-title" id="help-title">Klavye kısayolları</h2>
+    <table class="shortcuts">
+      <tbody>
+        <tr><th scope="row"><kbd>1</kbd>–<kbd>9</kbd>, <kbd>0</kbd></th><td>Kum, Su, Taş, Ateş, Odun, Buhar, Yağ, Lav, Bitki, Silgi</td></tr>
+        <tr><th scope="row"><kbd>G</kbd></th><td>Cam</td></tr>
+        <tr><th scope="row"><kbd>Space</kbd></th><td>Duraklat / Devam</td></tr>
+        <tr><th scope="row"><kbd>.</kbd></th><td>Tek adım</td></tr>
+        <tr><th scope="row"><kbd>[</kbd> <kbd>]</kbd></th><td>Fırça küçült / büyüt</td></tr>
+        <tr><th scope="row"><kbd>S</kbd></th><td>Fırça şekli: Daire → Kare → Sprey</td></tr>
+        <tr><th scope="row"><kbd>−</kbd> <kbd>+</kbd></th><td>Simülasyon hızı</td></tr>
+        <tr><th scope="row"><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Z</kbd></th><td>Son çizimi geri al</td></tr>
+        <tr><th scope="row">Sağ tık</th><td>Geçici silgi</td></tr>
+        <tr><th scope="row"><kbd>Shift</kbd> + çizim</th><td>Dolu hücrelerin üzerine yaz</td></tr>
+      </tbody>
+    </table>
+    <form method="dialog" class="dialog-actions">
+      <button class="btn" value="close">Kapat</button>
+    </form>
+  </dialog>
+
+  <p class="sr-only" id="announcer" aria-live="polite"></p>
   <noscript><p class="noscript">Bu uygulama JavaScript gerektirir.</p></noscript>
 </body>
 </html>

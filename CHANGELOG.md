@@ -5,6 +5,28 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) yaklaşımını 
 
 ## [Unreleased]
 
+### Added — Phase 6 (UI)
+
+- Kontrol paneli:
+  - Materyal seçici (numune kartları, doku örneği, kısayol)
+  - Fırça boyutu, şekli ve "Üzerine yaz"
+  - Duraklat/Devam, Adım, Hız (0.5×–4×), Geri al, Temizle
+  - Sahne ve Seed seçimi, Yeniden üret, Yeni seed
+  - Görüntü al (PNG)
+  - Kısayollar diyaloğu
+- Klavye kısayolları: 1–0, G, Space, `.`, `[` `]`, S, `+`/`−`, `?`, Ctrl/Cmd+Z. Metin alanlarında devre dışı; Türkçe Q klavyede AltGr desteği.
+- Durum göstergesi (parçacık, FPS, grid, hız, seed) ve `?debug=1` paneli.
+- Tercihler localStorage'da saklanıyor (materyal, fırça, hız, kalite, seed, sahne); bozuk veri ve erişim hatalarına dayanıklı.
+- URL parametreleri: `?scene=`, `?seed=`, `?debug=1`.
+- `Simulation.loadScene(scene, seed)` ve sahne kaydı.
+- Ekran okuyucu duyuruları (`aria-live`), görünür odak, seçili materyal renkten bağımsız belirtiliyor.
+- Testler: app-modules, app ve genişletilmiş renderer/simulation (toplam 236).
+
+### Changed
+
+- Arayüz dili Türkçe.
+- Spawn hash'i `(index, tick, seed)` üzerinden hesaplanıyor; sahne üretimi çağrı geçmişinden bağımsız.
+
 ### Added — Phase 5 (Input / Brush / Undo)
 
 - Fırça: Circle, Square, Spray (boyut 1–16).

@@ -1,7 +1,7 @@
 // Physics engine public API. DOM'a dokunmaz; tarayıcıda ve Node'da aynı çalışır.
 // Zamanlama: fixed timestep (ADR-006). Tick sırası: iki geçiş + stamp (ADR-007).
 import { World } from './world.js';
-import { Rng } from './rng.js';
+import { Rng, hashSeed } from './rng.js';
 import { MAT, KIND, MATERIALS } from './materials.js';
 import { stepPowder, stepLiquid, stepGas } from './kernels.js';
 import { react, createReactionState, beginReactionTick, initialLife } from './reactions.js';
@@ -40,6 +40,7 @@ export class Simulation {
     this.seed = String(seed);
     this.rng = new Rng(this.seed, 'sim');
     this.inputRng = new Rng(this.seed, 'input'); // spray; fizik dizisini etkilemez
+    this._seedSalt = hashSeed(this.seed)[0]; // spawn hash'i için seed'e bağlı tuz
     this.debug = debug;
     this.tick = 0;
     this.speed = 1;
@@ -181,6 +182,12 @@ export class Simulation {
     if (this.debug) this._assertInvariants();
   }
 
+  // Spawn hash tuzu: (tick, seed). Çağrı geçmişinden (version) bağımsız olduğu için
+  // aynı seed + aynı tick'te aynı hücre her zaman aynı ton/yön/ömrü alır (sahne determinizmi).
+  _spawnSalt() {
+    return Math.imul(this.tick + 1, 0x9e3779b1) ^ this._seedSalt;
+  }
+
   _gasCount() {
     const counts = this.world.counts;
     let n = 0;
@@ -202,7 +209,7 @@ export class Simulation {
     const def = MATERIALS.defs[material];
     if (!def || def.internal) return false;
     const i = w.index(x, y);
-    const h = spawnHash(i, this.version);
+    const h = spawnHash(i, this._spawnSalt());
     w.set(i, material, h & 255, initialLife(material, h >>> 9), (h >>> 8) & 1);
     this.version++;
     return true;
@@ -221,6 +228,27 @@ export class Simulation {
     this._capture(snap);
     this._undo = snap;
     this.world.clear();
+    this.version++;
+  }
+
+  // Sahne yükleme: dünya temizlenir, seed'e bağlı RNG stream'leri yeniden kurulur,
+  // tick/undo/hold sıfırlanır ve sahne kendi 'scene' stream'iyle üretilir.
+  // Sahne nesnesi dışarıdan verilir ({ id, generate(sim, rng) }); engine sahne kaydını bilmez.
+  // Aynı (sahne, seed, W, H) her zaman aynı başlangıcı üretir.
+  loadScene(scene, seed = this.seed) {
+    this.seed = String(seed);
+    this.rng = new Rng(this.seed, 'sim');
+    this.inputRng = new Rng(this.seed, 'input');
+    this._seedSalt = hashSeed(this.seed)[0];
+    this.world.clear();
+    this.tick = 0;
+    this._acc = 0;
+    this._hold = null;
+    this._undo = null;
+    this._pending = null;
+    this._strokeDirty = false;
+    scene.generate(this, new Rng(this.seed, 'scene'));
+    this._undo = null; // sahne üretimi geri alınabilir bir işlem değildir
     this.version++;
   }
 
@@ -267,7 +295,7 @@ export class Simulation {
     }
     if (current === material) return 0;
     if (!replace && current !== EMPTY && KIND_OF[current] !== GAS) return 0;
-    const h = spawnHash(i, this.version);
+    const h = spawnHash(i, this._spawnSalt());
     w.set(i, material, h & 255, initialLife(material, h >>> 9), (h >>> 8) & 1);
     return 1;
   }

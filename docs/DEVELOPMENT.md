@@ -292,26 +292,50 @@ node tools/check-paths.js  # path büyük/küçük harf + root-absolute kontrol�
 
 ### Phase 6 — UI ve uygulama katmanı
 
-- [ ] Semantik yapı, `layout.css`, `controls.css` (iskelet `base.css`'ten taşınır)
-- [ ] `controls.js`:
-  - [ ] material picker (numune kartları)
-  - [ ] brush size ve shape
-  - [ ] Play/Pause, Step, Speed, Clear
-  - [ ] Scene, Seed, New Seed, Regenerate
-  - [ ] Capture, Undo, Replace
-- [ ] `keyboard.js`:
-  - [ ] 1–0, G, Space, `.`, `[`, `]`
-  - [ ] Ctrl/Cmd+Z, S, `+`/`−`, `?`
-  - [ ] input'a odaklanınca kısayollar devre dışı
-- [ ] `stats.js`: yaklaşık 400 ms throttle; `?debug=1` paneli
-- [ ] `storage.js`: try/catch, şema doğrulama, clamp
-- [ ] URL parametreleri: `?debug=1`, `?scene=`, `?seed=`; debug'da `window.__strata`
-- [ ] Capture PNG
-- [ ] **Test:**
-  - [ ] storage stub
-  - [ ] stats sıklığı
-  - [ ] MCP smoke testleri
-  - [ ] capture
+- [x] Semantik `index.html`:
+  - [x] header + durum göstergesi, canvas bölgesi, `aside` panel ve bölümleri
+  - [x] `dialog` (kısayollar)
+  - [x] `aria-live` duyurucu
+- [x] CSS:
+  - [x] `base.css` (token'lar, ortak öğeler)
+  - [x] `layout.css` (iskelet, dar ekranda alt alta; canvas kenar cetveli)
+  - [x] `controls.css` (numune kartları, segmentli seçim, butonlar, alanlar, göstergeler)
+- [x] `app/catalog.js`: materyal sırası, Türkçe etiketler, kısayollar
+- [x] `app/controls.js`:
+  - [x] numune kartları (radiogroup; doku örneği paletten)
+  - [x] fırça boyutu, şekil, üzerine yaz
+  - [x] Duraklat/Devam, Adım, Hız, Geri al, Temizle
+  - [x] Sahne, Seed, Yeniden üret, Yeni seed
+  - [x] Görüntü al, Kısayollar
+- [x] `app/app.js`: uygulama durumu ve eylemleri, geciktirilmiş tercih kaydı, duyurular, capture indirme, klavye dağıtımı
+- [x] `app/keyboard.js`:
+  - [x] 1–0, G, Space, `.`, `[` `]`, S, `+` `=` `−`, `?`, Ctrl/Cmd+Z
+  - [x] metin alanlarında devre dışı
+  - [x] AltGr (Türkçe Q) desteği
+  - [x] odaklı butonda Space butonu tetikler
+- [x] `app/stats.js`:
+  - [x] PARTICLES/FPS/GRID/SPEED/SEED (yaklaşık 400 ms, yalnızca değişen değerler yazılır)
+  - [x] `?debug=1` paneli: fizik ms, render ms, TPS, aktif hücre, kalite, imleç hücresi ve materyali
+- [x] `app/storage.js`: try/catch, şema doğrulama, clamp, güvenli seed deseni; `safeLocalStorage`
+- [x] URL parametreleri: `?debug=1`, `?scene=`, `?seed=`; debug'da `window.__strata`
+- [x] Capture: arka plan + sim (önizleme hariç) → PNG indirme (`strata-<sahne>-<seed>-<zaman>.png`)
+- [x] `Simulation.loadScene(scene, seed)`, sahne kaydı (`scenes/index.js`: Demo, Boş)
+- [x] **Test** (`app-modules`, `app`, `renderer` + `simulation`; suite 236/236):
+  - [x] Storage: bozuk JSON, erişim hatası, geçersiz alanlar, gidiş-dönüş
+  - [x] Kısayol eşlemesi, modifier'lar, AltGr, metin alanında devre dışı
+  - [x] Stats: biçimleme, FPS/TPS ölçümü
+  - [x] Uygulama eylemleri (sahte doc)
+  - [x] `loadScene` determinizmi ve sıfırlama; sahne sonrası undo yok
+  - [x] Capture: PNG, önizleme hariç
+  - [x] Tarayıcı (Playwright): konsol temiz
+    - [x] kartlar ve seçili durum
+    - [x] kısayollar (2, `]`, S, Space)
+    - [x] Adım tam 1 tick; hız butonu
+    - [x] seed girişi ve istatistik güncellemesi
+    - [x] yardım diyaloğu (Esc kapatır)
+    - [x] metin alanında kısayol yok
+    - [x] Esc seed düzenlemesini iptal eder, geçersiz seed reddedilir
+    - [x] 1440 ve 360 px'te yatay scroll yok
 
 ### Phase 7 — Procedural Scenes
 
@@ -486,6 +510,21 @@ Uygulama sırasında plandan sapan ya da planın cevaplamadığı kararlar. Kal�
   - İnceleme bulgusu #7 kapandı: `counts` da snapshot'a dahil.
 - **2026-09-30 · Phase 5 — Fırça boyutu = çap.**
   - Karar: boyut çap (1–16); çift boyutlarda merkez iki hücre arasında.
+
+- **2026-09-30 · Phase 6 — Arayüz dili Türkçe.**
+  - Karar: arayüz dili Türkçe (Kum, Su, Taş…). Engine'deki İngilizce materyal adları tanımlayıcı olarak kalıyor.
+  - Neden: sayfa `lang="tr"` ve kullanıcı Türkçe iletişim kuruyor.
+  - Yanlışsa maliyeti: `catalog.js` etiketlerinin değiştirilmesi.
+- **2026-09-30 · Phase 6 — Spawn hash'i `(index, tick, seed)`.**
+  - Karar: spawn hash tuzu `version` yerine `(tick, seed)`.
+  - Neden: `loadScene` testinde, sahneden önce yapılan fazladan bir `setCell` sahnenin tonlarını değiştiriyordu. Determinizm çağrı geçmişinden bağımsız olmalı. ADR-008 güncellendi.
+- **2026-09-30 · Phase 6 — Sahne üretimi undo noktası bırakmaz.**
+  - Karar: sahne üretimi undo noktası bırakmıyor. Demo artık kendi içinde `clear()` çağırmıyor; `loadScene` undo'yu üretimden sonra da sıfırlıyor (regresyon testi var).
+- **2026-09-30 · Phase 6 — Esc ile seed iptali.**
+  - Karar: seed alanında Esc, değeri odaklanmadan önceki haline döndürüp odaktan çıkıyor. Tarayıcı testinde yakalanan hata: düzenleme yine de uygulanıyordu.
+- **2026-09-30 · Phase 6 — Mutasyon notu.**
+  - "Hızın uçlarda sıkıştırılmaması" eşdeğer bir mutasyon: `setSpeed` geçersiz değeri zaten reddediyor.
+  - Tercih kaydının gecikmesi yalnızca "senkron yazılmaz" düzeyinde test ediliyor (minor).
 
 ### Phase 0–1 bağımsız inceleme (2026-09-30)
 

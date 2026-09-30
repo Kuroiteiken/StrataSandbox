@@ -173,3 +173,44 @@ test('view her tick\'te version sayacını artırır', () => {
   sim.setCell(1, 1, MAT.SAND);
   assert.ok(sim.view.version > v1, 'setCell de görünümü kirletmeli');
 });
+
+// ---- Sahne yükleme ----
+
+const rngScene = {
+  id: 'rng-test',
+  generate(sim, rng) {
+    for (let k = 0; k < 20; k++) sim.setCell(rng.int(sim.view.width), rng.int(sim.view.height), MAT.STONE);
+  },
+};
+
+test('loadScene dünyayı temizler, sahneyi seed\'e bağlı üretir ve aynı seed aynı sonucu verir', async () => {
+  const { hashView } = await import('./helpers.js');
+  const a = new Simulation({ width: 30, height: 20 });
+  const b = new Simulation({ width: 30, height: 20 });
+  a.setCell(1, 1, MAT.SAND);
+  a.loadScene(rngScene, 'seed-1');
+  b.loadScene(rngScene, 'seed-1');
+  assert.equal(hashView(a), hashView(b));
+  assert.equal(a.seed, 'seed-1');
+  const c = new Simulation({ width: 30, height: 20 });
+  c.loadScene(rngScene, 'seed-2');
+  assert.notEqual(hashView(a), hashView(c));
+});
+
+test('loadScene tick\'i, undo\'yu ve basılı tutmayı sıfırlar; fizik RNG\'sini seed\'e göre yeniden kurar', () => {
+  const sim = new Simulation({ width: 20, height: 20, seed: 'old' });
+  sim.beginStroke();
+  sim.paintAt(5, 5, { material: MAT.STONE, size: 3, shape: 'square' });
+  sim.endStroke();
+  sim.setHold(10, 0, { material: MAT.SAND, size: 1, shape: 'square' });
+  sim.step();
+  const v = sim.view.version;
+  sim.loadScene({ id: 'empty', generate() {} }, 'fresh');
+  assert.equal(sim.tick, 0);
+  assert.equal(sim.canUndo, false);
+  assert.ok(sim.view.version > v);
+  sim.step();
+  assert.equal(sim.getStats().particles, 0, 'hold temizlenmeliydi');
+  const fresh = new Simulation({ width: 20, height: 20, seed: 'fresh' });
+  assert.deepEqual([...sim.rng.getState()], [...(() => { fresh.step(); return fresh.rng.getState(); })()]);
+});

@@ -1,0 +1,370 @@
+/* Panel bileşenleri: numune kartları, butonlar, segmentli seçim, alanlar, göstergeler. */
+
+.panel-section {
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--ink-700);
+}
+
+.panel-section:last-child {
+  border-bottom: 0;
+}
+
+.section-title {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--brass-400);
+}
+
+.field-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-bottom: var(--space-1);
+  padding: 0;
+  font-size: 12px;
+  color: var(--bone-300);
+}
+
+.field-label output {
+  margin-right: auto;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--bone-100);
+}
+
+.hint {
+  margin: calc(var(--space-1) * -1) 0 var(--space-2);
+  font-size: 11px;
+  color: var(--bone-500);
+}
+
+/* ---- Numune kartları (materyal seçici) ---- */
+
+.specimens {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-1);
+}
+
+.specimen {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--control-height);
+  padding: 4px 6px;
+  border: 1px solid var(--ink-600);
+  border-radius: var(--radius-s);
+  background: var(--ink-900);
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.specimen:hover {
+  border-color: var(--ink-500);
+}
+
+.specimen input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.specimen:has(input:focus-visible) {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+.specimen .swatch {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--ink-500);
+  border-radius: 2px;
+  image-rendering: pixelated;
+}
+
+.specimen-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+/* Seçili durum yalnızca renkle belirtilmez: işaret, kalın ad ve çift çerçeve. */
+.specimen[data-selected="true"] {
+  border-color: var(--brass-400);
+  background: var(--ink-700);
+  box-shadow: inset 0 0 0 1px var(--brass-600);
+}
+
+.specimen[data-selected="true"] .specimen-name {
+  font-weight: 700;
+}
+
+.specimen[data-selected="true"] .specimen-name::before {
+  content: "▸ ";
+  color: var(--brass-400);
+}
+
+/* ---- Butonlar ---- */
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+
+.button-row:first-child {
+  margin-top: 0;
+}
+
+.btn {
+  flex: 1 1 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--control-height);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--ink-500);
+  border-radius: var(--radius-s);
+  background: var(--ink-700);
+  color: var(--bone-100);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.btn:hover {
+  border-color: var(--brass-600);
+}
+
+.btn:active {
+  background: var(--ink-600);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.btn[aria-pressed="true"] {
+  border-color: var(--brass-400);
+  background: var(--ink-600);
+}
+
+.btn-danger:hover {
+  border-color: var(--copper-500);
+}
+
+/* ---- Segmentli seçim (radio) ---- */
+
+.segmented {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.segmented legend {
+  width: 100%;
+}
+
+.segmented label {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.segmented input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.segmented span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--control-height);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--ink-500);
+  margin-left: -1px;
+  background: var(--ink-900);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+
+.segmented label:first-of-type span {
+  margin-left: 0;
+  border-radius: var(--radius-s) 0 0 var(--radius-s);
+}
+
+.segmented label:last-of-type span {
+  border-radius: 0 var(--radius-s) var(--radius-s) 0;
+}
+
+.segmented input:checked + span {
+  position: relative;
+  border-color: var(--brass-400);
+  background: var(--ink-700);
+  color: var(--bone-100);
+  font-weight: 700;
+}
+
+.segmented input:focus-visible + span {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+  position: relative;
+}
+
+/* ---- Alanlar ---- */
+
+.field {
+  display: block;
+  margin-top: var(--space-2);
+}
+
+.field:first-of-type {
+  margin-top: 0;
+}
+
+.field input[type="range"] {
+  width: 100%;
+  min-height: 28px;
+  accent-color: var(--brass-400);
+}
+
+.field select,
+.field input[type="text"] {
+  width: 100%;
+  min-height: var(--control-height);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--ink-500);
+  border-radius: var(--radius-s);
+  background: var(--ink-900);
+  color: var(--bone-100);
+  font: inherit;
+  font-size: 13px;
+}
+
+.field input[type="text"] {
+  font-family: var(--font-mono);
+}
+
+.field input[type="text"]:invalid {
+  border-color: var(--copper-500);
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--control-height);
+  margin-top: var(--space-2);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.toggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--brass-400);
+}
+
+/* ---- Göstergeler ---- */
+
+.readout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.readout div {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+}
+
+.readout dt {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bone-500);
+}
+
+.readout dd {
+  margin: 0;
+  font-size: 12px;
+  color: var(--bone-100);
+}
+
+.readout-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px;
+}
+
+.readout-grid div {
+  justify-content: space-between;
+}
+
+/* ---- Kısayol diyaloğu ---- */
+
+.dialog {
+  max-width: min(520px, calc(100vw - 32px));
+  padding: var(--space-4);
+  border: 1px solid var(--brass-600);
+  border-radius: var(--radius-m);
+  background: var(--ink-800);
+  color: var(--bone-100);
+}
+
+.dialog::backdrop {
+  background: rgb(8 6 5 / 0.7);
+}
+
+.shortcuts {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.shortcuts th,
+.shortcuts td {
+  padding: 6px var(--space-2);
+  border-bottom: 1px solid var(--ink-700);
+  text-align: left;
+  vertical-align: top;
+}
+
+.shortcuts th {
+  width: 40%;
+  font-weight: 400;
+  color: var(--bone-300);
+  white-space: nowrap;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-3);
+}
+
+.dialog-actions .btn {
+  flex: 0 0 auto;
+}

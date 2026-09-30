@@ -19,7 +19,6 @@ export function buildDemo(sim) {
   const { width: W, height: H } = sim.view;
   const X = (f) => Math.round(f * (W - 1));
   const Y = (f) => Math.round(f * (H - 1));
-  sim.clear();
 
   line(sim, X(0.06), Y(0.36), X(0.4), Y(0.48), MAT.STONE); // sol eğimli raf
   line(sim, X(0.94), Y(0.5), X(0.6), Y(0.62), MAT.STONE); // sağ eğimli raf
@@ -36,13 +35,4 @@ export function buildDemo(sim) {
   rect(sim, X(0.84), Y(0.86), X(0.94), Y(0.97), MAT.LAVA); // köşede lava
   rect(sim, X(0.34), Y(0.9), X(0.66), Y(0.95), MAT.STEAM); // havuzun dibinde buhar
   rect(sim, X(0.1), Y(0.93), X(0.18), Y(0.94), MAT.FIRE); // kütüğü tutuşturan kıvılcımlar
-}
-
-// Demo sırasında sürekli akıtılan kaynaklar.
-export function demoSources(W, H) {
-  void H;
-  return [
-    { x: Math.round(0.5 * (W - 1)), y: 0, material: MAT.WATER },
-    { x: Math.round(0.62 * (W - 1)), y: 0, material: MAT.SAND },
-  ];
 }

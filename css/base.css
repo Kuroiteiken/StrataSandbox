@@ -1,6 +1,6 @@
-/* Strata — tasarım token'ları, reset ve geçici uygulama iskeleti.
+/* Strata Sandbox — tasarım token'ları, reset ve ortak öğeler.
    Görsel yön: jeolojik katmanlar, koyu toprak tonları, pirinç vurgular.
-   Not: Uygulama iskeleti Phase 6'da layout.css'e taşınacak. */
+   Yerleşim: layout.css · Bileşenler: controls.css */
 
 :root {
   color-scheme: dark;
@@ -11,16 +11,17 @@
   --ink-800: #1c1814;
   --ink-700: #26201b;
   --ink-600: #3a3029;
+  --ink-500: #4d4036;
 
   /* Metin (kemik) */
   --bone-100: #efe6d4;
   --bone-300: #cbbfa8;
-  --bone-500: #9a8f7c;
+  --bone-500: #a39884;
 
   /* Vurgular */
   --brass-400: #d3a652;
   --brass-600: #a47c32;
-  --copper-500: #b8683c;
+  --copper-500: #c4703f;
   --verdigris-400: #6fa89a;
   --focus-ring: #f0c46a;
 
@@ -37,8 +38,15 @@
   --space-6: 24px;
   --radius-s: 3px;
   --radius-m: 6px;
-  --panel-width: 288px;
-  --touch-target: 44px;
+  --panel-width: 296px;
+  --control-height: 36px;
+  --transition: 120ms ease-out;
+}
+
+@media (pointer: coarse) {
+  :root {
+    --control-height: 44px; /* dokunma hedefi */
+  }
 }
 
 *,
@@ -57,10 +65,11 @@ body {
   background: var(--ink-900);
   color: var(--bone-100);
   font-family: var(--font-sans);
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
+  overscroll-behavior: none;
 }
 
 :focus-visible {
@@ -68,103 +77,37 @@ body {
   outline-offset: 2px;
 }
 
-/* ---- Geçici uygulama iskeleti ---- */
-
-.app {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--panel-width);
-  grid-template-rows: auto minmax(0, 1fr);
-  grid-template-areas:
-    "header header"
-    "stage panel";
-  height: 100vh;
-  height: 100dvh;
-}
-
-.app-header {
-  grid-area: header;
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-4);
-  border-bottom: 1px solid var(--ink-600);
-}
-
-.app-title {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-size: 20px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--brass-400);
-}
-
-.app-subtitle {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--bone-500);
-}
-
-.stage {
-  grid-area: stage;
-  min-width: 0;
-  min-height: 0;
-  padding: var(--space-3);
-  background: var(--ink-950);
-}
-
-.viewport {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  border: 1px solid var(--brass-600);
+kbd {
+  display: inline-block;
+  min-width: 1.5em;
+  padding: 0 4px;
+  border: 1px solid var(--ink-500);
+  border-bottom-width: 2px;
   border-radius: var(--radius-s);
-  overflow: hidden;
-}
-
-.viewport canvas {
-  display: block;
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  touch-action: none;
-}
-
-.panel {
-  grid-area: panel;
-  min-height: 0;
-  overflow-y: auto;
-  padding: var(--space-4);
   background: var(--ink-800);
-  border-left: 1px solid var(--ink-600);
+  color: var(--bone-300);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.5;
+  text-align: center;
+  white-space: nowrap;
 }
 
-.panel-note,
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .noscript {
-  margin: 0;
-  color: var(--bone-500);
-  font-size: 13px;
-}
-
-@media (max-width: 720px) {
-  .app {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr) auto;
-    grid-template-areas:
-      "header"
-      "stage"
-      "panel";
-  }
-
-  .panel {
-    border-left: 0;
-    border-top: 1px solid var(--ink-600);
-    max-height: 40vh;
-  }
+  margin: var(--space-4);
+  color: var(--bone-300);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -8,6 +8,7 @@ import { Simulation } from '../js/engine/simulation.js';
 let puts;
 let strokes;
 let dashes;
+let draws;
 
 function fakeContext() {
   return {
@@ -16,7 +17,9 @@ function fakeContext() {
     strokeStyle: '',
     lineWidth: 1,
     fillRect() {},
-    drawImage() {},
+    drawImage() {
+      draws++;
+    },
     beginPath() {},
     moveTo() {},
     lineTo() {},
@@ -46,6 +49,7 @@ function fakeCanvas(width = 0, height = 0) {
     width,
     height,
     getContext: () => ctx,
+    toBlob: (cb, type) => cb({ type, size: 1 }),
     getBoundingClientRect: () => ({ left: 100, top: 50, width: 400, height: 200 }),
   };
 }
@@ -54,6 +58,7 @@ beforeEach(() => {
   puts = 0;
   strokes = 0;
   dashes = [];
+  draws = 0;
   globalThis.document = { createElement: () => fakeCanvas() };
 });
 
@@ -158,4 +163,18 @@ test('fırça önizlemesi simülasyonu değiştirmez ve tamponu yeniden doldurma
   }
   assert.equal(puts, before);
   assert.deepEqual(sim.view.type, type);
+});
+
+test('capture arka plan + simülasyonu PNG olarak döner, fırça önizlemesini içermez', async () => {
+  const { renderer } = setup();
+  const sim = new Simulation({ width: 100, height: 50 });
+  sim.setCell(4, 4, MAT.SAND);
+  renderer.setBrushPreview({ x: 10, y: 10, shape: 'circle', size: 7, visible: true });
+  renderer.render(sim.view);
+  strokes = 0;
+  draws = 0;
+  const blob = await renderer.capture(sim.view);
+  assert.equal(blob.type, 'image/png');
+  assert.equal(strokes, 0, 'önizleme yakalamaya girmemeli');
+  assert.equal(draws, 2, 'arka plan + sim tamponu');
 });
