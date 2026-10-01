@@ -39,6 +39,9 @@ export const MAT = Object.freeze({
   // Basınç ve patlama (0.11.0)
   RUBBLE: 24, // kırılan taş
   GUNPOWDER: 23, // barut
+  METHANE: 25, // metan
+  BURNING_METHANE: 26, // yanan metan
+  SMOKE: 27, // duman
   DYNAMITE: 28, // dinamit
   FUSE: 29, // fitil
   BURNING_FUSE: 30, // yanan fitil
@@ -158,6 +161,18 @@ export const MATERIAL_DEFS = [
     id: MAT.BURNING_FUSE, key: 'BURNING_FUSE', name: 'Burning Fuse', kind: KIND.STATIC, density: 255, color: '#ff9a3a',
     hidden: true, reactive: true, life: [5, 7], temp: 600, source: 600, conduct: 0.04, capacity: 2, strength: 4, debris: MAT.ASH,
     burn: { emit: 0.1, douse: 0.8, ash: 1, extinguishTo: MAT.FUSE },
+  },
+  {
+    id: MAT.METHANE, key: 'METHANE', name: 'Methane', kind: KIND.GAS, density: 3, color: '#c9d98a', drift: 0.2,
+    flammable: 1, burnsInto: MAT.BURNING_METHANE, ignitesAt: 540, conduct: 0.02, capacity: 1,
+  },
+  {
+    id: MAT.BURNING_METHANE, key: 'BURNING_METHANE', name: 'Burning Methane', kind: KIND.GAS, density: 3, color: '#ffb04a',
+    hidden: true, reactive: true, drift: 0.3, life: [3, 6], temp: 1200, source: 1200, conduct: 0.05, capacity: 1,
+  },
+  {
+    id: MAT.SMOKE, key: 'SMOKE', name: 'Smoke', kind: KIND.GAS, density: 4, color: '#6b6763', drift: 0.5, rise: 0.6,
+    reactive: true, life: [200, 500], conduct: 0.02, capacity: 1,
   },
 ];
 
@@ -393,3 +408,6 @@ export function spawnTemp(t, ambient) {
   const s = MATERIALS.SPAWN_TEMP[t];
   return s === s ? s : ambient;
 }
+
+// flags bit4: hücre kapalı bir gaz bölgesinde (pressure.js her taramada yazar; duman yalnız açık bölgede söner).
+export const CLOSED_BIT = 16;

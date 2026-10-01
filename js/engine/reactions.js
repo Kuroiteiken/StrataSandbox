@@ -5,8 +5,8 @@
 //   burada yalnızca temas kuralları var.
 // - Dönüştürülen/oluşturulan hücre damgalanır (world.transform/set) → aynı tick'te zincirleme yok.
 // react() true dönerse hücre artık aynı materyal değildir; çağıran hareketi atlar.
-import { MAT, KIND, MATERIALS, spawnTemp } from './materials.js';
-import { detonate } from './explosions.js';
+import { MAT, KIND, MATERIALS, spawnTemp, CLOSED_BIT } from './materials.js';
+import { detonate, addBlastPower } from './explosions.js';
 
 const { FLAMMABILITY, BURNS_INTO, LIFE_MIN, LIFE_SPAN, EMIT, DOUSE, ASH_CHANCE, EXTINGUISH_TO, EXPLOSIVE_POWER, EXPLOSIVE_IGNITE } = MATERIALS;
 const { EMPTY, WATER, LAVA, STEAM, FIRE, PLANT, ASH } = MAT;
@@ -21,10 +21,13 @@ export const RATES = Object.freeze({
   maxGrowthPerTick: 24, // tick başına en fazla bitki büyümesi (dünya genelinde)
   maxClonesPerTick: 300, // çoğaltıcıların tick başına en fazla kopyası (dünya genelinde)
   maxSinksPerTick: 300, // yutucuların tick başına en fazla yutması (dünya genelinde)
+  fireSmoke: p(0.15), // sönen ateşin dumana dönme olasılığı
+  burnSmoke: p(0.1), // yanan maddenin alev üretirken duman çıkarma olasılığı
+  maxSmokePerTick: 60, // yangınların tick başına en fazla dumanı (dünya genelinde)
 });
 
 export function createReactionState() {
-  return { fireBudget: 0, growthBudget: 0, cloneBudget: 0, sinkBudget: 0 };
+  return { fireBudget: 0, growthBudget: 0, cloneBudget: 0, sinkBudget: 0, smokeBudget: 0 };
 }
 
 export function beginReactionTick(state) {
@@ -32,6 +35,7 @@ export function beginReactionTick(state) {
   state.growthBudget = RATES.maxGrowthPerTick;
   state.cloneBudget = RATES.maxClonesPerTick;
   state.sinkBudget = RATES.maxSinksPerTick;
+  state.smokeBudget = RATES.maxSmokePerTick;
 }
 
 // Materyalin spawn ömrü: LIFE_MIN + r mod (span + 1).
@@ -61,6 +65,9 @@ function ignite(world, rng, j, nt) {
   if (flammability !== 0 && roll(rng, flammability)) become(world, rng, j, BURNS_INTO[nt]);
 }
 
+export const METHANE_POWER = 0.5; // yanan metan hücresinin tick başına birleştirme ızgarasına yazdığı güç
+const SMOKE_TEMP = 300; // yangın dumanının doğuş sıcaklığı (°C)
+
 const STEAM_TEMP = spawnTemp(STEAM, 0); // 105 °C
 
 // Tüm buhar üretimi buradan geçer (kaynama, ateş, söndürme). Buhar doğuş sıcaklığıyla başlar;
@@ -77,10 +84,13 @@ export function emitSteam(world, i) {
 // İlk kaynatmada söndüğü için tick başına en fazla bir su buharlaşır.
 const FIRE_SAMPLES = 2;
 
-function reactFire(world, rng, i) {
+function reactFire(world, rng, i, state) {
   const life = world.life;
   if (life[i] <= 1) {
-    vanish(world, i);
+    if (state.smokeBudget > 0 && roll(rng, RATES.fireSmoke)) {
+      world.transform(i, MAT.SMOKE, initialLife(MAT.SMOKE, rng.nextU32())); // sıcaklık korunur
+      state.smokeBudget--;
+    } else vanish(world, i);
     return true;
   }
   life[i]--;
@@ -135,6 +145,13 @@ function reactBurning(world, rng, i, t, state) {
 
   // Alev: üstteki üç hücreden birine (boşsa) ateş üret; tick başına dünya geneli sınır var.
   emitFlame(world, rng, i, t, state);
+  if (state.smokeBudget > 0 && roll(rng, RATES.burnSmoke)) {
+    const js = i - world.stride + ((rng.nextU32() % 3) - 1);
+    if (world.type[js] === EMPTY) {
+      world.set(js, MAT.SMOKE, rng.nextU32() & 255, initialLife(MAT.SMOKE, rng.nextU32()), 0, Math.max(world.temp[js], SMOKE_TEMP));
+      state.smokeBudget--;
+    }
+  }
 
   const j = sampleNeighbor(world, rng, i);
   const nt = world.type[j];
@@ -144,6 +161,44 @@ function reactBurning(world, rng, i, t, state) {
     return true;
   }
   ignite(world, rng, j, nt);
+  return false;
+}
+
+// Yanan metan: alev cephesi her tick 8 komşudaki metanı tutuşturur, bir komşudaki yanıcıyı tutuşturabilir ve
+// birleştirme ızgarasına METHANE_POWER yazar (yoğun cep blokta eşiği aşıp patlar; seyrek metan yalnız yanar).
+function reactBurningMethane(world, rng, i) {
+  const life = world.life;
+  if (life[i] <= 1) {
+    vanish(world, i);
+    return true;
+  }
+  life[i]--;
+  const off = world.neighborOffsets;
+  for (let k = 0; k < 8; k++) {
+    const j = i + off[k];
+    if (world.type[j] === MAT.METHANE) {
+      world.transform(j, MAT.BURNING_METHANE, initialLife(MAT.BURNING_METHANE, rng.nextU32()));
+      world.temp[j] = spawnTemp(MAT.BURNING_METHANE, 0);
+    }
+  }
+  const j = sampleNeighbor(world, rng, i);
+  ignite(world, rng, j, world.type[j]);
+  if (world.blast) {
+    const stride = world.stride;
+    addBlastPower(world.blast, (i % stride) - 1, Math.floor(i / stride) - 1, METHANE_POWER);
+  }
+  return false;
+}
+
+// Duman: yalnız açık bölgede söner (kapalı bölgede birikir; CLOSED_BIT'i basınç geçişi yazar).
+function reactSmoke(world, i) {
+  if ((world.flags[i] & CLOSED_BIT) !== 0) return false;
+  const life = world.life;
+  if (life[i] <= 1) {
+    vanish(world, i);
+    return true;
+  }
+  life[i]--;
   return false;
 }
 
@@ -241,7 +296,7 @@ function reactSink(world, rng, i, state) {
 export function react(world, rng, i, t, state) {
   switch (t) {
     case FIRE:
-      return reactFire(world, rng, i);
+      return reactFire(world, rng, i, state);
     case LAVA:
       return reactLava(world, rng, i);
     case PLANT:
@@ -252,6 +307,10 @@ export function react(world, rng, i, t, state) {
       return reactBurning(world, rng, i, t, state);
     case MAT.BURNING_FUSE:
       return reactBurningFuse(world, rng, i, state);
+    case MAT.BURNING_METHANE:
+      return reactBurningMethane(world, rng, i);
+    case MAT.SMOKE:
+      return reactSmoke(world, i);
     case MAT.CLONER:
       return reactCloner(world, rng, i, state);
     case MAT.SINK:

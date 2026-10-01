@@ -65,6 +65,8 @@ Bu belge, simülasyondaki tüm materyalleri ve aralarındaki etkileşimleri tek 
 | Barut | `GUNPOWDER` | `R` | toz | 14 | Suya batar. Ateş, yanan madde ya da lav teması veya ≥ 200 °C ile patlar; hücre başına güç 4 (0.11.0 ayarı: taşı kırabilmek için). |
 | Dinamit | `DYNAMITE` | `D` | statik | — | Dayanıklılık 3. ≥ 150 °C ya da yakındaki patlamayla tetiklenir; hücre başına güç 30 (0.11.0 ayarı: taşı kırabilmek için). |
 | Fitil | `FUSE` | `I` | statik | — | Dayanıklılık 4; 200 °C ya da ateşle tutuşur (yanıcılık 1). Yanan fitil ateşi taşır. |
+| Metan | `METHANE` | `N` | gaz | 3 | Havadan hafif (hava 5), yukarı çıkar. Yanıcılık 1; ≥ 540 °C, ateş, yanan madde ya da patlamayla tutuşur (0.11.0). |
+| Duman | `SMOKE` | `U` | gaz | 4 | Yangından ve patlamadan çıkar; 200–500 tick sonra söner, kapalı bölgede sönmez (0.11.0). |
 | Silgi | — | `0` | — | — | Materyal değil; hücreyi boşaltır. Sağ tık her zaman geçici silgidir. |
 
 ### Seçicide olmayan (reaksiyonla oluşan) durumlar
@@ -75,6 +77,7 @@ Bu belge, simülasyondaki tüm materyalleri ve aralarındaki etkileşimleri tek 
 | Yanan bitki | `BURNING_PLANT` | statik | 30–60 | %30 | %70 | %5 | Bitki |
 | Yanan fitil | `BURNING_FUSE` | statik | 5–7 | %10 | %80 | %100 | Fitil |
 | Yanan yağ | `BURNING_OIL` | sıvı (yoğunluk 8) | 120–240 | %35 | sönmez | yok | (Yağ) |
+| Yanan metan | `BURNING_METHANE` | gaz (yoğunluk 3) | 3–6 | — | — | yok | (kaybolur) |
 | Kül | `ASH` | toz (yoğunluk 12) | — | — | — | — | — |
 
 Yanan yağ akmaya devam eder ve suyla sönmez (söndürme olasılığı 0); suyun üstünde yüzerek yanar.
@@ -91,8 +94,8 @@ Olasılıklar tick başına ve sahip hücrenin örneklemesi başına verilmişti
 |---|---|---|
 | Ateş + yanıcı (odun, bitki, yağ) | Ateş | Yanıcılık olasılığıyla tutuşur: yanan odun, yanan bitki ya da yanan yağ olur. |
 | Ateş + su | Ateş | %50 olasılıkla su buhara döner ve ateş söner. Bir ateş tick başına en fazla bir suyu buharlaştırır. |
-| Ateş (tek başına) | Ateş | Ömrü bitince söner. |
-| Yanan materyal (tek başına) | Yanan | Her tick üstündeki üç hücreden birine, boşsa, ateş üretir. Dünya genelinde tick başına en fazla 400 ateş üretilir. Ömrü bitince kül olur ya da kaybolur. |
+| Ateş (tek başına) | Ateş | Ömrü bitince söner; %15 olasılıkla (duman bütçesi varsa) duman olur (0.11.0). |
+| Yanan materyal (tek başına) | Yanan | Her tick üstündeki üç hücreden birine, boşsa, ateş üretir. Dünya genelinde tick başına en fazla 400 ateş üretilir. Ömrü bitince kül olur ya da kaybolur. Alev üretirken %10 olasılıkla üstüne duman da çıkarır (yanan fitil çıkarmaz); duman tick başına dünya genelinde en fazla 60 (0.11.0). |
 | Yanan materyal + yanıcı | Yanan | Yangın yayılır (yanıcılık olasılığıyla). |
 | Yanan materyal + su | Yanan | Sönme olasılığıyla söner ve eski materyaline döner; su buhara döner. Yanan yağ sönmez. 0.10.1'den beri sönen hücre 105 °C'ye iner (ısı buhara geçer), böylece kendi ısısıyla yeniden tutuşmaz. |
 | Lav + su | Lav | %60 olasılıkla su buhara döner; lavın soğuma sayacı 25 artar. |
@@ -265,6 +268,13 @@ Patlamanın ızgaradan aldığı hücreler `debris.js` içindeki önceden ayrıl
 - **Kıvılcım:** birleştirme eşiğinin (2) altında kalan blok (güç 2 altı; barut tanesi 4 olduğundan tek tane küçük bir patlama üretir, eşik altı kalan kısmî bloklar kıvılcım olur) patlama olayı üretmez; blok merkezinin 3×3 çevresindeki patlayıcıları tetikler. Bunlar sonraki tick patlar. Tek tanenin zinciri böyle başlar. Tick başına en fazla 64 kıvılcım.
 - **Fitil:** yanan fitil 5–7 tick yanar, sonra küle döner; bu sırada 8 komşusundaki fitili tutuşturur ve patlayıcıyı tetikler. Ateş yaklaşık 6 tick'te bir hücre ilerler (1× hızda ~10 hücre/s). Yanarken %10 olasılıkla üstüne kıvılcım (ateş) çıkarır; su %80 olasılıkla söndürür (hücre fitile döner). Dayanıklılık 4: şiddeti 1–4 arası patlama fitili tutuşturur, daha güçlüsü kırar.
 - **Zincir:** patlamanın şiddeti bir patlayıcıda 0,5 ve üstündeyse hücre tetiklenir. Tetiklenenler ızgaraya yazılır ve sonraki tick patlar; zincir tick tick ilerler, bir tick'te sonsuz döngü olmaz.
+
+### 5.6 Gazlar ve duman
+
+- **Metan:** yoğunluk 3 (havadan hafif), yukarı çıkar. Yanıcılık 1, tutuşma 540 °C. Patlama şiddeti 0,5 ve üstündeyse tutuşur.
+- **Yanan metan:** 3–6 tick yanar, sonra kaybolur. Her tick 8 komşusundaki metanı tutuşturur (alev cephesi yayılır), bir komşudaki yanıcıyı tutuşturabilir ve birleştirme ızgarasına hücre başına 0,5 güç yazar (`METHANE_POWER`). 8×8 blokta ≥ 4 yanan hücre eşiği (2) aşar ve patlama olur; yoğun metan cebi bu yüzden patlar, seyrek metan yalnız yanar.
+- **Duman:** yoğunluk 4, ömür 200–500 tick. Yalnız açık bölgede söner; kapalı bölgede (`CLOSED_BIT`, flags bit4, basınç geçişi yazar) ömrü azalmaz, birikir.
+- **Duman kaynakları:** sönen ateşin %15'i (sıcaklığını korur); yanan maddenin alev üretirken %10'u (en az 300 °C); patlama halkasındaki (d ≥ r/2) boş hücrelerin %25'i. Yangın kaynaklı duman tick başına en fazla 60 (`maxSmokePerTick`).
 
 ---
 

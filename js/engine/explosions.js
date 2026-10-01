@@ -27,6 +27,7 @@ export const BLAST = Object.freeze({
   DETONATE_TEMP: 800, // tetiklenen hücrenin en az sıcaklığı (°C)
   SPARK_CAPACITY: 64, // tick başına eşik altı blok (kıvılcım) sayısı
   FIRE_CHANCE: 0.5, // d < r/2 boş hücrenin ateşe dönme olasılığı
+  SMOKE_CHANCE: 0.25, // d >= r/2 boş hücrenin (halka) dumana dönme olasılığı
   LAUNCH_K: 0.75, // savrulma hızı = LAUNCH_K · s (havuz V_MAX ile kırpar)
   UP_BIAS: 0.35, // savrulma yönüne eklenen yukarı eğilim
   RING: 8, // view.blasts halka tamponu (parlama ve sarsıntı)
@@ -248,12 +249,17 @@ export function applyExplosion(world, rng, s, pool, cx, cy, G, kind) {
       }
       const k = KIND_OF[t];
       if (k === KIND.NONE) {
-        if (d < r * 0.5 && chance(rng, BLAST.FIRE_CHANCE)) {
-          world.set(i, FIRE, rng.nextU32() & 255, lifeOf(rng, FIRE), 0, Math.max(temp[i], SPAWN_TEMP[FIRE]));
+        if (d < r * 0.5) {
+          if (chance(rng, BLAST.FIRE_CHANCE)) world.set(i, FIRE, rng.nextU32() & 255, lifeOf(rng, FIRE), 0, Math.max(temp[i], SPAWN_TEMP[FIRE]));
+        } else if (chance(rng, BLAST.SMOKE_CHANCE)) {
+          world.set(i, MAT.SMOKE, rng.nextU32() & 255, lifeOf(rng, MAT.SMOKE), 0, temp[i]);
         }
         continue;
       }
-      if (k === KIND.GAS) continue;
+      if (k === KIND.GAS) {
+        if (FLAMMABILITY[t] !== 0 && sv >= BLAST.CHAIN_MIN) world.transform(i, BURNS_INTO[t], lifeOf(rng, BURNS_INTO[t]));
+        continue;
+      }
       if (k === KIND.STATIC) {
         if (sv >= STRENGTH[t]) {
           const into = DEBRIS_OF[t];

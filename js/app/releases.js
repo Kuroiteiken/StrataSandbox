@@ -16,6 +16,8 @@ export const UNRELEASED = Object.freeze({
     'Barut (R): ateş, lav ya da 200 °C ile patlar; yığın büyüdükçe patlama büyür.',
     'Dinamit (D): barutun güçlü, katı hâli; ısıyla ya da yakındaki patlamayla tetiklenir.',
     'Fitil (I): ateşi saniyede ~10 hücre taşır, sonundaki barutu ya da dinamiti tetikler; su söndürür.',
+    'Metan (N): havadan hafif, yanıcı gaz; yoğun cep tutuşunca patlar.',
+    'Duman (U): yangınlardan ve patlamalardan çıkar, açık havada dağılır.',
   ],
 });
 

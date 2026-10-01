@@ -79,7 +79,8 @@ test('sönen ateş yerinde sıcak hava bırakır (vanish sıcaklığı korur)', 
   let hottestAir = 0;
   for (let t = 0; t < 80 && countMaterial(sim, MAT.FIRE) > 0; t++) sim.step();
   assert.equal(countMaterial(sim, MAT.FIRE), 0);
-  for (let i = 0; i < sim.view.temp.length; i++) if (sim.view.type[i] === MAT.EMPTY) hottestAir = Math.max(hottestAir, sim.view.temp[i]);
+  for (let i = 0; i < sim.view.temp.length; i++) if (sim.view.type[i] === MAT.EMPTY || sim.view.type[i] === MAT.SMOKE) hottestAir = Math.max(hottestAir, sim.view.temp[i]);
+  // Sönen ateş %15 olasılıkla dumana döner (0.11.0); duman da sıcaklığı korur, o da sıcak hava sayılır.
   assert.ok(hottestAir > 300, `en sıcak hava ${hottestAir}`);
 });
 
