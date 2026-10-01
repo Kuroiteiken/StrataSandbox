@@ -417,6 +417,17 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Kontrol etiketleri metin gibi seçilmez (çift tıklayınca ad vurgulanmasın). */
+.btn,
+.specimen,
+.picker-tab,
+.segmented span,
+.toggle,
+.panel-more > summary {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 /* ---- Dar ekran: materyal seçici yatay kayan şerit ---- */
 
 @media (max-width: 760px) {
@@ -513,19 +524,19 @@
   }
 }
 
-/* Materyal seçici sekmeleri */
+/* Materyal seçici sekmeleri: kaydırma çubuğu yok; sekmeler satırı paylaşır, sığmazsa alt satıra geçer. */
 .picker-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-1);
   margin-bottom: var(--space-2);
-  overflow-x: auto;
-  scrollbar-width: thin;
 }
 
 .picker-tab {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   min-height: var(--control-height);
-  padding: 0 var(--space-3);
+  padding: 0 var(--space-2);
+  white-space: nowrap;
   border: 1px solid var(--ink-600);
   border-radius: var(--radius-s);
   background: var(--ink-800);

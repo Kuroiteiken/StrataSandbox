@@ -30,6 +30,10 @@ Hedef sürüm 0.11.0.
 - **Volkan:** lav artık ağaçlara ulaşıyor. Yarık ağzından koni eteğine kadar yamaç yüzeyinin 2 hücre içinden geçen, kesintisiz bir magma damarı eklendi; damar ağaç hücrelerine 5 hücreden ve ilk ağaç gövdesine 9 sütundan fazla yaklaşmaz. Böylece ağacı damarın ısısı değil, eteğe ulaşan lav tutuşturur. Damar ağzın önündeki yamaç yüzünü de ısıtır; lav artık ağızda kabuk bağlayıp yarığı tıkamıyor. Sağ yamaca artık kum konmuyor: ısınan kum cama dönüp lavın önüne set çekiyor, eteğe kayıp ağaç gövdesine yığılıyordu. RNG sırası korunduğu için seed'ler aynı ağaç yerlerini verir.
 - **Dökümhane:** eğimli taş oluk geri geldi. Oluk potanın yarığından ilk kalıba iner; iki hücre kalın tabanı önceden 1350 °C'ye ısıtılır ve altında magma damarı vardır. Potadaki erimiş metalin yaklaşık yarısı oluktan kalıplara dökülüyor (320×180'de 1575 hücreden 810'u; serbest düşüşle 521'di).
 
+### Fixed
+
+- **Materyal seçici:** kategori sekmeleri yatay kaydırma çubuğu göstermez; satırı paylaşır, sığmazsa alt satıra geçer. Kontrol etiketleri (`user-select: none`) çift tıklayınca metin gibi seçilmez.
+
 ## [0.10.1] - 2026-09-30
 
 0.10.0'ın bütün-dal incelemesinde bulunan hataların yaması.

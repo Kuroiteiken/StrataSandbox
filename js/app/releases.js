@@ -8,6 +8,7 @@
 export const UNRELEASED = Object.freeze({
   version: '0.11.0',
   items: [
+    'Materyal seçici: kategori sekmeleri kaydırma çubuğu olmadan sığıyor; materyal adına çift tıklamak artık adı metin gibi seçmiyor.',
     'Kum saati: yutucular artık dipte değil, alt haznenin üst kısmında akışın iki yanındaki küçük cam raflarda. Alt hazne gerçek bir kum saati gibi dolar, raf seviyesinde durur ve boğazı tıkamaz.',
     'Volkan: yamacın altındaki magma damarı lav yolunu sıcak tutuyor; lav eteğe inip sağdaki ağaçları tutuşturuyor.',
     'Dökümhane: potanın yarığından kalıplara ısıtılmış eğimli bir oluk iniyor; metal oluktan akıp kalıplara doluyor.',
