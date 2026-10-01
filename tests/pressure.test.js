@@ -32,6 +32,7 @@ function boilUntilBurst(sim, x0, x1, y0, y1, ticks) {
 // cam hacim ~6'da, taş ~8'de patlar; metal tamamen buharla (hacim 12, P ≈ 10) bile G ≈ 56 < 100 kalır.
 function jar(wall, lid = wall) {
   const sim = new Simulation({ width: 30, height: 30, seed: `jar-${wall}-${lid}` });
+  sim.world.flash = null; // dış ısıtıcı suyu bir anda kaynatır; konu basınç, ani buharlaşma değil
   box(sim, 13, 21, 16, 23, wall, lid);
   for (let y = 22; y <= 23; y++) for (let x = 13; x <= 16; x++) sim.setCell(x, y, MAT.WATER);
   return sim;
@@ -52,6 +53,7 @@ test('kapalı cam kavanozda kaynayan su kavanozu patlatır; aynı kavanoz açık
   const t = boilUntilBurst(closed, 13, 16, 22, 23, 2000);
   assert.ok(t >= 0, 'kapalı kavanoz patlamalı');
   const open = new Simulation({ width: 30, height: 30, seed: 'jar-open' });
+  open.world.flash = null;
   box(open, 13, 21, 16, 23, MAT.GLASS, null);
   for (let y = 22; y <= 23; y++) for (let x = 13; x <= 16; x++) open.setCell(x, y, MAT.WATER);
   assert.equal(boilUntilBurst(open, 13, 16, 22, 23, 2000), -1);

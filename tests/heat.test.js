@@ -51,6 +51,7 @@ test('tek sıcak nokta her yöne eşit yayılır (yön bias\'ı yok)', () => {
 
 test('değerler başlangıçtaki min–max aralığında kalır (salınım yok)', () => {
   const sim = filled(20, 20, (x, y) => ((x + y) % 2 === 0 ? MAT.WATER : MAT.STONE));
+  sim.world.flash = null; // konu ısı yayılımı; ani buharlaşma patlaması aralığı bozardı
   for (let y = 0; y < 20; y++) for (let x = 0; x < 20; x++) if ((x * 3 + y) % 2 === 0) sim.setTemp(x, y, 1000);
   for (let k = 0; k < 20; k++) {
     sim.step();

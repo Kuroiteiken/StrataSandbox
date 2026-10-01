@@ -20,6 +20,10 @@ export const PRESSURE = Object.freeze({
   POWER_K: 0.15, // basınç → patlama gücü
   G_MAX: 400,
   W_STEAM: 8, // buharın basınç ağırlığı (suyun genleşmesi)
+  FLASH_BLOCK: 8, // ani buharlaşma blok kenarı (hücre)
+  FLASH_DECAY: 0.85, // blok sayacının tick başına çarpanı (kısa pencere)
+  FLASH_MIN: 4, // patlama eşiği (yarılanan sayaç)
+  FLASH_POWER: 1, // dönüşüm başına güç
 });
 
 const WEIGHT = new Float32Array(256);
@@ -182,9 +186,68 @@ function scanRegions(world, s, blast) {
 }
 
 // Geçiş 4. Tarama PERIOD tick'te bir (ya da geri alma/temizleme sonrası hemen) yapılır.
-export function stepPressure(world, s, blast, tick) {
+export function stepPressure(world, s, blast, tick, flash = null) {
   if (s.forceScan || tick % PRESSURE.PERIOD === 0) {
     s.forceScan = false;
     scanRegions(world, s, blast);
   }
+  if (flash) stepFlash(flash, blast);
+}
+
+// ---- Ani buharlaşma: kısa pencerede bir blokta çok sayıda su→buhar dönüşümü patlar ----
+
+export function createFlashState(width, height) {
+  const B = PRESSURE.FLASH_BLOCK;
+  const bw = Math.ceil(width / B);
+  const n = bw * Math.ceil(height / B);
+  return { bw, count: new Float32Array(n), sx: new Float32Array(n), sy: new Float32Array(n), active: new Int32Array(n), isActive: new Uint8Array(n), activeCount: 0 };
+}
+
+export function resetFlashState(f) {
+  f.count.fill(0);
+  f.sx.fill(0);
+  f.sy.fill(0);
+  f.isActive.fill(0);
+  f.activeCount = 0;
+}
+
+export function copyFlashState(dst, src) {
+  for (const k of ['count', 'sx', 'sy', 'active', 'isActive']) dst[k].set(src[k]);
+  dst.activeCount = src.activeCount;
+}
+
+// emitSteam her dönüşümü buraya yazar.
+export function noteSteam(f, x, y) {
+  const B = PRESSURE.FLASH_BLOCK;
+  const b = Math.floor(y / B) * f.bw + Math.floor(x / B);
+  if (f.isActive[b] === 0) {
+    f.isActive[b] = 1;
+    f.active[f.activeCount++] = b;
+  }
+  f.count[b] += 1;
+  f.sx[b] += x;
+  f.sy[b] += y;
+}
+
+// Her tick: eşiği aşan blok buhar patlaması ister ve sıfırlanır; diğerleri sönümlenir.
+function stepFlash(f, blast) {
+  let keep = 0;
+  for (let k = 0; k < f.activeCount; k++) {
+    const b = f.active[k];
+    const c = f.count[b];
+    if (c >= PRESSURE.FLASH_MIN) {
+      requestExplosion(blast, f.sx[b] / c, f.sy[b] / c, c * PRESSURE.FLASH_POWER, BLAST_KIND.STEAM);
+    } else if (c * PRESSURE.FLASH_DECAY >= 0.05) {
+      f.count[b] = c * PRESSURE.FLASH_DECAY;
+      f.sx[b] *= PRESSURE.FLASH_DECAY;
+      f.sy[b] *= PRESSURE.FLASH_DECAY;
+      f.active[keep++] = b;
+      continue;
+    }
+    f.count[b] = 0;
+    f.sx[b] = 0;
+    f.sy[b] = 0;
+    f.isActive[b] = 0;
+  }
+  f.activeCount = keep;
 }

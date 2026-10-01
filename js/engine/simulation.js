@@ -6,7 +6,7 @@ import { MAT, KIND, MATERIALS, spawnTemp } from './materials.js';
 import { stepPowder, stepLiquid, stepGas } from './kernels.js';
 import { react, createReactionState, beginReactionTick, initialLife, isMover, SOURCE_INFINITE, CLONER_LEARNED, SOURCE_DOWNWARD } from './reactions.js';
 import { footprint, lineCells, SPRAY_DENSITY, clampBrushSize } from './brush.js';
-import { createPressureState, resetPressureState, stepPressure } from './pressure.js';
+import { createPressureState, resetPressureState, stepPressure, createFlashState, resetFlashState, copyFlashState } from './pressure.js';
 import { createBlastState, resetBlastState, copyBlastState, flipBlastState, stepExplosions, applyExplosion, BLAST_KIND } from './explosions.js';
 import { DebrisPool } from './debris.js';
 import { stepHeat, createHeatState } from './heat.js';
@@ -68,6 +68,8 @@ export class Simulation {
     this._blast = createBlastState(width, height); // geçiş 5 (patlamalar)
     this._debris = new DebrisPool(); // savrulan parçacıklar (geçiş 6)
     this._pressure = createPressureState(width, height); // geçiş 4 (basınç)
+    this._flash = createFlashState(width, height); // ani buharlaşma sayaçları
+    this.world.flash = this._flash;
     this.world.blast = this._blast; // reaksiyonlar ve ısı geçişi patlayıcıları buraya yazar
     this.ambientBase = DEFAULT_AMBIENT; // kullanıcı ayarı (undo ile geri alınmaz)
     this.dayCycle = false; // gün/gece döngüsü (kullanıcı tercihi)
@@ -268,7 +270,7 @@ export class Simulation {
     stepHeat(w, rng, this._heat);
 
     // Geçiş 4 — basınç (pressure.js): kapalı bölgeler; patlama istekleri geçiş 5'te işlenir.
-    stepPressure(w, this._pressure, this._blast, this.tick);
+    stepPressure(w, this._pressure, this._blast, this.tick, this._flash);
 
     // Geçiş 5 — patlamalar (explosions.js): birleştirme ızgarası ve kuyruk.
     stepExplosions(w, rng, this._blast, this._debris);
@@ -375,6 +377,7 @@ export class Simulation {
     this.world.clear();
     resetBlastState(this._blast);
     resetPressureState(this._pressure);
+    resetFlashState(this._flash);
     this._debris.clear();
     this.version++;
   }
@@ -386,6 +389,8 @@ export class Simulation {
     this._undo = snap;
     this.world.flipVertical();
     flipBlastState(this._blast);
+    resetPressureState(this._pressure);
+    resetFlashState(this._flash);
     this._debris.flip(this.world.height);
     this.version++;
   }
@@ -406,6 +411,7 @@ export class Simulation {
     this.world.clear();
     resetBlastState(this._blast);
     resetPressureState(this._pressure);
+    resetFlashState(this._flash);
     this._debris.clear();
     this._acc = 0;
     this._hold = null;
@@ -541,6 +547,7 @@ export class Simulation {
     copyBlastState(this._blast, snap.blast);
     this._debris.copyFrom(snap.debris);
     resetPressureState(this._pressure); // geri almada hemen yeniden tara
+    copyFlashState(this._flash, snap.flash);
     this.rng.setState(snap.rng);
     this.tick = snap.tick;
     this.world.ambient = this.ambient; // gün/gece fazı geri alınan tick'e göre
@@ -563,6 +570,7 @@ export class Simulation {
       counts: new Uint32Array(256),
       blast: createBlastState(this.world.width, this.world.height),
       debris: new DebrisPool(),
+      flash: createFlashState(this.world.width, this.world.height),
       rng: new Uint32Array(4),
       tick: 0,
     };
@@ -580,6 +588,7 @@ export class Simulation {
     snap.counts.set(w.counts);
     copyBlastState(snap.blast, this._blast);
     snap.debris.copyFrom(this._debris);
+    copyFlashState(snap.flash, this._flash);
     snap.rng.set(this.rng.getState());
     snap.tick = this.tick;
   }

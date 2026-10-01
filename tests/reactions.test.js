@@ -75,6 +75,7 @@ test('Su altındaki yanan kalas söner ve sönük kalır (sönen hücre yeniden 
   for (const [seed, burning, fuel] of [['a', 'B', MAT.WOOD], ['b', 'B', MAT.WOOD], ['c', 'b', MAT.PLANT], ['d', 'B', MAT.WOOD]]) {
     const row = `~~${burning.repeat(16)}~~`;
     const sim = makeSim(['~'.repeat(20), '~'.repeat(20), row, '~'.repeat(20), '~'.repeat(20), '#'.repeat(20)].join('\n'), { seed });
+    sim.world.flash = null; // konu yeniden tutuşma; 16 hücrelik buhar patlaması kalası dağıtırdı
     runTicks(sim, 300);
     const lit = count(sim, MAT.BURNING_WOOD, MAT.BURNING_PLANT);
     assert.equal(lit, 0, `seed ${seed}: 300 tick sonra hâlâ ${lit} yanan hücre\n${toAscii(sim)}`);
@@ -263,6 +264,7 @@ test('Lava + su kapalı kutusu 10k tick boyunca stabil ve parçacık sayısı ar
   const sim = new Simulation({ width: 30, height: 20, seed: 'stable', debug: true });
   fill(sim, 0, 14, 29, 19, MAT.LAVA);
   fill(sim, 0, 6, 29, 13, MAT.WATER);
+  sim.world.flash = null; // konu kütle korunumu; buhar patlaması (flash.test.js) hücre sayısını değiştirir
   const start = sim.getStats().particles;
   let max = start;
   for (let t = 0; t < 10000; t++) {

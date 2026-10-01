@@ -7,6 +7,7 @@
 // react() true dönerse hücre artık aynı materyal değildir; çağıran hareketi atlar.
 import { MAT, KIND, MATERIALS, spawnTemp, CLOSED_BIT } from './materials.js';
 import { detonate, addBlastPower } from './explosions.js';
+import { noteSteam } from './pressure.js';
 
 const { FLAMMABILITY, BURNS_INTO, LIFE_MIN, LIFE_SPAN, EMIT, DOUSE, ASH_CHANCE, EXTINGUISH_TO, EXPLOSIVE_POWER, EXPLOSIVE_IGNITE } = MATERIALS;
 const { EMPTY, WATER, LAVA, STEAM, FIRE, PLANT, ASH } = MAT;
@@ -71,10 +72,14 @@ const SMOKE_TEMP = 300; // yangın dumanının doğuş sıcaklığı (°C)
 const STEAM_TEMP = spawnTemp(STEAM, 0); // 105 °C
 
 // Tüm buhar üretimi buradan geçer (kaynama, ateş, söndürme). Buhar doğuş sıcaklığıyla başlar;
-// aksi halde suyun sıcaklığını alıp hemen yoğuşurdu. Alt proje 2: basınç kaynağı buraya bağlanacak.
+// aksi halde suyun sıcaklığını alıp hemen yoğuşurdu. Ani buharlaşma sayacı (pressure.js) buradan beslenir.
 export function emitSteam(world, i) {
   world.transform(i, STEAM, 0);
   world.temp[i] = STEAM_TEMP;
+  if (world.flash) {
+    const stride = world.stride;
+    noteSteam(world.flash, (i % stride) - 1, Math.floor(i / stride) - 1); // ani buharlaşma (pressure.js)
+  }
 }
 
 // ---- Materyal kuralları ----

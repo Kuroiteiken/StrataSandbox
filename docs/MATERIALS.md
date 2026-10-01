@@ -52,13 +52,13 @@ Bu belge, simülasyondaki tüm materyalleri ve aralarındaki etkileşimleri tek 
 | Hava (boş) | `EMPTY` | — | — | 5 | Referans. |
 | Kenar | `WALL` | — | statik | — | Dünyanın görünmez çerçevesi; boyanamaz, silinemez. |
 | Kum | `SAND` | `1` | toz | 20 | Suya %50, yağa %40 olasılıkla batar. Lavın üstünde yüzer. |
-| Su | `WATER` | `2` | sıvı | 10 | Dağılım 5, yayılma 1, sürtünme 0,5. |
+| Su | `WATER` | `2` | sıvı | 10 | Dağılım 5, yayılma 1, sürtünme 0,5. Lav ya da erimiş metale değince birden buharlaşırsa buhar patlaması yapar (§5.8). |
 | Taş | `STONE` | `3` | statik | — | — |
 | Ateş | `FIRE` | `4` | gaz | 3 | Ömür 10–26 tick. Tick'lerin %65'inde hareket eder, %30 olasılıkla sürüklenir. |
 | Odun | `WOOD` | `5` | statik | — | Yanıcılık 0,25. |
 | Buhar | `STEAM` | `6` | gaz | 2 | %45 olasılıkla sürüklenir. Ömür 240–480 tick. |
 | Yağ | `OIL` | `7` | sıvı | 8 | Dağılım 2, yayılma 0,6, sürtünme 0,6. Suyun üstünde yüzer. Yanıcılık 1. |
-| Lav | `LAVA` | `8` | sıvı | 30 | Dağılım 1, yayılma 0,2 (ağır akar), sürtünme 0,9. Havada normal hızla düşer. |
+| Lav | `LAVA` | `8` | sıvı | 30 | Dağılım 1, yayılma 0,2 (ağır akar), sürtünme 0,9. Havada normal hızla düşer. Üstüne su dökülürse buhar patlaması olur (§5.8). |
 | Bitki | `PLANT` | `9` | statik | — | Büyüme bütçesi 8. Yanıcılık 0,5. |
 | Cam | `GLASS` | `G` | statik | — | — |
 | Moloz | `RUBBLE` | `O` | toz | 26 | Kumdan ağır, lavdan hafif: lavın üstünde yüzer. 1500 °C'de lava döner (0.11.0). |
@@ -284,6 +284,13 @@ Patlamanın ızgaradan aldığı hücreler `debris.js` içindeki önceden ayrıl
 - **Tavan şartı:** basınç yalnız katı tavan altında birikir. Tavanında sıvı ya da toz olan bölge basınçlı sayılmaz; parça uçlarında yan komşusu sıvı ya da toz olan bölge de sayılmaz (suyun içindeki buhar cebi kabarcıkla çıkar).
 - **Patlama:** P ≥ 3 ve hacim ≥ 3 ise G = min(400, 0,15·(P − 1)·hacim). Tavanın en zayıf (eşitlikte en üst, sonra en sol) hücresi için 2·√G ≥ dayanıklılık ise orada `PRESSURE` türünde patlama istenir; değilse basınç birikir. Tavan açılınca bölge açık havaya bağlanır ve basınç düşer.
 - **Ölçüm (4×3 kavanoz, su 150 °C'de tutulur):** cam 8. tick'te patlar, taş ve metal dayanır (P ≈ 7,2, G ≈ 11).
+
+### 5.8 Ani buharlaşma
+
+- **Sayaç:** `emitSteam` (kaynama, ateşle kaynama, söndürme) her su→buhar dönüşümünü 8×8 bloğa yazar. Blok sayacı her tick 0,85 ile çarpılır (kısa pencere).
+- **Patlama:** sayaç ≥ 4 olunca dönüşüm merkezinde G = sayaç (güç 1/dönüşüm) olan `STEAM` türünde patlama istenir ve sayaç sıfırlanır.
+- **Sonuç:** lava ya da erimiş metale dökülen su aynı anda buhara dönüp patlar; yavaş ısınan suda dönüşümler zamana yayılır, eşiğe ulaşmaz. Ölçüm: lav + su sayaç tepesi ≈ 5, erimiş metal + su ≈ 6,5; sahnelerde (Buzul, Mağara, Vaha, Kum saati, Dökümhane, Volkan) en çok 1,8.
+- **Sınır:** tabanı 200 °C'de tutulan geniş bir tencere de bir an eşiği aşabilir (tepe ≈ 7); yan yana çok sayıda hücre birlikte kaynarsa bu fiziksel olarak doğrudur.
 
 ---
 
