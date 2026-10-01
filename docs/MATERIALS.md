@@ -62,6 +62,8 @@ Bu belge, simülasyondaki tüm materyalleri ve aralarındaki etkileşimleri tek 
 | Bitki | `PLANT` | `9` | statik | — | Büyüme bütçesi 8. Yanıcılık 0,5. |
 | Cam | `GLASS` | `G` | statik | — | — |
 | Moloz | `RUBBLE` | `O` | toz | 26 | Kumdan ağır, lavdan hafif: lavın üstünde yüzer. 1500 °C'de lava döner (0.11.0). |
+| Barut | `GUNPOWDER` | `R` | toz | 14 | Suya batar. Ateş, yanan madde ya da lav teması veya ≥ 200 °C ile patlar; hücre başına güç 1 (0.11.0). |
+| Dinamit | `DYNAMITE` | `D` | statik | — | Dayanıklılık 3. ≥ 150 °C ya da yakındaki patlamayla tetiklenir; hücre başına güç 8 (0.11.0). |
 | Silgi | — | `0` | — | — | Materyal değil; hücreyi boşaltır. Sağ tık her zaman geçici silgidir. |
 
 ### Seçicide olmayan (reaksiyonla oluşan) durumlar
@@ -252,6 +254,14 @@ Patlamanın ızgaradan aldığı hücreler `debris.js` içindeki önceden ayrıl
 - **Ömür:** 300 tick sonunda yarıçap 3 içindeki ilk boş hücreye yerleşir; bulamazsa kaybolur ve `debrisLost` artar (testler 0 bekler).
 - **Kütle:** ızgara sayımı + havuz sayımı sabittir. `getStats().particles` havuzu içerir. Havuz doluysa hücre yerinde kalır.
 - Havuz geri almaya (anlık görüntü) ve dikey çevirmeye (`y ↦ H − y`, `vy ↦ −vy`) dahildir; temizle ve sahne yükleme boşaltır.
+
+### 5.5 Patlayıcılar
+
+- **Güç:** barut hücre başına 1, dinamit 8. Tetiklenen hücrenin gücü 8×8 bloğunda toplanır; blok başına tek patlama olur, yarıçap ve şiddet toplam güçten çıkar (§5.1). Büyük yığın bu yüzden daha büyük patlar.
+- **Eşik:** barut 200 °C, dinamit 150 °C. Eşiği aşan hücre hemen tetiklenir; tetiklenen hücre boşalır ve en az 800 °C olur.
+- **Tutuşma:** ateş, yanan madde ve lav komşu patlayıcıyı tetikler (barut her temasta, dinamit 0,5 olasılıkla).
+- **Kıvılcım:** birleştirme eşiğinin (2) altında kalan blok (örn. tek barut tanesi) patlama olayı üretmez; blok merkezinin 3×3 çevresindeki patlayıcıları tetikler. Bunlar sonraki tick patlar. Tek tanenin zinciri böyle başlar. Tick başına en fazla 64 kıvılcım.
+- **Zincir:** patlamanın şiddeti bir patlayıcıda 0,5 ve üstündeyse hücre tetiklenir. Tetiklenenler ızgaraya yazılır ve sonraki tick patlar; zincir tick tick ilerler, bir tick'te sonsuz döngü olmaz.
 
 ---
 

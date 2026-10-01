@@ -11,6 +11,7 @@
 // Yalnızca aritmetik (Math.sin/exp/pow yok) ve sim RNG'si: deterministik.
 import { MAT, MATERIALS, PROGRESS_SCALE } from './materials.js';
 import { emitSteam, initialLife } from './reactions.js';
+import { detonate } from './explosions.js';
 
 export const HEAT = Object.freeze({
   AIR_RELAX: 0.02, // havanın tick başına ortama yaklaşma oranı
@@ -23,7 +24,7 @@ export const HEAT = Object.freeze({
 
 const {
   CONDUCT, CAP, INV_CAP, SOURCE_TEMP, HAS_PHASE, UP_AT, UP_INTO, UP_LATENT, UP_VANISH,
-  DOWN_AT, DOWN_INTO, DOWN_LATENT, DOWN_VANISH, IGNITE_AT, EVAP_AT, BURNS_INTO,
+  DOWN_AT, DOWN_INTO, DOWN_LATENT, DOWN_VANISH, IGNITE_AT, EVAP_AT, BURNS_INTO, EXPLODE_AT,
 } = MATERIALS;
 const EMPTY = MAT.EMPTY;
 const STEAM = MAT.STEAM;
@@ -41,7 +42,7 @@ const CAND_LO = new Float32Array(256);
 const CAND_HI = new Float32Array(256);
 for (let t = 0; t < 256; t++) {
   CAND_LO[t] = DOWN_AT[t] > SOURCE_TEMP[t] ? DOWN_AT[t] : SOURCE_TEMP[t];
-  CAND_HI[t] = Math.min(UP_AT[t] + 1e-3, IGNITE_AT[t], EVAP_AT[t]);
+  CAND_HI[t] = Math.min(UP_AT[t] + 1e-3, IGNITE_AT[t], EVAP_AT[t], EXPLODE_AT[t]);
 }
 
 // hot[y + 1]: iç satır y sıcak mı. hot[0] ve hot[height + 1] kenar satırlarıdır, hep 0.
@@ -133,6 +134,10 @@ function applyThermalRules(world, rng, state) {
           continue;
         }
         if (life[i] !== 0) life[i] = life[i] > DECAY ? life[i] - DECAY : 0;
+      }
+      if (T >= EXPLODE_AT[t]) {
+        detonate(world, i); // patlayıcı: eşiği aşan hücre hemen tetiklenir (olasılıksız; tek ısınmış hücre soğumadan patlar)
+        continue;
       }
       if (T >= IGNITE_AT[t]) {
         if (rng.nextU32() < ignite) {

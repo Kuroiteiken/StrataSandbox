@@ -6,8 +6,9 @@
 // - Dönüştürülen/oluşturulan hücre damgalanır (world.transform/set) → aynı tick'te zincirleme yok.
 // react() true dönerse hücre artık aynı materyal değildir; çağıran hareketi atlar.
 import { MAT, KIND, MATERIALS, spawnTemp } from './materials.js';
+import { detonate } from './explosions.js';
 
-const { FLAMMABILITY, BURNS_INTO, LIFE_MIN, LIFE_SPAN, EMIT, DOUSE, ASH_CHANCE, EXTINGUISH_TO } = MATERIALS;
+const { FLAMMABILITY, BURNS_INTO, LIFE_MIN, LIFE_SPAN, EMIT, DOUSE, ASH_CHANCE, EXTINGUISH_TO, EXPLOSIVE_POWER, EXPLOSIVE_IGNITE } = MATERIALS;
 const { EMPTY, WATER, LAVA, STEAM, FIRE, PLANT, ASH } = MAT;
 
 // Oranlar (olasılıklar 0..1 → 0..256 eşik).
@@ -52,6 +53,10 @@ function vanish(world, i) {
 }
 
 function ignite(world, rng, j, nt) {
+  if (EXPLOSIVE_POWER[nt] !== 0) {
+    if (roll(rng, EXPLOSIVE_IGNITE[nt])) detonate(world, j); // ateş, yanan madde ve lav patlayıcıyı tetikler
+    return;
+  }
   const flammability = FLAMMABILITY[nt];
   if (flammability !== 0 && roll(rng, flammability)) become(world, rng, j, BURNS_INTO[nt]);
 }

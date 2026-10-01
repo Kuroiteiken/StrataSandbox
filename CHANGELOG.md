@@ -12,6 +12,7 @@ Hedef sürüm 0.11.0.
 - **Patlama çekirdeği:** olay kuyruğu (tick başına en fazla 16 patlama, 4000 hücre), 8×8 birleştirme ızgarası ve patlamanın uygulanması. Yarıçap `min(20, 1 + 1,5·√G)`, şiddet `2·√G·(1 − d/r)`; her hücre merkeze uzaklıkla orantılı ısınır, merkezdeki boş hücrelerin bir kısmı ateş olur. Patlama durumu geri almaya ve çevirmeye dahildir.
 - **Dayanıklılık ve enkaz:** her statik materyalin patlamaya dayanıklılığı ve kırılınca dönüştüğü enkaz var (taş 8 → moloz, cam 2 → kum, buz 2 → kar, odun 4 → kül, metal 20; kenar ve magma kırılmaz).
 - **Savrulan parçacıklar:** patlamada kırılan ve toz ya da sıvı olan hücreler 2000 parçacıklık bir havuzda yay çizerek uçar; hücre hücre izlenen yol duvardan sızmaz, parçacık çarptığı yere (ya da yakın boş hücreye) iner. Kütle korunur; havuz geri almaya ve çevirmeye dahildir.
+- **Barut (`R`) ve Dinamit (`D`):** barut (güç 1) ateş, lav ya da 200 °C ile; dinamit (güç 8, dayanıklılık 3) 150 °C ya da yakındaki patlamayla tetiklenir. Güçler 8×8 blokta toplanır, yığın büyüdükçe patlama büyür. Eşik altı bloklar kıvılcım olur ve komşu patlayıcıyı tetikler; zincir tick tick ilerler.
 - **Moloz (`O`):** kırılan taşın tozu; kumdan ağır, lavın üstünde yüzer, 1500 °C'de lava döner.
 
 ### Changed

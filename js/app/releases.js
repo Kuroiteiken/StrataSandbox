@@ -13,6 +13,8 @@ export const UNRELEASED = Object.freeze({
     'Dökümhane: potanın yarığından kalıplara ısıtılmış eğimli bir oluk iniyor; metal oluktan akıp kalıplara doluyor.',
     'Patlamalar maddeyi savurur: parçalar yay çizip uçar, çarptığı yere düşer.',
     'Moloz (O): patlamada kırılan taşın tozu; kumdan ağır, lavın üstünde yüzer.',
+    'Barut (R): ateş, lav ya da 200 °C ile patlar; yığın büyüdükçe patlama büyür.',
+    'Dinamit (D): barutun güçlü, katı hâli; ısıyla ya da yakındaki patlamayla tetiklenir.',
   ],
 });
 

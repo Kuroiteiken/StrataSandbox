@@ -10,7 +10,7 @@
 import { MAT, KIND, MATERIALS } from './materials.js';
 import { TEMP_MAX } from './climate.js';
 
-const { KIND: KIND_OF, STRENGTH, DEBRIS_OF, FLAMMABILITY, BURNS_INTO, LIFE_MIN, LIFE_SPAN, SPAWN_TEMP } = MATERIALS;
+const { KIND: KIND_OF, EXPLOSIVE_POWER, STRENGTH, DEBRIS_OF, FLAMMABILITY, BURNS_INTO, LIFE_MIN, LIFE_SPAN, SPAWN_TEMP } = MATERIALS;
 const EMPTY = MAT.EMPTY;
 const FIRE = MAT.FIRE;
 const U32 = 4294967296;
@@ -23,7 +23,9 @@ export const BLAST = Object.freeze({
   QUEUE_CAPACITY: 64,
   MERGE_BLOCK: 8, // birleştirme ızgarası blok kenarı (hücre)
   MERGE_MIN: 2, // bir bloğun patlama olayına dönüşmesi için en az güç
-  CHAIN_MIN: 0.5, // patlayıcıyı tetikleyen en az şiddet (Görev 3)
+  CHAIN_MIN: 0.5, // patlayıcıyı tetikleyen en az şiddet
+  DETONATE_TEMP: 800, // tetiklenen hücrenin en az sıcaklığı (°C)
+  SPARK_CAPACITY: 64, // tick başına eşik altı blok (kıvılcım) sayısı
   FIRE_CHANCE: 0.5, // d < r/2 boş hücrenin ateşe dönme olasılığı
   LAUNCH_K: 0.75, // savrulma hızı = LAUNCH_K · s (havuz V_MAX ile kırpar)
   UP_BIAS: 0.35, // savrulma yönüne eklenen yukarı eğilim
@@ -64,6 +66,9 @@ export function createBlastState(width, height) {
     qCount: 0,
     blastsThisTick: 0,
     cellsThisTick: 0,
+    sparkX: new Int32Array(BLAST.SPARK_CAPACITY),
+    sparkY: new Int32Array(BLAST.SPARK_CAPACITY),
+    sparkCount: 0,
     totals: new Uint32Array(8), // BLAST_KIND başına toplam (istatistik ve testler)
     ringX: new Float32Array(ring),
     ringY: new Float32Array(ring),
@@ -139,9 +144,22 @@ export function requestExplosion(s, x, y, G, kind) {
   return true;
 }
 
+// Patlayıcı hücreyi tetikler: gücü 8×8 bloğuna yazılır, hücre en az DETONATE_TEMP sıcaklıkta boşluğa döner.
+// world.blast yoksa (yalın World testleri) yalnız hücre boşalır.
+export function detonate(world, i) {
+  const G = EXPLOSIVE_POWER[world.type[i]];
+  if (G === 0) return false;
+  const stride = world.stride;
+  if (world.blast) addBlastPower(world.blast, (i % stride) - 1, Math.floor(i / stride) - 1, G);
+  const T = world.temp[i];
+  world.set(i, EMPTY, 0, 0, 0, T > BLAST.DETONATE_TEMP ? T : BLAST.DETONATE_TEMP);
+  return true;
+}
+
 // Birleştirme ızgarası → kuyruk. Kuyruk doluysa blok bekler (sonraki tick).
-function flushMerge(s) {
+function flushMerge(world, s) {
   let keep = 0;
+  s.sparkCount = 0;
   for (let k = 0; k < s.activeCount; k++) {
     const b = s.active[k];
     const p = s.power[b];
@@ -151,10 +169,27 @@ function flushMerge(s) {
         continue;
       }
       pushEvent(s, s.sx[b] / p, s.sy[b] / p, p, BLAST_KIND.EXPLOSIVE);
+    } else if (p > 0 && s.sparkCount < BLAST.SPARK_CAPACITY) {
+      s.sparkX[s.sparkCount] = Math.round(s.sx[b] / p);
+      s.sparkY[s.sparkCount] = Math.round(s.sy[b] / p);
+      s.sparkCount++;
     }
     clearBlock(s, b);
   }
   s.activeCount = keep;
+  // Kıvılcım: eşik altı bloğun merkezindeki 3×3'teki patlayıcılar tetiklenir (ızgaraya, sonraki tick).
+  for (let n = 0; n < s.sparkCount; n++) {
+    const cx = s.sparkX[n];
+    const cy = s.sparkY[n];
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const x = cx + dx;
+        const y = cy + dy;
+        if (x < 0 || y < 0 || x >= world.width || y >= world.height) continue;
+        detonate(world, (y + 1) * world.stride + x + 1);
+      }
+    }
+  }
 }
 
 const chance = (rng, p) => rng.nextU32() < p * U32;
@@ -207,6 +242,10 @@ export function applyExplosion(world, rng, s, pool, cx, cy, G, kind) {
       s.cellsThisTick++;
       const heated = temp[i] + BLAST.HEAT_MAX * f;
       temp[i] = heated > TEMP_MAX ? TEMP_MAX : heated;
+      if (EXPLOSIVE_POWER[t] !== 0) {
+        if (sv >= BLAST.CHAIN_MIN) detonate(world, i); // zincir: ızgaraya, sonraki tick
+        continue;
+      }
       const k = KIND_OF[t];
       if (k === KIND.NONE) {
         if (d < r * 0.5 && chance(rng, BLAST.FIRE_CHANCE)) {
@@ -241,7 +280,7 @@ export function applyExplosion(world, rng, s, pool, cx, cy, G, kind) {
 
 // Geçiş 5: birleştirme ızgarası kuyruğa, sonra sınırlar içinde kuyruk işlenir; kalan sonraki tick'e kalır.
 export function stepExplosions(world, rng, s, pool) {
-  flushMerge(s);
+  flushMerge(world, s);
   s.blastsThisTick = 0;
   s.cellsThisTick = 0;
   let k = 0;

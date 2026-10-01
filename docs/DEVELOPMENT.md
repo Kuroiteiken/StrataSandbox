@@ -751,7 +751,7 @@ Spec: `docs/superpowers/specs/2026-10-01-basinc-patlama-design.md` · Plan: `doc
 
 - [x] Patlama çekirdeği, dayanıklılık ve Moloz
 - [x] Savrulan parçacıklar
-- [ ] Barut ve dinamit
+- [x] Barut ve dinamit
 - [ ] Fitil
 - [ ] Metan ve duman
 - [ ] Kapalı bölge basıncı
