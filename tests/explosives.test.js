@@ -48,8 +48,8 @@ test('büyük yığın daha büyük patlar: kırılan taş sayısı yığınla a
     return stone0 - countMaterial(sim, MAT.STONE);
   };
   const small = broken(4);
-  const big = broken(16);
-  assert.ok(big > small * 2, `küçük ${small}, büyük ${big}`);
+  const big = broken(12);
+  assert.ok(big > small * 2 && big >= 200, `küçük ${small}, büyük ${big}`);
 });
 
 test('zincir tick tick ilerler: 60 hücrelik barut hattı tek tick\'te bitmez ama sonuna kadar tükenir', () => {
@@ -91,7 +91,7 @@ test('dinamit: ≥ 150 °C ile ve yakındaki patlamayla tetiklenir; tek hücre b
   heat.setTemp(15, 29, 200);
   runTicks(heat, 150);
   assert.equal(countMaterial(heat, MAT.DYNAMITE), 0);
-  assert.equal(explosive(heat), 1, 'güç 8 ≥ MERGE_MIN: tek hücre patlama olayı üretir');
+  assert.equal(explosive(heat), 1, 'güç 30 ≥ MERGE_MIN: tek hücre patlama olayı üretir');
   const chain = new Simulation({ width: 40, height: 30, seed: 'dyn2' });
   chain.setCell(28, 15, MAT.DYNAMITE);
   chain.blastAt(22, 15, 6); // d 6 → s 4,8 ≥ 0,5
@@ -101,10 +101,10 @@ test('dinamit: ≥ 150 °C ile ve yakındaki patlamayla tetiklenir; tek hücre b
   assert.ok(explosive(chain) >= 1);
 });
 
-test('tablolar: barut toz ve suya batar; dinamit katı, patlayıcı gücü 8', () => {
-  assert.equal(MATERIALS.EXPLOSIVE_POWER[MAT.GUNPOWDER], 1);
+test('tablolar: barut toz ve suya batar; dinamit katı, patlayıcı gücü 30', () => {
+  assert.equal(MATERIALS.EXPLOSIVE_POWER[MAT.GUNPOWDER], 4);
   assert.equal(MATERIALS.EXPLODE_AT[MAT.GUNPOWDER], 200);
-  assert.equal(MATERIALS.EXPLOSIVE_POWER[MAT.DYNAMITE], 8);
+  assert.equal(MATERIALS.EXPLOSIVE_POWER[MAT.DYNAMITE], 30);
   assert.equal(MATERIALS.EXPLODE_AT[MAT.DYNAMITE], 150);
   assert.ok(MATERIALS.byKey.GUNPOWDER.density > MATERIALS.byKey.WATER.density);
 });

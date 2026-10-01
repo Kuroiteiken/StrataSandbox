@@ -142,11 +142,11 @@ export const MATERIAL_DEFS = [
   },
   {
     id: MAT.GUNPOWDER, key: 'GUNPOWDER', name: 'Gunpowder', kind: KIND.POWDER, density: 14, color: '#3a3634',
-    conduct: 0.03, capacity: 2, explosive: { power: 1, at: 200, ignite: 1 },
+    conduct: 0.03, capacity: 2, explosive: { power: 4, at: 200, ignite: 1 },
   },
   {
     id: MAT.DYNAMITE, key: 'DYNAMITE', name: 'Dynamite', kind: KIND.STATIC, density: 255, color: '#b8322a',
-    conduct: 0.03, capacity: 3, strength: 3, explosive: { power: 8, at: 150, ignite: 0.5 },
+    conduct: 0.03, capacity: 3, strength: 3, explosive: { power: 30, at: 150, ignite: 0.5 },
   },
 ];
 
