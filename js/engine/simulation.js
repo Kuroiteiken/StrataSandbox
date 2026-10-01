@@ -7,6 +7,7 @@ import { stepPowder, stepLiquid, stepGas } from './kernels.js';
 import { react, createReactionState, beginReactionTick, initialLife, isMover, SOURCE_INFINITE, CLONER_LEARNED, SOURCE_DOWNWARD } from './reactions.js';
 import { footprint, lineCells, SPRAY_DENSITY, clampBrushSize } from './brush.js';
 import { createBlastState, resetBlastState, copyBlastState, flipBlastState, stepExplosions, applyExplosion, BLAST_KIND } from './explosions.js';
+import { DebrisPool } from './debris.js';
 import { stepHeat, createHeatState } from './heat.js';
 import { DEFAULT_AMBIENT, clampAmbient, TEMP_MIN, TEMP_MAX, ambientAt, dayPhase } from './climate.js';
 
@@ -64,7 +65,7 @@ export class Simulation {
     this._gasRows = new Uint8Array(height); // geçiş 2'de taranacak satırlar
     this._heat = createHeatState(height); // geçiş 3 (ısı) durumu
     this._blast = createBlastState(width, height); // geçiş 5 (patlamalar)
-    this._debris = null; // savrulan parçacık havuzu (Görev 2)
+    this._debris = new DebrisPool(); // savrulan parçacıklar (geçiş 6)
     this.world.blast = this._blast; // reaksiyonlar ve ısı geçişi patlayıcıları buraya yazar
     this.ambientBase = DEFAULT_AMBIENT; // kullanıcı ayarı (undo ile geri alınmaz)
     this.dayCycle = false; // gün/gece döngüsü (kullanıcı tercihi)
@@ -83,6 +84,16 @@ export class Simulation {
     const sim = this;
     const w = this.world;
     this.view = Object.freeze({
+      debris: Object.freeze({
+        get count() {
+          return sim._debris.count;
+        },
+        x: this._debris.x,
+        y: this._debris.y,
+        type: this._debris.type,
+        variant: this._debris.variant,
+        temp: this._debris.temp,
+      }),
       width,
       height,
       stride: w.stride,
@@ -257,6 +268,9 @@ export class Simulation {
     // Geçiş 5 — patlamalar (explosions.js): birleştirme ızgarası ve kuyruk.
     stepExplosions(w, rng, this._blast, this._debris);
 
+    // Geçiş 6 — savrulan parçacıklar (debris.js).
+    this._debris.step(w);
+
     // Basılı tutma tick sonunda uygulanır: kaynak hücre bu tick boşaldıysa hemen yeniden dolar
     // (kesintisiz akış); yeni hücreler bir sonraki tick hareket eder.
     this._nextToolGen();
@@ -278,6 +292,12 @@ export class Simulation {
 
   _assertInvariants() {
     const problems = this.world.checkInvariants();
+    const d = this._debris;
+    for (let k = 0; k < d.count; k++) {
+      const t = d.type[k];
+      if (!(d.x[k] >= 0 && d.x[k] <= this.world.width && d.y[k] >= 0 && d.y[k] <= this.world.height)) problems.push(`parçacık dünya dışında #${k}`);
+      if (t === MAT.EMPTY || t === MAT.WALL || !MATERIALS.defs[t]) problems.push(`parçacık türü geçersiz #${k}: ${t}`);
+    }
     if (problems.length > 0) {
       throw new Error(`Dünya değişmezi bozuldu (tick ${this.tick}): ${problems.slice(0, 5).join('; ')}`);
     }
@@ -349,6 +369,7 @@ export class Simulation {
     this.world.ambient = this.ambient;
     this.world.clear();
     resetBlastState(this._blast);
+    this._debris.clear();
     this.version++;
   }
 
@@ -359,6 +380,7 @@ export class Simulation {
     this._undo = snap;
     this.world.flipVertical();
     flipBlastState(this._blast);
+    this._debris.flip(this.world.height);
     this.version++;
   }
 
@@ -377,6 +399,7 @@ export class Simulation {
     this.world.ambient = this.ambient;
     this.world.clear();
     resetBlastState(this._blast);
+    this._debris.clear();
     this._acc = 0;
     this._hold = null;
     this._undo = null;
@@ -509,6 +532,7 @@ export class Simulation {
     w.temp.set(snap.temp);
     w.counts.set(snap.counts);
     copyBlastState(this._blast, snap.blast);
+    this._debris.copyFrom(snap.debris);
     this.rng.setState(snap.rng);
     this.tick = snap.tick;
     this.world.ambient = this.ambient; // gün/gece fazı geri alınan tick'e göre
@@ -530,6 +554,7 @@ export class Simulation {
       temp: new Float32Array(size),
       counts: new Uint32Array(256),
       blast: createBlastState(this.world.width, this.world.height),
+      debris: new DebrisPool(),
       rng: new Uint32Array(4),
       tick: 0,
     };
@@ -546,6 +571,7 @@ export class Simulation {
     snap.temp.set(w.temp);
     snap.counts.set(w.counts);
     copyBlastState(snap.blast, this._blast);
+    snap.debris.copyFrom(this._debris);
     snap.rng.set(this.rng.getState());
     snap.tick = this.tick;
   }
@@ -554,7 +580,9 @@ export class Simulation {
     const w = this.world;
     return {
       tick: this.tick,
-      particles: w.width * w.height - w.counts[EMPTY],
+      particles: w.width * w.height - w.counts[EMPTY] + this._debris.count,
+      debris: this._debris.count,
+      debrisLost: this._debris.lost,
       activeCells: w.moves,
       width: w.width,
       height: w.height,

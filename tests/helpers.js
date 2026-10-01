@@ -103,5 +103,19 @@ export function hashView(sim) {
     mix(tb[i] >>> 16);
     mix(tb[i] >>> 24);
   }
+  const d = sim.view.debris;
+  if (d) {
+    mix(d.count);
+    mix(d.count >>> 8);
+    const fx = new Uint32Array(d.x.buffer, d.x.byteOffset, d.count);
+    const fy = new Uint32Array(d.y.buffer, d.y.byteOffset, d.count);
+    for (let k = 0; k < d.count; k++) {
+      mix(d.type[k]);
+      mix(fx[k]);
+      mix(fx[k] >>> 16);
+      mix(fy[k]);
+      mix(fy[k] >>> 16);
+    }
+  }
   return h >>> 0;
 }

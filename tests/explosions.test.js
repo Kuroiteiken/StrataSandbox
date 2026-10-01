@@ -7,6 +7,13 @@ import { BLAST, BLAST_KIND, radiusOf, intensityAt, requestExplosion, addBlastPow
 import { countMaterial, cellType, hashView, runTicks } from './helpers.js';
 
 const T = (sim, x, y) => sim.getCell(x, y).temp;
+// Savrulan parçacıklar: kırılan hücre havuza girer; havuzdaki bir türün sayısı.
+const flying = (sim, mat) => {
+  const d = sim.view.debris;
+  let n = 0;
+  for (let k = 0; k < d.count; k++) if (d.type[k] === mat) n++;
+  return n;
+};
 
 test('yarıçap ve şiddet: r = min(20, 1 + 1,5·√G), s = 2·√G·(1 − d/r)', () => {
   assert.equal(radiusOf(1), 2.5);
@@ -25,9 +32,11 @@ test('dayanıklılık: aynı patlamada yakın taş kırılır, uzak taş kalır;
   sim.setCell(12, 10, MAT.GLASS); // d 8 → s 2,4 ≥ 2: kırılır
   sim.setCell(21, 10, MAT.METAL); // d 1 → s 10,8 < 20: kalır
   assert.equal(sim.blastAt(20, 10, 6), true);
-  assert.equal(cellType(sim, 23, 10), MAT.RUBBLE, 'taş → moloz (havuz yokken yerinde)');
+  assert.ok(cellType(sim, 23, 10) !== MAT.STONE, 'taş kırıldı');
+  assert.ok(flying(sim, MAT.RUBBLE) > 0, 'moloz savruldu');
   assert.equal(cellType(sim, 25, 10), MAT.STONE);
-  assert.equal(cellType(sim, 12, 10), MAT.SAND, 'cam → kum');
+  assert.ok(cellType(sim, 12, 10) !== MAT.GLASS, 'cam kırıldı');
+  assert.ok(flying(sim, MAT.SAND) > 0, 'cam → kum savruldu');
   assert.equal(cellType(sim, 21, 10), MAT.METAL);
   assert.deepEqual(sim.world.checkInvariants(), []);
 });
@@ -38,8 +47,10 @@ test('enkaz eşlemesi: buz → kar, odun → kül; magma kırılmaz', () => {
   sim.setCell(11, 5, MAT.WOOD);
   sim.world.set(sim.world.index(9, 5), MAT.MAGMA, 0, 0, 0, 1200);
   sim.blastAt(10, 5, 6);
-  assert.equal(cellType(sim, 10, 4), MAT.SNOW);
-  assert.equal(cellType(sim, 11, 5), MAT.ASH);
+  assert.ok(cellType(sim, 10, 4) !== MAT.ICE, 'buz kırıldı');
+  assert.ok(cellType(sim, 11, 5) !== MAT.WOOD, 'odun kırıldı');
+  assert.ok(flying(sim, MAT.SNOW) > 0, 'buz → kar');
+  assert.ok(flying(sim, MAT.ASH) > 0, 'odun → kül');
   assert.equal(cellType(sim, 9, 5), MAT.MAGMA);
 });
 

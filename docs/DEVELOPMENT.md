@@ -750,7 +750,7 @@ Spec: `docs/superpowers/specs/2026-09-30-sicaklik-sistemi-design.md` · Plan: `d
 Spec: `docs/superpowers/specs/2026-10-01-basinc-patlama-design.md` · Plan: `docs/superpowers/plans/2026-10-01-basinc-patlama.md` · Materyal belgesi: `docs/MATERIALS.md`
 
 - [x] Patlama çekirdeği, dayanıklılık ve Moloz
-- [ ] Savrulan parçacıklar
+- [x] Savrulan parçacıklar
 - [ ] Barut ve dinamit
 - [ ] Fitil
 - [ ] Metan ve duman

@@ -229,7 +229,8 @@ Burada yalnızca gerçekten önemli teknik kararlar tutulur. Her kayıt dört ba
   - **Formül:** yarıçap `r = min(20, 1 + 1,5·√G)`, şiddet `s = 2·√G·(1 − d/r)`. Yalnızca `Math.sqrt` kullanılır; sin/cos/exp/pow yoktur.
   - **Dayanıklılık:** statik materyalin `strength` değeri zorunludur (`Infinity` = kırılmaz). `s ≥ strength` olan katı `debris` materyaline döner ve savrulur. Toz ve sıvı her zaman savrulur, gaz yalnız ısınır.
   - **Savurma havuzu:** havuz yoksa (`null`) savrulacak hücre yerinde kalır, kırılan katı yerinde enkazına döner.
+  - **Parçacık havuzu:** `debris.js` önceden ayrılmış SoA havuz (2000) tutar; geçiş 6 parçacıkları ilerletir. Yol hücre hücre izlenir (DDA, tek eksen adımı): köşeden de duvardan da sızılmaz. İniş çarpmadan önceki son hücreye, doluysa 4 komşuya (köşegen yok), o da doluysa sütunda yukarı; ömür (300 tick) sonunda yarıçap 3'te yerleşir, bulamazsa kaybolur ve sayılır. Havuz anlık görüntüye ve çevirmeye dahildir.
 - **Alternatifler:**
   - Tam hız alanı (basınç ve hız ızgarası). Reddedildi: bellek ve tick maliyeti yüksek, sonuç tek seferlik patlama için gereğinden karmaşık.
   - Anlık itme (patlamada hücreleri doğrudan taşımak). Reddedildi: sıra bağımlı, katı çarpışmayı ve duvardan sızmayı denetlemek zor.
-- **Sonuç:** patlama maliyeti tick başına sınırlı ve deterministik. Patlayıcı malzemeler yalnızca tablolara (`EXPLOSIVE_POWER`, `EXPLODE_AT`, `EXPLOSIVE_IGNITE`) alan ekler. Savrulan parçacık havuzu sonraki görevde bu ADR'ye eklenir.
+- **Sonuç:** patlama maliyeti tick başına sınırlı ve deterministik. Patlayıcı malzemeler yalnızca tablolara (`EXPLOSIVE_POWER`, `EXPLODE_AT`, `EXPLOSIVE_IGNITE`) alan ekler. Savrulan parçacıklar ızgaranın dışında yaşadığından geri alma ve çevirmede ayrıca ele alınır.

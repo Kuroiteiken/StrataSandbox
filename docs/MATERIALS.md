@@ -242,6 +242,17 @@ Bir patlama (merkez, güç G) şöyle uygulanır (ADR-017):
 - Yoğunluk 26: kumdan (20) ağır, lavdan (30) hafif. Lavın üstünde yüzer.
 - Isıl özellikleri taş gibidir (iletkenlik 0,06, kapasite 4); 1500 °C'de lava döner.
 
+### 5.4 Savrulan parçacıklar
+
+Patlamanın ızgaradan aldığı hücreler `debris.js` içindeki önceden ayrılmış havuzda (SoA, kapasite 2000) uçar; tick geçiş 6'da ilerler.
+
+- **Hareket:** her tick `vy += 0,25`, `v *= 0,98`, `|v| ≤ 6` hücre/tick.
+- **Yol:** konumdan yeni konuma hücre hücre izlenir (DDA, tek eksen adımları). Hava ve gaz geçilebilir; ilk diğer hücrede ya da dünya kenarında durulur. Köşeden de geçilmez, duvardan sızma yok.
+- **İniş:** çarpmadan önceki son hücreye kendi türü, tonu ve sıcaklığıyla iner; doluysa 4 komşusuna (köşegen yok), o da doluysa aynı sütunda yukarıdaki ilk boş hücreye. Bulunamazsa yatay hızını kaybedip düşmeye devam eder. İniş hücresi gazsa gaz silinir.
+- **Ömür:** 300 tick sonunda yarıçap 3 içindeki ilk boş hücreye yerleşir; bulamazsa kaybolur ve `debrisLost` artar (testler 0 bekler).
+- **Kütle:** ızgara sayımı + havuz sayımı sabittir. `getStats().particles` havuzu içerir. Havuz doluysa hücre yerinde kalır.
+- Havuz geri almaya (anlık görüntü) ve dikey çevirmeye (`y ↦ H − y`, `vy ↦ −vy`) dahildir; temizle ve sahne yükleme boşaltır.
+
 ---
 
 ## 6. Materyal ekleme kontrol listesi

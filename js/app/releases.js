@@ -11,6 +11,7 @@ export const UNRELEASED = Object.freeze({
     'Kum saati: yutucular artık dipte değil, alt haznenin üst kısmında akışın iki yanındaki küçük cam raflarda. Alt hazne gerçek bir kum saati gibi dolar, raf seviyesinde durur ve boğazı tıkamaz.',
     'Volkan: yamacın altındaki magma damarı lav yolunu sıcak tutuyor; lav eteğe inip sağdaki ağaçları tutuşturuyor.',
     'Dökümhane: potanın yarığından kalıplara ısıtılmış eğimli bir oluk iniyor; metal oluktan akıp kalıplara doluyor.',
+    'Patlamalar maddeyi savurur: parçalar yay çizip uçar, çarptığı yere düşer.',
     'Moloz (O): patlamada kırılan taşın tozu; kumdan ağır, lavın üstünde yüzer.',
   ],
 });
