@@ -31,6 +31,11 @@ function flicker(i, frame) {
 
 const clampRamp = (v) => (v < 0 ? 0 : v > RAMP_MAX ? RAMP_MAX : v | 0);
 
+// Akkorluk (T ≥ INC_START): karışım oranı ve rampa rengi. Izgara ve parçacık çizimi aynı ifadeleri paylaşır.
+const incFactor = (T) => (T >= INC_FULL ? 1 : (T - INC_START) / (INC_FULL - INC_START));
+const incColor = (T, incandescent) =>
+  incandescent[clampRamp((((T > INC_MAX ? INC_MAX : T) - INC_START) * RAMP_MAX) / (INC_MAX - INC_START))];
+
 // Aynı endianness'ta paketli iki rengin bayt bayt karışımı (f ∈ [0, 1]); alfa baytları 255 ise 255 kalır.
 function mixPacked(a, b, f) {
   const g = 1 - f;
@@ -111,8 +116,8 @@ export function fillPixels(view, out, pal, ramps, frame, reducedMotion, glow = n
           const T = temp[i];
           if (T >= INC_START) {
             hotCells++;
-            const f = T >= INC_FULL ? 1 : (T - INC_START) / (INC_FULL - INC_START);
-            const hot = incandescent[clampRamp((((T > INC_MAX ? INC_MAX : T) - INC_START) * RAMP_MAX) / (INC_MAX - INC_START))];
+            const f = incFactor(T);
+            const hot = incColor(T, incandescent);
             c = mixPacked(c, hot, f);
             if (glow) g = withAlpha(hot, (f * 150) | 0, littleEndian);
           } else if (t === WATER && T < COLD_START) {
@@ -160,8 +165,8 @@ export function drawDebris(view, out, pal, ramps, glow = null) {
     const T = d.temp[k];
     if (T >= INC_START) {
       hot++;
-      const f = T >= INC_FULL ? 1 : (T - INC_START) / (INC_FULL - INC_START);
-      const h = incandescent[clampRamp((((T > INC_MAX ? INC_MAX : T) - INC_START) * RAMP_MAX) / (INC_MAX - INC_START))];
+      const f = incFactor(T);
+      const h = incColor(T, incandescent);
       c = mixPacked(c, h, f);
       if (glow) glow[o] = withAlpha(h, (f * 150) | 0, littleEndian);
     }
