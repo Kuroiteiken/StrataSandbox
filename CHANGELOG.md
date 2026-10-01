@@ -16,6 +16,7 @@ Hedef sürüm 0.11.0.
 - **Fitil (`I`):** ateşi saniyede ~10 hücre (6 tick'te bir hücre) taşır; yanan fitil ömrü bitince küle döner, komşu fitili tutuşturur ve patlayıcıyı tetikler. Yanarken kıvılcım çıkarır, suyla söner. Dayanıklılık 4: zayıf patlama fitili tutuşturur, güçlüsü kırar.
 - **Moloz (`O`):** kırılan taşın tozu; kumdan ağır, lavın üstünde yüzer, 1500 °C'de lava döner.
 - **Metan (`N`), Yanan metan ve Duman (`U`):** metan havadan hafif, yanıcı bir gazdır (540 °C); yanan metan 8 komşusundaki metanı tutuşturur ve birleştirme ızgarasına güç yazar, bu yüzden yoğun cep patlar, seyrek metan yalnız yanar. Duman yangınlardan (sönen ateş, yanan madde; tick başına en fazla 60) ve patlama halkasından çıkar, açık havada 200–500 tick sonra söner. Patlama gaz yanıcıları tutuşturur.
+- **Kapalı bölge basıncı:** hava ve gaz bölgeleri 4 tick'te bir taranır; kapalı bölgenin basıncı (buhar ağırlığı 8, sıcaklıkla artar) tavanın en zayıf katı hücresini aşarsa orada patlama olur. Cam kolay, taş zor, metal küçük kapta hiç kırılmaz; sıvı tavanlı bölge ya da yanı sıvı olan gaz cebi basınç tutmaz. Kapalı bölgedeki duman sönmez. Debug panelinde kapalı bölge sayısı, en yüksek basınç ve patlama sayısı görünür.
 
 ### Changed
 

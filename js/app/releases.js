@@ -18,6 +18,7 @@ export const UNRELEASED = Object.freeze({
     'Fitil (I): ateşi saniyede ~10 hücre taşır, sonundaki barutu ya da dinamiti tetikler; su söndürür.',
     'Metan (N): havadan hafif, yanıcı gaz; yoğun cep tutuşunca patlar.',
     'Duman (U): yangınlardan ve patlamalardan çıkar, açık havada dağılır.',
+    'Dar alanda basınç: kapalı bir kapta biriken buhar ya da sıcak gaz en zayıf noktasından patlar; cam kolay, taş zor, metal neredeyse hiç.',
   ],
 });
 

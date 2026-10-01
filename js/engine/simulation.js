@@ -6,6 +6,7 @@ import { MAT, KIND, MATERIALS, spawnTemp } from './materials.js';
 import { stepPowder, stepLiquid, stepGas } from './kernels.js';
 import { react, createReactionState, beginReactionTick, initialLife, isMover, SOURCE_INFINITE, CLONER_LEARNED, SOURCE_DOWNWARD } from './reactions.js';
 import { footprint, lineCells, SPRAY_DENSITY, clampBrushSize } from './brush.js';
+import { createPressureState, resetPressureState, stepPressure } from './pressure.js';
 import { createBlastState, resetBlastState, copyBlastState, flipBlastState, stepExplosions, applyExplosion, BLAST_KIND } from './explosions.js';
 import { DebrisPool } from './debris.js';
 import { stepHeat, createHeatState } from './heat.js';
@@ -66,6 +67,7 @@ export class Simulation {
     this._heat = createHeatState(height); // geçiş 3 (ısı) durumu
     this._blast = createBlastState(width, height); // geçiş 5 (patlamalar)
     this._debris = new DebrisPool(); // savrulan parçacıklar (geçiş 6)
+    this._pressure = createPressureState(width, height); // geçiş 4 (basınç)
     this.world.blast = this._blast; // reaksiyonlar ve ısı geçişi patlayıcıları buraya yazar
     this.ambientBase = DEFAULT_AMBIENT; // kullanıcı ayarı (undo ile geri alınmaz)
     this.dayCycle = false; // gün/gece döngüsü (kullanıcı tercihi)
@@ -265,6 +267,9 @@ export class Simulation {
     // Geçiş 3 — ısı (heat.js): difüzyon, hava, kaynaklar.
     stepHeat(w, rng, this._heat);
 
+    // Geçiş 4 — basınç (pressure.js): kapalı bölgeler; patlama istekleri geçiş 5'te işlenir.
+    stepPressure(w, this._pressure, this._blast, this.tick);
+
     // Geçiş 5 — patlamalar (explosions.js): birleştirme ızgarası ve kuyruk.
     stepExplosions(w, rng, this._blast, this._debris);
 
@@ -369,6 +374,7 @@ export class Simulation {
     this.world.ambient = this.ambient;
     this.world.clear();
     resetBlastState(this._blast);
+    resetPressureState(this._pressure);
     this._debris.clear();
     this.version++;
   }
@@ -399,6 +405,7 @@ export class Simulation {
     this.world.ambient = this.ambient;
     this.world.clear();
     resetBlastState(this._blast);
+    resetPressureState(this._pressure);
     this._debris.clear();
     this._acc = 0;
     this._hold = null;
@@ -533,6 +540,7 @@ export class Simulation {
     w.counts.set(snap.counts);
     copyBlastState(this._blast, snap.blast);
     this._debris.copyFrom(snap.debris);
+    resetPressureState(this._pressure); // geri almada hemen yeniden tara
     this.rng.setState(snap.rng);
     this.tick = snap.tick;
     this.world.ambient = this.ambient; // gün/gece fazı geri alınan tick'e göre
@@ -595,6 +603,7 @@ export class Simulation {
       dayPhase: this.dayPhase,
       blastsThisTick: this._blast.blastsThisTick,
       blastTotals: Uint32Array.from(this._blast.totals),
+      pressure: { regions: this._pressure.regions, closed: this._pressure.closed, maxP: this._pressure.maxP },
     };
   }
 }

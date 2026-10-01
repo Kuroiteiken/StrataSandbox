@@ -234,3 +234,18 @@ Burada yalnızca gerçekten önemli teknik kararlar tutulur. Her kayıt dört ba
   - Tam hız alanı (basınç ve hız ızgarası). Reddedildi: bellek ve tick maliyeti yüksek, sonuç tek seferlik patlama için gereğinden karmaşık.
   - Anlık itme (patlamada hücreleri doğrudan taşımak). Reddedildi: sıra bağımlı, katı çarpışmayı ve duvardan sızmayı denetlemek zor.
 - **Sonuç:** patlama maliyeti tick başına sınırlı ve deterministik. Patlayıcı malzemeler yalnızca tablolara (`EXPLOSIVE_POWER`, `EXPLODE_AT`, `EXPLOSIVE_IGNITE`) alan ekler. Savrulan parçacıklar ızgaranın dışında yaşadığından geri alma ve çevirmede ayrıca ele alınır.
+
+## ADR-018 — Kapalı bölge basıncı: dört tick'te bir bölge taraması
+
+- **Bağlam:** Kapalı kapta ısınan buhar ve gaz patlamalı; cam kolay, taş zor, metal neredeyse hiç kırılmalı. Basıncın her hücrede ayrı tutulması hem bellek hem tick maliyeti getirir.
+- **Karar:**
+  - **Bölge taraması:** `pressure.js` 4 tick'te bir hava ve gaz hücrelerini satır parçalarıyla birleşim-bul yöntemiyle etiketler (geçiş 4). Üst satıra değen bölge açıktır; kapalı bölgenin hücrelerine `CLOSED_BIT` (flags bit4) yazılır. Duman bu bitle ömrünü dondurur.
+  - **Basınç:** P = Σ w·(T+273)/293 / hacim; buharın ağırlığı 8. Tek bir sayı bölgeyi anlatır.
+  - **Tavan şartı:** yalnız katı tavan basınç tutar; sıvı ya da toz tavanlı ve yanları sıvı/toz olan bölgeler sayılmaz (gaz kabarcıkla çıkar). Yan komşu denetimi yalnız parça uçlarında yapılır: ucuz.
+  - **Patlama:** G = min(400, 0,15·(P − 1)·hacim); en zayıf tavan hücresi 2·√G ≥ dayanıklılık ise orada patlama istenir, yoksa basınç birikir. POWER_K başlangıçta 0,5'ti; 4×3 kavanozda su bir anda kaynadığından P tek taramada ~7'ye sıçrıyor ve G ≈ 37 taşı da (8) kırıyordu. 0,15 ile cam kırılır, taş ve metal dayanır.
+  - **Geri alma:** `resetPressureState` bir sonraki tick'te zorunlu tarama yapar.
+- **Alternatifler:**
+  - Hücre başına basınç alanı (yayılan sayısal alan). Reddedildi: bellek ve tick maliyeti yüksek, bölge düzeyinde bir sonuç için gereksiz.
+  - Yalnız olay tabanlı (ısınan gaz hücresi patlama tetikler). Reddedildi: kapalılık bilinmediği için açık havadaki sıcak gaz da patlardı.
+- **Ölçüm:** spike'ta 400×225'te tarama 0,13–0,21 ms (ortalama ~0,05 ms/tick). `tools/bench.js` 400×225 medyanı: görev öncesi 1,70–2,86 ms, sonrası 1,83–2,64 ms (makine gürültülü; fark gürültü içinde, yaklaşık +0,1–0,2 ms). `PERIOD` 4'te kaldı.
+- **Sonuç:** sabit maliyetli, deterministik ve geri almaya duyarlı. Sınırlama: bölge basıncı sürekli değil 4 tick'te bir örneklenir.

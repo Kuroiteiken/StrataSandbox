@@ -203,7 +203,7 @@ Değerler uygulama sırasında testlerle ayarlanır; son hâlleri ilgili modüll
 | `PRESSURE_PERIOD` | 4 tick | bölge tarama aralığı |
 | `P_BURST` | 3 | patlama basınç eşiği |
 | `V_MIN` | 3 hücre | basınçlı bölge en küçük hacmi |
-| `POWER_K` | 0,5 | basınç → güç |
+| `POWER_K` | 0,15 | basınç → güç (0,5 ile taş da kırılıyordu, ADR-018) |
 | `G_MAX` | 400 | basınç patlaması güç üst sınırı |
 | `W_STEAM` | 8 | buharın basınç ağırlığı |
 | `FLASH_MIN` | 6 | ani buharlaşma eşiği (yarılanan sayaç) |

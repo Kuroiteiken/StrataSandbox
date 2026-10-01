@@ -44,7 +44,7 @@ Renderer.render(view, frameInfo)                                 ← state'i asl
 | `type` | `Uint8Array` | materyal id (0 = EMPTY/hava) |
 | `variant` | `Uint8Array` | parçacığa özgü kozmetik ton; parçacıkla birlikte taşınır |
 | `life` | `Uint16Array` | materyale göre anlamı değişen sayaç: ömür, yanma, faz ilerlemesi, büyüme bütçesi, kaynak bütçesi |
-| `flags` | `Uint8Array` | bit0 = sıvının kalıcı akış yönü; bit1 = çoğaltıcı materyal öğrendi; bit2 = kaynak aşağı yönlü (ADR-016); bit3 = faz ilerlemesi aşağı kenara doğru (ADR-015). `transform` yalnızca bit0'ı korur |
+| `flags` | `Uint8Array` | bit0 = sıvının kalıcı akış yönü; bit1 = çoğaltıcı materyal öğrendi; bit2 = kaynak aşağı yönlü (ADR-016); bit3 = faz ilerlemesi aşağı kenara doğru (ADR-015); bit4 = kapalı bölge hücresi (ADR-018). `transform` yalnızca bit0'ı korur |
 | `temp` / `tempNext` | `Float32Array` | sıcaklık (°C), hava dahil her hücre; difüzyon için çift tampon (0.10.0, ADR-014) |
 | `stamp` | `Uint16Array` | update stamp; taşmada `fill(0)` yapılır ve saat 1'den başlar |
 
@@ -56,10 +56,13 @@ Renderer.render(view, frameInfo)                                 ← state'i asl
 
 ## 3. Simulation tick (uygulandı — Phase 1–2)
 
-- **Geçişler:** Her tick üç taramadan oluşur.
+- **Geçişler:** Her tick şu geçişlerden oluşur.
   1. Aşağıdan yukarı: tozlar, sıvılar ve reaktif statikler.
   2. Yukarıdan aşağı: gazlar. Yalnızca birinci geçişte gaz görülen satırlar taranır.
   3. Isı (`heat.js`, 0.10.0): çift tamponlu difüzyon, hava ve kaynaklar; ardından ayrı bir döngüde faz geçişleri, sıcaklıkla tutuşma ve buharlaşma. Sakin satırlar atlanır.
+  4. Basınç (`pressure.js`, 0.11.0, ADR-018): 4 tick'te bir hava ve gaz bölgelerini etiketler, kapalı olanlara `CLOSED_BIT` yazar, basıncı hesaplar ve gerekirse patlama ister.
+  5. Patlamalar (`explosions.js`, ADR-017): olay kuyruğu ve birleştirme ızgarası işlenir.
+  6. Savrulan parçacıklar (`debris.js`): önceden ayrılmış havuz ilerletilir.
 - **Ortam:** `climate.js` ortam sıcaklığını ve gün/gece dalgasını yalnızca aritmetikle, tick'ten türeterek verir.
 - **Yatay yön:** tick paritesi XOR satır paritesi. Kalıcı sağa/sola akış bias'ı oluşmaz.
 - **Stamp kuralları:**

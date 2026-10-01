@@ -754,7 +754,7 @@ Spec: `docs/superpowers/specs/2026-10-01-basinc-patlama-design.md` · Plan: `doc
 - [x] Barut ve dinamit
 - [x] Fitil
 - [x] Metan ve duman
-- [ ] Kapalı bölge basıncı
+- [x] Kapalı bölge basıncı
 - [ ] Ani buharlaşma
 - [ ] Görseller (parlama, sarsıntı, parçacıklar)
 - [ ] Patlat aracı

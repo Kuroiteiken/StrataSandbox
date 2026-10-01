@@ -41,7 +41,7 @@ Bu belge, simülasyondaki tüm materyalleri ve aralarındaki etkileşimleri tek 
 
 - 0.9.0'daki buhar zamanlayıcısı, lav soğuma sayacı ve kum ısısı kaldırıldı; yerlerini sıcaklık alanı aldı (§4.6).
 - Her hücrede ayrıca bir sıcaklık (°C) tutulur. Sıcaklık parçacıkla birlikte taşınır ve komşu hücrelere iletilir (§4).
-- **`flags` bitleri:** bit0 sıvının akış yönü; bit1 çoğaltıcının "öğrendi" işareti; bit2 kaynağın "aşağı yönlü" modu (§4.5); bit3 faz ilerlemesinin yönü (aşağı kenara doğru, §4.2).
+- **`flags` bitleri:** bit0 sıvının akış yönü; bit1 çoğaltıcının "öğrendi" işareti; bit2 kaynağın "aşağı yönlü" modu (§4.5); bit3 faz ilerlemesinin yönü (aşağı kenara doğru, §4.2); bit4 `CLOSED_BIT`, kapalı bölgedeki hava ve gaz hücresi (basınç geçişi yazar, §5.7).
 
 ---
 
@@ -275,6 +275,15 @@ Patlamanın ızgaradan aldığı hücreler `debris.js` içindeki önceden ayrıl
 - **Yanan metan:** 3–6 tick yanar, sonra kaybolur. Her tick 8 komşusundaki metanı tutuşturur (alev cephesi yayılır), bir komşudaki yanıcıyı tutuşturabilir ve birleştirme ızgarasına hücre başına 0,5 güç yazar (`METHANE_POWER`). 8×8 blokta ≥ 4 yanan hücre eşiği (2) aşar ve patlama olur; yoğun metan cebi bu yüzden patlar, seyrek metan yalnız yanar.
 - **Duman:** yoğunluk 4, ömür 200–500 tick. Yalnız açık bölgede söner; kapalı bölgede (`CLOSED_BIT`, flags bit4, basınç geçişi yazar) ömrü azalmaz, birikir.
 - **Duman kaynakları:** sönen ateşin %15'i (sıcaklığını korur); yanan maddenin alev üretirken %10'u (en az 300 °C); patlama halkasındaki (d ≥ r/2) boş hücrelerin %25'i. Yangın kaynaklı duman tick başına en fazla 60 (`maxSmokePerTick`).
+
+
+### 5.7 Kapalı bölge basıncı
+
+- **Tarama:** 4 tick'te bir (geri alma, temizleme ve sahne yüklemede hemen) hava ve gaz hücrelerinin 4-komşu bölgeleri satır parçalarıyla etiketlenir. Dünyanın üst satırına değen bölge açıktır; diğerleri kapalıdır. Kapalı bölgenin hücreleri `CLOSED_BIT` alır, açık bölgedekilerden silinir.
+- **Basınç:** P = Σ w·(T+273)/293 / hacim. w(buhar) = 8, hava ve diğer gazlar 1; oda sıcaklığındaki kapalı hava P ≈ 1.
+- **Tavan şartı:** basınç yalnız katı tavan altında birikir. Tavanında sıvı ya da toz olan bölge basınçlı sayılmaz; parça uçlarında yan komşusu sıvı ya da toz olan bölge de sayılmaz (suyun içindeki buhar cebi kabarcıkla çıkar).
+- **Patlama:** P ≥ 3 ve hacim ≥ 3 ise G = min(400, 0,15·(P − 1)·hacim). Tavanın en zayıf (eşitlikte en üst, sonra en sol) hücresi için 2·√G ≥ dayanıklılık ise orada `PRESSURE` türünde patlama istenir; değilse basınç birikir. Tavan açılınca bölge açık havaya bağlanır ve basınç düşer.
+- **Ölçüm (4×3 kavanoz, su 150 °C'de tutulur):** cam 8. tick'te patlar, taş ve metal dayanır (P ≈ 7,2, G ≈ 11).
 
 ---
 

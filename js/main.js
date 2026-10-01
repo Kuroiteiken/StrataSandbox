@@ -120,6 +120,8 @@ attachStats(document, () => {
   if (debug) {
     values.cursorTemp = under ? under.temp.toFixed(1) : '–';
     values.physicsMs = s.physicsMs.toFixed(2);
+    values.pressure = `${s.pressure.closed} kapalı · P ${s.pressure.maxP.toFixed(2)}`;
+    values.blasts = `${s.blastsThisTick} · parça ${s.debris}`;
     values.renderMs = renderer.lastRenderMs.toFixed(2);
     values.activeCells = String(s.activeCells);
     values.quality = quality.mode === 'auto' ? `otomatik → ${quality.level}` : quality.level;
