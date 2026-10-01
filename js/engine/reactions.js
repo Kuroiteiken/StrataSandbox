@@ -25,10 +25,16 @@ export const RATES = Object.freeze({
   fireSmoke: p(0.15), // sönen ateşin dumana dönme olasılığı
   burnSmoke: p(0.1), // yanan maddenin alev üretirken duman çıkarma olasılığı
   maxSmokePerTick: 60, // yangınların tick başına en fazla dumanı (dünya genelinde)
+  degasU32: Math.floor(4294967296 / 1000), // magmaya değen lavın tick başına gaz olma olasılığı (× 2³²)
+  maxDegasPerTick: 8, // volkanik gaz dönüşümlerinin tick başına en fazlası (dünya genelinde)
 });
 
+// flags bit5: gaz salan magma (sahneler `sim.configureMagma` ile işaretler). Ona değen lav tick başına
+// RATES.degasU32/2³² olasılıkla sıcak dumana döner (volkanik gaz); lav sıcaklığı korunur.
+export const DEGAS_BIT = 32;
+
 export function createReactionState() {
-  return { fireBudget: 0, growthBudget: 0, cloneBudget: 0, sinkBudget: 0, smokeBudget: 0 };
+  return { fireBudget: 0, growthBudget: 0, cloneBudget: 0, sinkBudget: 0, smokeBudget: 0, degasBudget: 0 };
 }
 
 export function beginReactionTick(state) {
@@ -37,6 +43,7 @@ export function beginReactionTick(state) {
   state.cloneBudget = RATES.maxClonesPerTick;
   state.sinkBudget = RATES.maxSinksPerTick;
   state.smokeBudget = RATES.maxSmokePerTick;
+  state.degasBudget = RATES.maxDegasPerTick;
 }
 
 // Materyalin spawn ömrü: LIFE_MIN + r mod (span + 1).
@@ -114,9 +121,15 @@ function reactFire(world, rng, i, state) {
 }
 
 // Lav yalnızca temasla tutuşturur; kaynatma, kum ısıtma ve soğuma sıcaklık alanında.
-function reactLava(world, rng, i) {
+function reactLava(world, rng, i, state) {
   const j = sampleNeighbor(world, rng, i);
-  ignite(world, rng, j, world.type[j]);
+  const nt = world.type[j];
+  if (nt === MAT.MAGMA && (world.flags[j] & DEGAS_BIT) !== 0 && state.degasBudget > 0 && rng.nextU32() < RATES.degasU32) {
+    world.transform(i, MAT.SMOKE, initialLife(MAT.SMOKE, rng.nextU32())); // kabarcık lavın içinden yükselir
+    state.degasBudget--;
+    return true;
+  }
+  ignite(world, rng, j, nt);
   return false;
 }
 
@@ -303,7 +316,7 @@ export function react(world, rng, i, t, state) {
     case FIRE:
       return reactFire(world, rng, i, state);
     case LAVA:
-      return reactLava(world, rng, i);
+      return reactLava(world, rng, i, state);
     case PLANT:
       return reactPlant(world, rng, i, state);
     case MAT.BURNING_WOOD:

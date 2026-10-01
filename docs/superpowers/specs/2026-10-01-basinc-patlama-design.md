@@ -369,6 +369,7 @@ Kısayol yardımı ve README tablosu güncellenir.
 - **Korunanlar:** yarıktan sağ yamaçtan ağaçlara akan lav ve sol göl.
 - **Gaz cebi ile yarık ayrı tutulur.** Yarık cebe açılırsa cep açık havaya bağlanır ve basınç birikmez. Gerekirse yarık bacaya cebin altından bağlanır.
 - Ayrıntılı geometri uygulamada ölçümle ayarlanır.
+- **Uygulama notu (Görev 10):** tıkaç platonun üst satırı ve bacanın içine 7 satır taştır (toplam 8, `PLUG_ROWS`); altında 4 satırlık boş cep (`POCKET_ROWS`). Baca duvarları magmadır (baca lavı donmaz), yarık (`riftY = plateauY + craterD + 1`, 3 satır) bacadan bir sütun magmayla ayrıdır. Gaz salan magma `RATES.degasU32` = 1/1000. Her patlama tıkacın bir satırını yer, bu yüzden "lav yeniden kabuk bağlar ve döngü sürer" sağlanmadı: ölçülen ilk patlama 9 672. tick, 30 000 tick'te 5 basınç patlaması; tıkacın iki yanındaki yüzey magması su/barut tetiğini sağlar, sonra volkan susar.
 
 ### 6.2 Yeni sahne: Maden ocağı
 

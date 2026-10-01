@@ -70,3 +70,26 @@ test('patlama halkasında duman çıkar', () => {
   sim.blastAt(30, 20, 8);
   assert.ok(countMaterial(sim, MAT.SMOKE) > 0);
 });
+
+test('gaz salan magmaya değen lav yavaşça sıcak dumana döner; işaretsiz magma gaz salmaz', async () => {
+  const { DEGAS_BIT } = await import('../js/engine/reactions.js');
+  const run = (degas) => {
+    const sim = new Simulation({ width: 30, height: 30, seed: 'degas' });
+    for (let y = 10; y < 30; y++) for (let x = 5; x < 25; x++) sim.setCell(x, y, MAT.LAVA);
+    for (let y = 22; y < 28; y++) for (let x = 8; x < 22; x++) {
+      sim.world.set(sim.world.index(x, y), MAT.MAGMA, 0, 0, 0, 1200);
+      if (degas) assert.equal(sim.configureMagma(x, y, { degas: true }), true);
+    }
+    let smoke = 0;
+    for (let t = 0; t < 6000; t++) {
+      sim.step();
+      smoke = Math.max(smoke, countMaterial(sim, MAT.SMOKE));
+    }
+    return { sim, smoke };
+  };
+  const on = run(true);
+  assert.ok(on.smoke > 0, 'gaz salmalı');
+  assert.equal(run(false).smoke, 0);
+  assert.equal(on.sim.configureMagma(0, 0, { degas: true }), false, 'magma değil');
+  assert.ok(DEGAS_BIT === 32);
+});

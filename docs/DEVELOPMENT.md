@@ -758,7 +758,7 @@ Spec: `docs/superpowers/specs/2026-10-01-basinc-patlama-design.md` · Plan: `doc
 - [x] Ani buharlaşma
 - [x] Görseller (parlama, sarsıntı, parçacıklar)
 - [x] Patlat aracı
-- [ ] Volkan sahnesi
+- [x] Volkan sahnesi
 - [ ] Maden ocağı sahnesi
 - [ ] Gayzer sahnesi
 - [ ] Mağara sahnesi

@@ -21,6 +21,9 @@ Hedef sürüm 0.11.0.
 - **Patlama görselleri:** her patlamada yarıçapla orantılı, 6 karede sönen parlama; savrulan parçacıklar malzeme renginde çizilir, ≥ 450 °C olanlar akkor ve ışıyıcıdır (termal görünümde sıcaklık rampası). G ≥ 64 patlamada tuval 12 kare sarsılır (genlik 0,4·√G, en çok 6 px). Azaltılmış harekette sarsıntı yoktur, parlama yarı yoğunluktadır; PNG yakalama sarsıntısız ve parlamasızdır. Duman yarı saydam çizilir ve ömrü azaldıkça soluklaşır, metan çok saydamdır.
 - **Patlat aracı (`P`):** tıklanan yerde fırça boyutuna göre patlama (G = min(400, boyut²)); tek tık tek patlama, sürükleme ve basılı tutma tekrarlamaz, duraklatılmışken de çalışır, tek vuruş olarak geri alınır. Seçicide Araç sekmesinde, beyaz-sarı-kırmızı desenle.
 
+- **Volkanik gaz:** `sim.configureMagma(x, y, { degas: true })` ile işaretlenen gaz salan magmaya (flags bit5) değen lav, tick başına 1/1000 olasılıkla sıcak dumana döner (tick başına en fazla 8). Diğer sahnelerdeki magma gaz salmaz.
+- **Patlayan volkan:** baca 8 satırlık taş tıkaçla kapalı, altında gaz cebi var; magma odasının gazı bacadan yükselip cepte birikir ve basınç tıkacı kırar (ilk patlama ~3 dakikada). Kratere su ya da barut atmak hemen patlatır.
+
 ### Changed
 
 - **Kum saati:** yutucular kapak dibinden kaldırıldı. Artık alt haznenin üst kısmında, boğazdan inen akışın iki yanında duvara yaslı cam raflar var; her rafta 3 aşağı yönlü, sınırsız yutucu bulunuyor. Raflar boğazdan hazne yüksekliğinin ~%30'u kadar aşağıda; küçük haznede sığana kadar aşağı iner.

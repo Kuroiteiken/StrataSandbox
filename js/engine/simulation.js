@@ -4,7 +4,7 @@ import { World } from './world.js';
 import { Rng, hashSeed } from './rng.js';
 import { MAT, KIND, MATERIALS, spawnTemp } from './materials.js';
 import { stepPowder, stepLiquid, stepGas } from './kernels.js';
-import { react, createReactionState, beginReactionTick, initialLife, isMover, SOURCE_INFINITE, CLONER_LEARNED, SOURCE_DOWNWARD } from './reactions.js';
+import { react, createReactionState, beginReactionTick, initialLife, isMover, SOURCE_INFINITE, CLONER_LEARNED, SOURCE_DOWNWARD, DEGAS_BIT } from './reactions.js';
 import { footprint, lineCells, SPRAY_DENSITY, clampBrushSize } from './brush.js';
 import { createPressureState, resetPressureState, stepPressure, createFlashState, resetFlashState, copyFlashState } from './pressure.js';
 import { createBlastState, resetBlastState, copyBlastState, flipBlastState, stepExplosions, applyExplosion, BLAST_KIND } from './explosions.js';
@@ -345,6 +345,18 @@ export class Simulation {
     if (b !== undefined) w.life[i] = b;
     if (downward === true) w.flags[i] |= SOURCE_DOWNWARD;
     if (downward === false) w.flags[i] &= ~SOURCE_DOWNWARD;
+    this.version++;
+    return true;
+  }
+
+  // Magma ayarı (sahneler, testler): degas = gaz salan magma (flags bit5). Magma olmayan hücre reddedilir.
+  configureMagma(x, y, { degas } = {}) {
+    const w = this.world;
+    if (!w.inBounds(x, y)) return false;
+    const i = w.index(x, y);
+    if (w.type[i] !== MAT.MAGMA || typeof degas !== 'boolean') return false;
+    if (degas) w.flags[i] |= DEGAS_BIT;
+    else w.flags[i] &= ~DEGAS_BIT;
     this.version++;
     return true;
   }

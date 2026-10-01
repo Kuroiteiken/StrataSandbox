@@ -23,6 +23,7 @@ export const UNRELEASED = Object.freeze({
     'Dar alanda basınç: kapalı bir kapta biriken buhar ya da sıcak gaz en zayıf noktasından patlar; cam kolay, taş zor, metal neredeyse hiç.',
     'Buhar patlaması: lava ya da erimiş metale su dökülünce su bir anda buharlaşıp patlar.',
     'Patlama görselleri: parlama, akkor savrulan parçalar ve büyük patlamalarda kısa sarsıntı (azaltılmış harekette kapalı).',
+    'Volkan patlar: magma odası gaz biriktirir, birkaç dakikada bir tıkacı patlatır; kratere su ya da barut atınca hemen patlar.',
   ],
 });
 

@@ -3,12 +3,21 @@
 // Lav sağ yamaçtan iner: yamaç yüzeyinin hemen altındaki magma damarı yolu sıcak tuttuğu için kabuk
 // bağlamadan eteğe ulaşır ve sağdaki ağaçları tutuşturur; etekte soğuk zeminde yayılıp taşlaşır.
 // (Göl sol tarafta; lav yalnızca sağ yarıktan çıktığı için göle ulaşmaz.)
+// Patlama döngüsü: oda magması gaz salar (configureMagma); gaz kabarcık olarak bacadan yükselip kraterin
+// altındaki cepte birikir. Cep platonun taş kabuğuyla kapalıdır; basınç kabuğu kıracak kadar artınca
+// volkan patlar (spec §6.1). Yarık cebin altından ayrıldığı için cep açık havaya bağlanmaz; patlamadan
+// sonra açık kalan krater lavı soğuyup taşlaşır ve altında yeni cep birikir. Kratere su ya da barut
+// atmak da hemen patlatır.
 import { MAT } from '../engine/materials.js';
 import { frame, valueNoise, rect, disk, fillColumns, isEmpty } from './tools.js';
 
 const SLOPE_VEIN_DEPTH = 2; // yamaç damarının yüzeyden uzaklığı (arada 1 sıra taş)
 const TREE_CLEARANCE = 9; // damarın ilk ağacın gövdesinden en az yatay uzaklığı (hücre)
 const VEIN_TREE_GAP = 5; // damar hücresinin herhangi bir ağaç hücresine (gövde/taç) en az uzaklığı
+const VOLCANO_CLONER_BUDGET = 3000; // yarık çoğaltıcıları (patlama döngüsü boyunca lav akışı sürsün)
+const POCKET_ROWS = 4; // tıkacın altındaki boş gaz cebi satırı (cep bacanın lav seviyesine kadar gaz dolar)
+const RIFT_ROWS = 3; // yarığın kalınlığı (satır): ince yarıkta lav eteğe ulaşmadan kabuk bağlar
+const PLUG_ROWS = 8; // tıkaç kalınlığı: her basınç patlaması en üstteki taşı kırar, kalan kabuk bir sonrakini tutar
 
 export function volcano(sim, rng) {
   const { W, H, X, Y, S } = frame(sim);
@@ -68,6 +77,12 @@ export function volcano(sim, rng) {
   disk(sim, cxi, chamberY, chamberR, MAT.LAVA);
   // Magma kaynağı: odanın alt yarısında sabit 1200 °C (oda lavı sıvı kalır; alt proje 2'de basınç).
   disk(sim, cxi, chamberY + Math.max(1, Math.floor(chamberR / 2)), Math.max(1, Math.floor(chamberR / 3)), MAT.MAGMA);
+  // Oda magması gaz salar (volkanik gaz): ona değen lav yavaşça sıcak dumana döner.
+  const mr = Math.max(1, Math.floor(chamberR / 3));
+  const my = chamberY + Math.max(1, Math.floor(chamberR / 2));
+  for (let y = my - mr; y <= my + mr; y++) for (let x = cxi - mr; x <= cxi + mr; x++) {
+    if (sim.getCell(x, y)?.material === MAT.MAGMA) sim.configureMagma(x, y, { degas: true });
+  }
   const vent = Math.max(1, S(0.015));
   rect(sim, cxi - vent, plateauY + 1, cxi + vent, chamberY, MAT.LAVA);
   // Çanak yalnızca taşın içine oyulur ve dış tarafta en az 2 hücrelik taş kenar bırakır;
@@ -84,22 +99,45 @@ export function volcano(sim, rng) {
       }
     }
   }
-  // Sağ kenardaki yarık: lav buradan sağ yamaçtan aşağı süzülür (sol kenar sağlam). Yarık yamaç
-  // yüzeyine ulaşana kadar uzar (0.9.0'da sağ ucu tek sıra taşla kapalıydı; lav hiç çıkamıyordu).
+  // Tıkaç ve gaz cebi: platonun üst satırı çanağın taş kabuğudur; altındaki POCKET_ROWS satır boş cep olur.
+  // Magmanın saldığı volkanik gaz kabarcık olarak bacadan yükselip cepte birikir; basınç kabuğu kıracak
+  // kadar yükselince patlar (spec §6.1).
+  for (let x = cxi - craterW; x <= cxi + craterW; x++) {
+    for (let r = 0; r < PLUG_ROWS - 1; r++) {
+      const y = plateauY + 1 + r;
+      if (sim.getCell(x, y)?.material === MAT.LAVA) sim.setCell(x, y, MAT.STONE);
+    }
+    for (let r = 0; r < POCKET_ROWS; r++) {
+      const y = plateauY + PLUG_ROWS + r;
+      if (sim.getCell(x, y)?.material === MAT.LAVA) sim.world.set(sim.world.index(x, y), MAT.EMPTY, 0, 0, 0, 900);
+    }
+  }
+  // Krater kenarı: tıkacın iki yanında platonun yüzeyinde birer magma hücresi. Kenar kızgın kalır; kratere
+  // atılan barut ona değince tutuşur, atılan su ona değince ani buharlaşır (hemen patlama).
+  for (const x of [cxi - vent - 2, cxi + vent + 2]) if (isStone(x, plateauY)) sim.setCell(x, plateauY, MAT.MAGMA);
+  // Baca duvarı: bacanın iki yanındaki taş sıra magmaya çevrilir; baca lavı soğuyup taşlaşmaz, gaz kabarcıkları
+  // odadan cebe kadar yükselebilir. (Duvarın yarıkla kesişen satırlarını aşağıdaki yarık üzerine yazar.)
+  for (let y = plateauY + 1 + PLUG_ROWS + POCKET_ROWS; y < chamberY; y++) {
+    for (const x of [cxi - vent - 1, cxi + vent + 1]) if (isStone(x, y)) sim.setCell(x, y, MAT.MAGMA);
+  }
+  // Sağ kenardaki yarık: lav buradan sağ yamaçtan aşağı süzülür (sol kenar sağlam). Yarık çanağın (ve cebin)
+  // altından, bacanın sağ kenarından ayrılır ve yamaç yüzeyine ulaşana kadar uzar.
+  const riftY = plateauY + craterD + 1;
   let riftEnd = cxi;
-  for (let x = cxi; x < W - 1; x++) {
-    sim.setCell(x, plateauY + 1, MAT.LAVA);
-    sim.setCell(x, plateauY + 2, MAT.LAVA);
+  for (let x = cxi + vent + 2; x < W - 1; x++) {
+    for (let k = 0; k < RIFT_ROWS; k++) sim.setCell(x, riftY + k, MAT.LAVA);
     riftEnd = x;
-    if (x >= cxi + craterW + 4 && top[x + 1] > plateauY + 2) break; // sonraki sütunda yamaç yarığın altında
+    if (x >= cxi + craterW + 4 && top[x + 1] > riftY + 1) break; // sonraki sütunda yamaç yarığın altında
   }
   // Magma damarı: yarığın tabanını alttan ısıtır; ince kanaldaki lav soğuk taşa değip hemen kabuk
   // bağlamaz, yamaca akmaya devam eder (ağız kısmı açık kalsın diye son iki sütuna uzanmaz).
-  for (let x = cxi; x <= riftEnd - 2; x++) if (isStone(x, plateauY + 3)) sim.setCell(x, plateauY + 3, MAT.MAGMA);
+  for (let x = cxi + vent + 2; x <= riftEnd - 2; x++) if (isStone(x, riftY + RIFT_ROWS)) sim.setCell(x, riftY + RIFT_ROWS, MAT.MAGMA);
   // Çoğaltıcı: yarığın tabanında iki hücre. Çevresindeki lavı öğrenir; yarıktan lav aktıkça boşalan
-  // bitişik hücreleri doldurur (hücre başına 1000 kopya, sonra durur). Basınç olmadığı için dolu odanın
-  // dibine değil buraya konur: orada boş komşusu olmaz ve üretim yapamazdı (alt proje 2'de basınç).
-  for (const dx of [Math.max(2, vent + 1), Math.max(3, vent + 2)]) sim.setCell(cxi + dx, plateauY + 2, MAT.CLONER);
+  // bitişik hücreleri doldurur (bütçe bitince durur).
+  for (const dx of [vent + 2, vent + 3]) {
+    sim.setCell(cxi + dx, riftY + 1, MAT.CLONER);
+    sim.configureSource(cxi + dx, riftY + 1, { budget: VOLCANO_CLONER_BUDGET });
+  }
 
   // Yamaçlarda kum örtüsü (taşın hemen üstü, kraterden uzak). Sağ yamaç lavın yoludur ve magma damarıyla
   // ısınır: oradaki kum cama dönüp lavın önüne set çekiyor, eteğe kayıp ağaç gövdesine yığılıyor ve damarın
@@ -155,7 +193,7 @@ export function volcano(sim, rng) {
   for (let x = x0; x <= veinEnd; x++) {
     // Yarığın içinde tabanın altından, ağzın dışında yarık seviyesinden başlar (ağzın hemen önündeki yamaç
     // yüzü de ısınır; soğuk yüzde lav ağızda kabuk bağlayıp yarığı tıkıyordu).
-    for (let y = x > riftEnd ? plateauY + 1 : plateauY + 3; y < Math.round(ground[x]); y++) {
+    for (let y = x > riftEnd ? riftY : riftY + RIFT_ROWS; y < Math.round(ground[x]); y++) {
       if (isStone(x, y) && exposed(x, y, SLOPE_VEIN_DEPTH) && !exposed(x, y, SLOPE_VEIN_DEPTH - 1) && !nearTree(x, y)) vein.push(x, y);
     }
   }

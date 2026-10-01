@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MAT } from '../js/engine/materials.js';
 import { Simulation } from '../js/engine/simulation.js';
+import { BLAST_KIND } from '../js/engine/explosions.js';
 import { SOURCE_DOWNWARD } from '../js/engine/reactions.js';
 import { SCENES, getScene, DEFAULT_SCENE_ID } from '../js/scenes/index.js';
 import { valueNoise, fillPolygon, frame } from '../js/scenes/tools.js';
@@ -469,4 +470,45 @@ test('kum saatinde Patlat değişmezleri bozmaz; kaynaklar dayanıklılığa gö
   assert.deepEqual(sim.world.checkInvariants(), []);
   assert.ok(countMaterial(sim, MAT.CLONER) + countMaterial(sim, MAT.SINK) < sources0, 'bazı kaynaklar kırılmalı');
   assert.equal(sim.getStats().debrisLost, 0);
+});
+
+// Volkan tıkacı: ortadaki üçte birlik bantta, yukarıdan ilk dolu hücresi taş olan ve hemen altı gaz cebi
+// (boş ya da duman) olan sütunun o taş hücresi.
+function craterCell(sim) {
+  const { width: W, height: H } = sim.view;
+  for (let x = Math.floor(W / 3); x < Math.floor((2 * W) / 3); x++) {
+    for (let y = 0; y < H - 1; y++) {
+      const m = sim.getCell(x, y).material;
+      if (m === MAT.EMPTY || m === MAT.SMOKE) continue;
+      const below = sim.getCell(x, y + 1).material;
+      if (m === MAT.STONE && (below === MAT.EMPTY || below === MAT.SMOKE)) return { x, y };
+      break;
+    }
+  }
+  return { x: Math.floor(W / 2), y: Math.floor(H * 0.3) };
+}
+
+test('Volkan kendiliğinden patlar: 30 000 tick içinde en az 3 basınç patlaması, ilki 1–4 dakikada', () => {
+  const sim = load('volcano', 'readme', 240, 150);
+  let first = -1;
+  for (let t = 0; t < 30000; t++) {
+    sim.step();
+    if (first < 0 && sim.getStats().blastTotals[BLAST_KIND.PRESSURE] > 0) first = t;
+  }
+  assert.ok(first >= 3600 && first <= 14400, `ilk patlama ${first}. tick`);
+  assert.ok(sim.getStats().blastTotals[BLAST_KIND.PRESSURE] >= 3, `${sim.getStats().blastTotals[BLAST_KIND.PRESSURE]} patlama`);
+  assert.deepEqual(sim.world.checkInvariants(), []);
+});
+
+test('Volkan tetikle hemen patlar: kratere bol su ya da barut', () => {
+  for (const mat of [MAT.WATER, MAT.GUNPOWDER]) {
+    const sim = load('volcano', 'readme', 240, 150);
+    runTicks(sim, 600);
+    const before = sim.getStats().blastTotals;
+    const sum = (t) => t[BLAST_KIND.PRESSURE] + t[BLAST_KIND.STEAM] + t[BLAST_KIND.EXPLOSIVE];
+    const crater = craterCell(sim);
+    for (let y = crater.y - 8; y < crater.y - 1; y++) for (let x = crater.x - 5; x <= crater.x + 5; x++) if (sim.getCell(x, y)?.material === MAT.EMPTY) sim.setCell(x, y, mat);
+    runTicks(sim, 300);
+    assert.ok(sum(sim.getStats().blastTotals) > sum(before), `${mat}: tetik patlaması olmadı`);
+  }
 });

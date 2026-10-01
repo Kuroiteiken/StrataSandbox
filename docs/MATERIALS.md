@@ -41,7 +41,7 @@ Bu belge, simülasyondaki tüm materyalleri ve aralarındaki etkileşimleri tek 
 
 - 0.9.0'daki buhar zamanlayıcısı, lav soğuma sayacı ve kum ısısı kaldırıldı; yerlerini sıcaklık alanı aldı (§4.6).
 - Her hücrede ayrıca bir sıcaklık (°C) tutulur. Sıcaklık parçacıkla birlikte taşınır ve komşu hücrelere iletilir (§4).
-- **`flags` bitleri:** bit0 sıvının akış yönü; bit1 çoğaltıcının "öğrendi" işareti; bit2 kaynağın "aşağı yönlü" modu (§4.5); bit3 faz ilerlemesinin yönü (aşağı kenara doğru, §4.2); bit4 `CLOSED_BIT`, kapalı bölgedeki hava ve gaz hücresi (basınç geçişi yazar, §5.7).
+- **`flags` bitleri:** bit0 sıvının akış yönü; bit1 çoğaltıcının "öğrendi" işareti; bit2 kaynağın "aşağı yönlü" modu (§4.5); bit3 faz ilerlemesinin yönü (aşağı kenara doğru, §4.2); bit4 `CLOSED_BIT`, kapalı bölgedeki hava ve gaz hücresi (basınç geçişi yazar, §5.7); bit5 `DEGAS_BIT`, gaz salan magma (§5.9).
 
 ---
 
@@ -161,7 +161,7 @@ Eşiklerde histerezis vardır (ör. donma −1 °C, erime +1 °C), böylece hüc
 | Kar | `SNOW` | `K` | toz | 8 | Doğuş −8 °C, yalıtkan (K 0,01, C 1). +1 °C'de suya döner (gizli ısı 30, buzdan hızlı). Suyun üstünde yüzer. |
 | Metal | `METAL` | `M` | statik | — | Isıyı çok hızlı iletir (K 1,6, C 8; havaya kayıpla ~10 hücre menzil). 450 °C'den sonra kızarır, 1400 °C'de erir (gizli ısı 1200). |
 | Erimiş metal | `MOLTEN_METAL` | `E` | sıvı | 40 | Doğuş 1450 °C, K 0,8, C 4, dağılım 4 (çok akışkan). 1300 °C'de metale döner (gizli ısı 400). Lavdan ağırdır, lavın içinde batar. |
-| Magma kaynağı | `MAGMA` | — | statik | — | Seçicide yok; sahneler yerleştirir (volkan odası, yarık ve yamaç damarları, Buzul bacası, Dökümhane kaidesi ve oluk damarı, Mağara lav cebi). Sabit 1200 °C ısı kaynağıdır. |
+| Magma kaynağı | `MAGMA` | — | statik | — | Seçicide yok; sahneler yerleştirir (volkan odası, yarık ve yamaç damarları, Buzul bacası, Dökümhane kaidesi ve oluk damarı, Mağara lav cebi). Sabit 1200 °C ısı kaynağıdır. `sim.configureMagma(x, y, { degas: true })` ile gaz salan magma (flags bit5) olur: ona değen lav volkanik gaz çıkarır (§5.9). |
 | Çoğaltıcı | `CLONER` | `X` | statik | — | **Mevcut (0.10.0).** Bkz. §4.5. |
 | Yutucu | `SINK` | `Y` | statik | — | **Mevcut (0.10.0).** Bkz. §4.5. |
 
@@ -195,7 +195,7 @@ Eşiklerde histerezis vardır (ör. donma −1 °C, erime +1 °C), böylece hüc
   - Alt hazne raf seviyesine kadar dolar (400×225'te ~6000 kum, ~3000 tick), fazlası yutulur; hazne tamamen dolup boğazı tıkamaz.
   - Üst haznedeki aynı raf yutucunun tavanıdır, bu yüzden oradaki yutucu boşta kalır.
   - Kum sürekli akar; ters çevrilince görevler yer değiştirir ve akış sürer. İki yönde de alt hazne raf seviyesine kadar dolu kalır.
-- **Volkandaki kullanım (mevcut):** iki çoğaltıcı hücre krater yarığının tabanında, yarığın altında bir magma damarı var. Yarık yamaca açık (0.9.0'da sağ ucu kapalıydı); çoğaltıcı boşalan yeri ~2000 hücre boyunca doldurur. 0.11.0'dan beri yarık ağzından koni eteğine kadar yamaç yüzeyinin 2 hücre içinden kesintisiz bir magma damarı geçer. Isınan yamaçta lav kabuk bağlamadan eteğe iner ve sağdaki ağaçları tutuşturur. Damar ağaçlara yaklaşmaz, ağacı damarın ısısı değil lav tutuşturur. Sağ yamaçta kum yoktur.
+- **Volkandaki kullanım (mevcut):** iki çoğaltıcı hücre krater yarığının tabanında, yarığın altında bir magma damarı var. Yarık, gaz cebinin ve çanağın altından (`riftY = plateauY + craterD + 1`) bacadan bir taş/magma sütunuyla ayrılarak 3 satır kalınlığında sağa açılır (0.9.0'da sağ ucu kapalıydı); çoğaltıcılar (bütçe 3000) boşalan yeri doldurur. 0.11.0'dan beri yarık ağzından koni eteğine kadar yamaç yüzeyinin 2 hücre içinden kesintisiz bir magma damarı geçer. Isınan yamaçta lav kabuk bağlamadan eteğe iner ve sağdaki ağaçları tutuşturur. Damar ağaçlara yaklaşmaz, ağacı damarın ısısı değil lav tutuşturur. Sağ yamaçta kum yoktur.
 - **Sınır:** basınç olmadığı için, dolu bir odanın altındaki çoğaltıcı lavı yukarı itemez; etrafında boş hücre yoksa üretim yapmaz. Basınç, planlanan alt proje 2'nin (Basınç ve patlama) konusu.
 
 ### 4.6 0.9.0 → 0.10.0 etkileşim değişiklikleri (Mevcut)
@@ -290,6 +290,16 @@ Patlamanın ızgaradan aldığı hücreler `debris.js` içindeki önceden ayrıl
 - **Sayaç:** `emitSteam` (kaynama, ateşle kaynama, söndürme) her su→buhar dönüşümünü 8×8 bloğa yazar. Her dönüşümün ağırlığı kaynama eşiği üstündeki ısıya (aşırı ısınma) bağlıdır: w = clamp((T − 100) / 6, 0, 3); yalnız ısı geçişindeki kaynama sayılır ve en sıcak 4-komşu ≥ 720 °C olmalıdır (lav, erimiş metal, magma ısıtmış taş); ateşle kaynama, söndürme ve yanan madde (700 °C) hiç sayılmaz. Blok sayacı (ağırlıklı toplam) her tick 0,85 ile çarpılır (kısa pencere).
 - **Patlama:** sayaç ≥ 6 olunca (ağırlıklı) dönüşüm merkezinde G = sayaç (güç 1/ağırlık) olan `STEAM` türünde patlama istenir ve sayaç sıfırlanır.
 - **Sonuç:** lava ya da erimiş metale dökülen su aynı anda buhara dönüp patlar; yavaş ısınan suda dönüşümler zamana yayılır, eşiğe ulaşmaz. Ölçüm (sayaç tepesi): lav + su 3 seedde 7–12 (4–25 patlama), erimiş metal + su 13–19 (29–31 patlama); magma üstü 1 taş sırası + su ≈ 6,6 (eşiğe yakın: 2000 tickte 1 patlama, Geyser için ince marj); tabanı 200/400/600 °C'de tutulan tencere 0 (kaynar, patlamaz); sahnelerde 0. Kapı 800 °C'de lav çok zayıf kalıyordu (tepe ≈ 3,8), bu yüzden 720 °C; lav temas hücresi ~750 °C'ye soğuduğu için marj dardır (lav seed c: 7,2 ile 6 arasında).
+
+### 5.9 Volkanik gaz ve volkan döngüsü
+
+- **Gaz salan magma:** `sim.configureMagma(x, y, { degas })` MAGMA hücresine flags bit5 (`DEGAS_BIT` = 32) yazar ya da siler (magma olmayan hücre `false` döner; undo noktası açmaz). Yalnız volkanın oda magması işaretlenir; diğer sahnelerdeki magma gaz salmaz.
+- **Gaz:** gaz salan magmaya değen lav, tick başına `RATES.degasU32 / 2³²` (= 1/1000) olasılıkla sıcak dumana döner (sıcaklığı korunur, kabarcık lavın içinden yükselir); tick başına dünya genelinde en fazla `RATES.maxDegasPerTick` = 8 dönüşüm.
+- **Döngü (`js/scenes/volcano.js`):** baca 8 satır taş tıkaçla kapanır (`PLUG_ROWS`), altında 4 satırlık boş cep vardır (`POCKET_ROWS`); baca duvarları magmadır, bu yüzden baca lavı donup gazı tıkamaz. Oda gazı baca lavının içinden yükselip cepte birikir. Cep kapalı bölgedir (yan ve alt komşuları katı ya da lav, tavanı taş); P ≥ 3 ve (P − 1)·hacim ≥ ~107 olunca taş tıkacın en alt hücresi kırılır. Kırılan hücre bölgeyi bir satır büyütür, tıkacın kalanı basıncı tutmaya devam eder: her patlama bir satır tıkaç yer.
+- **Yarık ayrı:** yarık bacaya bir sütun magma ile bağlanmadan ayrılır. Bacayla bağlansaydı lav yarıktan boşalıp seviye yarık tabanına inecek, cep yarığa açılıp yan komşusu lav olduğundan basınç tutmayacaktı.
+- **Ölçüm (240×150, tohum `readme`):** ilk patlama 9 672. tick (~2,7 dakika, 60 TPS), 30 000 tick'te 5 basınç patlaması (9 672, 9 708, 10 012, 11 288, 12 508); P ≈ 3,1–3,8, hacim 55–65, G ≈ 17–24.
+- **Tetik:** tıkacın iki yanında platonun yüzeyinde birer magma hücresi (kızgın krater kenarı) vardır. Kratere atılan su ona değince ani buharlaşır (600 tick sonra 300 tick içinde 3 basınç + 4 buhar patlaması), barut tutuşur (12 patlayıcı patlaması); tetiksiz kontrol sahnesinde 0.
+- **Sınır:** tıkaç tükenince volkan susar; döngü yenilenmez (patlayan tıkaç geri oluşmaz).
 
 ---
 
