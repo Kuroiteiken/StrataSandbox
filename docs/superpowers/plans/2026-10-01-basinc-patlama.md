@@ -9,7 +9,8 @@
 - kapalı bölge basıncı ve ani buharlaşma (buhar patlaması);
 - yeni malzemeler: Barut, Moloz, Metan, Duman, Dinamit, Fitil (ve iç durumlar Yanan metan, Yanan fitil);
 - Patlat aracı, parlama ve tuval sarsıntısı;
-- patlayan volkan, yeni Maden ocağı ve Gayzer sahneleri, patlatılabilir Mağara.
+- patlayan volkan, yeni Maden ocağı ve Gayzer sahneleri, patlatılabilir Mağara;
+- Sıvı azot: lavı ve magmayı taşa çeviren −196 °C sıvı (kullanıcı isteği, 2026-10-01; Görev 14).
 
 **Mimari:**
 
@@ -53,9 +54,9 @@
   - `docs/DEVELOPMENT.md` → Phase 14'teki ilgili madde `[x]` olur (yalnızca testler geçtiyse).
   - `main`'e commit edilir ve sormadan push edilir. Commit mesajı Türkçe, attribution satırı yok.
 - **Materyal belgesi:** `docs/MATERIALS.md` tüm materyalleri ve etkileşimleri belgeler. Materyal ya da etkileşim ekleyen veya değiştiren her görev ilgili bölümü güncel sayılarla yazar ve aynı commit'e ekler. `tests/docs-materials.test.js` her materyal anahtarının belgede geçtiğini doğrular.
-- **Uygulama içi Yenilikler:** `js/app/releases.js` → `UNRELEASED.items` (sürüm 0.11.0), kullanıcıya görünen her değişiklikte kısa bir Türkçe maddeyle aynı commit'te güncellenir. Görev 14'te maddeler `RELEASES`'e 0.11.0 olarak taşınır.
+- **Uygulama içi Yenilikler:** `js/app/releases.js` → `UNRELEASED.items` (sürüm 0.11.0), kullanıcıya görünen her değişiklikte kısa bir Türkçe maddeyle aynı commit'te güncellenir. Görev 15'te maddeler `RELEASES`'e 0.11.0 olarak taşınır.
 - Dokunma hedefleri ≥ 44 px (`pointer: coarse`). Yeni kontroller ARIA etiketli olur.
-- Kimlikler: `GUNPOWDER` 23, `RUBBLE` 24, `METHANE` 25, `BURNING_METHANE` 26, `SMOKE` 27, `DYNAMITE` 28, `FUSE` 29, `BURNING_FUSE` 30.
+- Kimlikler: `GUNPOWDER` 23, `RUBBLE` 24, `METHANE` 25, `BURNING_METHANE` 26, `SMOKE` 27, `DYNAMITE` 28, `FUSE` 29, `BURNING_FUSE` 30, `LIQUID_NITROGEN` 31.
 - `flags` bitleri:
   - bit0 sıvı yönü, bit1 çoğaltıcı öğrendi, bit2 kaynak aşağı yönlü, bit3 faz yönü (mevcut);
   - **bit4 kapalı bölgede** (Görev 6), **bit5 gaz salan magma** (Görev 10).
@@ -98,7 +99,8 @@ Normal testlerin kaçırabileceği ama kullanıcıyı en çok etkileyecek beş d
 | `js/app/catalog.js`, `pointer.js`, `app.js`, `main.js`, `index.html` | Yeni girişler, Patlat aracı, debug paneli, yardım | 1, 3, 4, 5, 9 |
 | `js/scenes/volcano.js`, `quarry.js` (yeni), `geyser.js` (yeni), `cave.js`, `index.js` | Sahneler | 10–13 |
 | `tests/*.test.js` | Her görevin testleri | hepsi |
-| `docs/MATERIALS.md`, `docs/DECISIONS.md`, `docs/ARCHITECTURE.md`, `README.md`, `CHANGELOG.md`, `docs/DEVELOPMENT.md`, `js/app/releases.js` | Dokümanlar ve sürüm notları | hepsi, 14 |
+| `docs/MATERIALS.md`, `docs/DECISIONS.md`, `docs/ARCHITECTURE.md`, `README.md`, `CHANGELOG.md`, `docs/DEVELOPMENT.md`, `js/app/releases.js` | Dokümanlar ve sürüm notları | hepsi, 15 |
+| `js/engine/materials.js`, `js/engine/reactions.js` (Sıvı azot) | `LIQUID_NITROGEN`, `reactLiquidNitrogen` | 14 |
 
 ---
 
@@ -3793,7 +3795,194 @@ git push origin main
 
 ---
 
-### Task 14 (Görev 14): Performans, dokümanlar, ekran görüntüleri, 0.11.0 sürümü
+### Task 14 (Görev 14): Sıvı azot
+
+> Kullanıcı isteği (2026-10-01): "magmayı soğutarak taşlaştırabileceğimiz birşey ekle". Seçilen yol: yeni malzeme **Sıvı azot**. Magma sabit kaynak olarak kalır; onu yalnız sıvı azot taşa çevirir. Spec §3.5.
+
+**Files:**
+- Modify: `js/engine/materials.js` (`LIQUID_NITROGEN`, kimlik 31)
+- Modify: `js/engine/reactions.js` (`reactLiquidNitrogen`)
+- Modify: `js/app/catalog.js`, `index.html` (Sıvı azot `a`, Sıvı sekmesi)
+- Test: `tests/nitrogen.test.js` (yeni), `tests/app-modules.test.js`
+- Docs: `docs/MATERIALS.md` (§2 tablosu, §5.10), `docs/DEVELOPMENT.md` (Phase 14 listesine madde 14 "Sıvı azot"; sürüm maddesi 15 olur), `README.md` (materyaller, kısayollar), `CHANGELOG.md`, `js/app/releases.js`
+
+**Interfaces:**
+- Consumes: `emitSteam` gerekmez. `vanish`, `sampleNeighbor`, `EXTINGUISH_TO`, `BURNS_INTO` tablosu ve `react` switch'i (mevcut). Faz motoru (heat.js): `phase.up` ile ısınan sıvı azot kaybolur.
+- Produces: `MAT.LIQUID_NITROGEN = 31`; seçici girişi `{ key: 'LIQUID_NITROGEN', mat: MAT.LIQUID_NITROGEN, label: 'Sıvı azot', shortcut: 'a', category: 'liquid' }`.
+
+**Davranış (spec §3.5):**
+- Sıvı, yoğunluk 8: suyun üstünde yüzer. Dağılım 5. Doğuş −196 °C. K 0,04, C 2.
+- Isınınca kaynar ve kaybolur: `phase.up` −190 °C'de, gizli ısı 150, `vanish: 1`. Yerinde soğuk hava kalır, hava ortama döner.
+- Temas (sahip: sıvı azot; tick başına bir komşu örnekler):
+  - lav → taş, magma → taş, erimiş metal → metal, su → buz;
+  - ateş söner, yanan madde söner (`EXTINGUISH_TO`).
+  - Her dönüşüm bir sıvı azot hücresini tüketir: hücre −196 °C'lik soğuk havaya döner.
+- Dönüşen hücrenin sıcaklığı en fazla 300 °C'ye indirilir (lav ve magma ısısı azotun kaynamasına gider). Komşu magma yeniden ısıtsa da taş 1500 °C'nin altında kalır.
+
+- [ ] **Step 1: Başarısız testleri yaz**
+
+`tests/nitrogen.test.js`:
+
+```js
+// Sıvı azot (kullanıcı isteği): −196 °C sıvı; suyun üstünde yüzer, açık havada kaynayıp kaybolur;
+// değdiği lav ve magmayı taşa, erimiş metali metale, suyu buza çevirir, ateşi söndürür.
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { MAT, MATERIALS } from '../js/engine/materials.js';
+import { Simulation } from '../js/engine/simulation.js';
+import { countMaterial, cellType, runTicks } from './helpers.js';
+
+function fill(sim, x0, y0, x1, y1, mat) {
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) sim.setCell(x, y, mat);
+}
+
+test('sıvı azot −196 °C doğar, suyun üstünde yüzer ve açık havada kaynayıp kaybolur', () => {
+  assert.equal(MATERIALS.SPAWN_TEMP[MAT.LIQUID_NITROGEN], -196);
+  assert.ok(MATERIALS.byKey.LIQUID_NITROGEN.density < MATERIALS.byKey.WATER.density);
+  const sim = new Simulation({ width: 30, height: 30, seed: 'ln2', debug: true });
+  fill(sim, 5, 24, 24, 29, MAT.WATER);
+  fill(sim, 10, 18, 19, 19, MAT.LIQUID_NITROGEN);
+  runTicks(sim, 60);
+  let above = 0;
+  let below = 0;
+  for (let y = 0; y < 30; y++) for (let x = 0; x < 30; x++) {
+    if (cellType(sim, x, y) !== MAT.LIQUID_NITROGEN) continue;
+    if (y < 24) above++;
+    else below++;
+  }
+  assert.ok(above >= below, `yüzmeli (üst ${above}, alt ${below})`);
+  runTicks(sim, 6000);
+  assert.equal(countMaterial(sim, MAT.LIQUID_NITROGEN), 0, 'kaynayıp kaybolmalı');
+});
+
+test('sıvı azot lava değince lavı taşa çevirir ve tükenir', () => {
+  const sim = new Simulation({ width: 30, height: 30, seed: 'ln2-lava' });
+  fill(sim, 5, 25, 24, 29, MAT.LAVA);
+  const lava0 = countMaterial(sim, MAT.LAVA);
+  fill(sim, 5, 20, 24, 22, MAT.LIQUID_NITROGEN);
+  runTicks(sim, 200);
+  assert.ok(countMaterial(sim, MAT.LAVA) < lava0, 'lav azalmalı');
+  assert.ok(countMaterial(sim, MAT.STONE) > 0, 'taş oluşmalı');
+});
+
+test('magmayı yalnız sıvı azot taşa çevirir: Soğut fırçası magmayı söndürmez', () => {
+  const cool = new Simulation({ width: 20, height: 20, seed: 'ln2-magma-cool' });
+  for (let x = 5; x < 15; x++) cool.world.set(cool.world.index(x, 19), MAT.MAGMA, 0, 0, 0, 1200);
+  for (let k = 0; k < 200; k++) {
+    cool.paintAt(10, 19, { material: 0, tool: 'cool', size: 6, shape: 'square' });
+    cool.step();
+  }
+  assert.equal(countMaterial(cool, MAT.MAGMA), 10, 'soğut fırçası magmayı taşlaştırmaz');
+  const ln2 = new Simulation({ width: 20, height: 20, seed: 'ln2-magma' });
+  for (let x = 5; x < 15; x++) ln2.world.set(ln2.world.index(x, 19), MAT.MAGMA, 0, 0, 0, 1200);
+  fill(ln2, 5, 15, 14, 17, MAT.LIQUID_NITROGEN);
+  runTicks(ln2, 300);
+  assert.ok(countMaterial(ln2, MAT.MAGMA) < 10, 'sıvı azot magmayı taşa çevirmeli');
+  assert.ok(countMaterial(ln2, MAT.STONE) > 0);
+  assert.deepEqual(ln2.world.checkInvariants(), []);
+});
+
+test('sıvı azot erimiş metali katılaştırır, suyu dondurur, ateşi söndürür', () => {
+  const sim = new Simulation({ width: 40, height: 20, seed: 'ln2-misc' });
+  fill(sim, 2, 17, 10, 19, MAT.MOLTEN_METAL);
+  fill(sim, 15, 17, 23, 19, MAT.WATER);
+  fill(sim, 28, 17, 36, 19, MAT.WOOD);
+  sim.setCell(32, 16, MAT.FIRE);
+  fill(sim, 2, 14, 36, 15, MAT.LIQUID_NITROGEN);
+  runTicks(sim, 150);
+  assert.ok(countMaterial(sim, MAT.METAL) > 0, 'metal');
+  assert.ok(countMaterial(sim, MAT.ICE) > 0, 'buz');
+  assert.equal(countMaterial(sim, MAT.BURNING_WOOD), 0, 'yangın sönmeli');
+});
+```
+
+`tests/app-modules.test.js` kısayol beklentisine `a` → `LIQUID_NITROGEN` ekle.
+
+- [ ] **Step 2: Testlerin başarısız olduğunu gör**
+
+Run: `node --test tests/nitrogen.test.js`
+Expected: FAIL (`MAT.LIQUID_NITROGEN` tanımsız).
+
+- [ ] **Step 3: Materyal**
+
+`MAT`'a `LIQUID_NITROGEN: 31,`. Tanım:
+
+```js
+  {
+    id: MAT.LIQUID_NITROGEN, key: 'LIQUID_NITROGEN', name: 'Liquid Nitrogen', kind: KIND.LIQUID, density: 8, color: '#cfe8ff',
+    dispersion: 5, spread: 1, drag: 0.3, reactive: true, temp: -196, conduct: 0.04, capacity: 2,
+    phase: { up: { at: -190, into: MAT.EMPTY, latent: 150, vanish: 1 } }, // ısınınca kaynar, soğuk hava kalır
+  },
+```
+
+- [ ] **Step 4: Reaksiyon**
+
+`reactions.js`:
+
+```js
+// Sıvı azot: bir komşu örnekler; lav/magma → taş, erimiş metal → metal, su → buz, ateş ve yanan madde söner.
+// Her dönüşüm bir sıvı azot hücresini tüketir (−196 °C soğuk hava kalır); dönüşen hücre en fazla
+// LN2_QUENCH_TEMP olur (ısı azotun kaynamasına gider). Magmayı taşa çeviren tek kural budur.
+const LN2_TEMP = -196;
+const LN2_QUENCH_TEMP = 300;
+const QUENCH_INTO = new Uint8Array(256);
+QUENCH_INTO[LAVA] = MAT.STONE;
+QUENCH_INTO[MAT.MAGMA] = MAT.STONE;
+QUENCH_INTO[MAT.MOLTEN_METAL] = MAT.METAL;
+QUENCH_INTO[WATER] = MAT.ICE;
+
+function reactLiquidNitrogen(world, rng, i) {
+  const j = sampleNeighbor(world, rng, i);
+  const nt = world.type[j];
+  const into = QUENCH_INTO[nt];
+  if (into !== 0) {
+    world.transform(j, into, 0);
+    if (world.temp[j] > LN2_QUENCH_TEMP) world.temp[j] = LN2_QUENCH_TEMP;
+    if (into === MAT.ICE && world.temp[j] > -20) world.temp[j] = -20;
+  } else if (nt === FIRE) {
+    vanish(world, j);
+  } else if (EXTINGUISH_TO[nt] !== 0 && DOUSE[nt] !== 0) {
+    world.transform(j, EXTINGUISH_TO[nt], 0);
+    if (world.temp[j] > LN2_QUENCH_TEMP) world.temp[j] = LN2_QUENCH_TEMP;
+  } else {
+    return false;
+  }
+  world.set(i, EMPTY, 0, 0, 0, LN2_TEMP); // azot kaynayıp gider, soğuk hava kalır
+  return true;
+}
+```
+
+`react` switch'ine `case MAT.LIQUID_NITROGEN: return reactLiquidNitrogen(world, rng, i);`.
+
+(Yanan yağın `douse` değeri 0 olduğundan sıvı azot onu da söndürmez; su gibi davranır. Bu bilinçli: yağ yangını sıvı azotla da sönmez.)
+
+- [ ] **Step 5: Seçici ve yardım**
+
+`catalog.js` `PICKER`'a (`MOLTEN_METAL`'den sonra) seçici girişini ekle. `index.html` kısayol tablosuna `<tr><th scope="row"><kbd>A</kbd></th><td>Sıvı azot (lavı ve magmayı taşa çevirir)</td></tr>`.
+
+- [ ] **Step 6: Testlerin geçtiğini gör, tüm testler**
+
+Run: `node --test tests/nitrogen.test.js tests/app-modules.test.js` → PASS. Run: `npm test` → `# fail 0`.
+
+Kaynama süresi testi (6000 tick) aşılırsa gizli ısıyı 150'den küçült (en az 30). Yüzme testi düşerse yoğunluğu 7 yap. Her ayarı ledger'a `Ruling:` olarak yaz.
+
+- [ ] **Step 7: Dokümanlar, commit, push**
+
+- `docs/MATERIALS.md`: §2 tablosuna Sıvı azot; §5.10 "Sıvı azot" (davranış listesi); Magma satırına "yalnız sıvı azot taşa çevirir".
+- `docs/DEVELOPMENT.md`: Phase 14 listesinde yeni madde 14 "Sıvı azot" `[x]`; sürüm maddesi 15 olur.
+- `README.md`: materyal listesi ve kısayol tablosu.
+- `CHANGELOG.md`.
+- `js/app/releases.js`: `'Sıvı azot (A): −196 °C sıvı; lavı ve magmayı taşa, suyu buza çevirir, ateşi söndürür; açık havada kaynayıp kaybolur.'`
+
+```bash
+git add js/engine/materials.js js/engine/reactions.js js/app/catalog.js index.html tests/nitrogen.test.js tests/app-modules.test.js docs/MATERIALS.md docs/DEVELOPMENT.md README.md CHANGELOG.md js/app/releases.js
+git commit -m "Sıvı azot: lavı ve magmayı taşa çeviren −196 °C sıvı"
+git push origin main
+```
+
+---
+
+### Task 15 (Görev 15): Performans, dokümanlar, ekran görüntüleri, 0.11.0 sürümü
 
 **Files:**
 - Modify: `tests/climate.test.js` (yeni modüller de sin/cos/exp/pow kullanmaz)
@@ -3804,6 +3993,8 @@ git push origin main
 **Interfaces:**
 - Consumes: tüm görevler.
 - Produces: sürüm 0.11.0; `RELEASES[0].version === '0.11.0'`; `UNRELEASED.version === '0.12.0'` ve maddeleri boş.
+
+> Bu görev planın son görevidir (Görev 14 Sıvı azottan sonra çalışır).
 
 - [ ] **Step 1: Saflık testini genişlet (önce kırmızı değil, koruma)**
 
@@ -3827,7 +4018,7 @@ Her adım ölçümüyle ledger'a `Ruling:` olarak yazılır.
 - `docs/DEVELOPMENT.md`:
   - Phase 14 "tamamlandı";
   - benchmark tablosuna Görev 14 satırı (ortalama ve patlama tepesi);
-  - 0.11.0 manuel kontrol listesi: Patlat aracı, barut, fitil, metan, volkan patlaması, gayzer, maden ocağı, mobil (360 px), azaltılmış hareket.
+  - 0.11.0 manuel kontrol listesi: Patlat aracı, barut, fitil, metan, sıvı azot, volkan patlaması, gayzer, maden ocağı, mobil (360 px), azaltılmış hareket.
 - `docs/DECISIONS.md`: ADR-007'ye geçiş 4–6 eki; ADR-017 ve ADR-018'in son ölçümleri.
 - `docs/ARCHITECTURE.md`: modül listesi, tick sırası, `world.blast` ve `world.flash`, `flags` bit tablosu (bit4, bit5), görünüm alanları (`debris`, `blasts`).
 - `docs/MATERIALS.md`: durum etiketleri ("Mevcut (0.11.0)"), §5 son sayılar (ayarlanan sabitler).

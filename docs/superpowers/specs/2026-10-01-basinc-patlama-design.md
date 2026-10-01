@@ -265,6 +265,10 @@ Kimlikler 23'ten başlar. "İç" olanlar seçicide yoktur, yalnız motor yazar.
 | Fitil | 0,02 | 2 | |
 | Yanan fitil | 0,04 | 2 | doğuş 600 °C |
 
+### 3.2a Sıvı azot (kullanıcı isteği, 2026-10-01)
+
+Kullanıcı "magmayı soğutarak taşlaştırabileceğimiz birşey" istedi ve seçenekler arasından yeni bir malzeme olarak **Sıvı azot**u seçti. Magma sabit kaynak olarak kalır; onu yalnız sıvı azot taşa çevirir. Ayrıntılar §3.5'te.
+
 ### 3.3 Dayanıklılık ve enkaz
 
 | Malzeme | Dayanıklılık | Kırılınca |
@@ -288,6 +292,20 @@ Kimlikler 23'ten başlar. "İç" olanlar seçicide yoktur, yalnız motor yazar.
 - **Yanan odun, bitki ve yağ:** alev üretirken ara sıra duman çıkarır (aynı sınır).
 - **`emitSteam`:** dönüşümü ani buharlaşma sayacına yazar (§2.7).
 - **Isı geçişi (tutuşma kuralı):** `explosive.at` eşiğini aşan patlayıcı, yanmak yerine birleştirme ızgarasına yazar.
+
+### 3.5 Sıvı azot
+
+| Kimlik | Anahtar | Ad | Tür | Seçici |
+|---|---|---|---|---|
+| 31 | `LIQUID_NITROGEN` | Sıvı azot | sıvı, yoğunluk 8 (suyun üstünde yüzer), dağılım 5 | Sıvı, `A` |
+
+- **Doğuş:** −196 °C. K 0,04, C 2.
+- **Kaynama:** ısınınca kaybolur (`phase.up` −190 °C, gizli ısı 150, tamamen kaybolur). Yerinde soğuk hava kalır, hava ortama döner.
+- **Temas** (sahip sıvı azot; tick başına bir komşu):
+  - lav → taş, magma → taş, erimiş metal → metal, su → buz;
+  - ateş ve yanan madde söner (yanan yağ hariç: suyla da sönmez).
+  - Her dönüşüm bir sıvı azot hücresini tüketir; geride −196 °C soğuk hava kalır. Dönüşen hücre en fazla 300 °C olur.
+- **Magma:** sabit kaynak olarak kalır (Soğut fırçası onu söndürmez). Yalnız sıvı azot taşa çevirir; komşu magma taşı ısıtsa da taşın erime eşiği (1500 °C) aşılmaz.
 
 ---
 
@@ -501,4 +519,7 @@ TDD: her davranış önce testle (kırmızı), sonra kodla (yeşil).
 12. Maden ocağı sahnesi.
 13. Gayzer sahnesi.
 14. Mağara güncellemesi.
-15. Performans, dokümanlar, ekran görüntüleri, 0.11.0.
+15. Sıvı azot (kullanıcı isteği, 2026-10-01).
+16. Performans, dokümanlar, ekran görüntüleri, 0.11.0.
+
+> Not: planda görev numaraları farklıdır (Görev 13 Mağara, 14 Sıvı azot, 15 sürüm).
