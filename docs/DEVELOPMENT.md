@@ -745,6 +745,25 @@ Spec: `docs/superpowers/specs/2026-09-30-sicaklik-sistemi-design.md` · Plan: `d
 - [x] Buzul, Dökümhane ve Mağara sahneleri; volkan magması ve çoğaltıcısı
 - [x] Performans, dokümanlar, 0.10.0 sürümü
 
+### Phase 14 — Basınç ve patlama (0.11.0)
+
+Spec: `docs/superpowers/specs/2026-10-01-basinc-patlama-design.md` · Plan: `docs/superpowers/plans/2026-10-01-basinc-patlama.md` · Materyal belgesi: `docs/MATERIALS.md`
+
+- [x] Patlama çekirdeği, dayanıklılık ve Moloz
+- [ ] Savrulan parçacıklar
+- [ ] Barut ve dinamit
+- [ ] Fitil
+- [ ] Metan ve duman
+- [ ] Kapalı bölge basıncı
+- [ ] Ani buharlaşma
+- [ ] Görseller (parlama, sarsıntı, parçacıklar)
+- [ ] Patlat aracı
+- [ ] Volkan sahnesi
+- [ ] Maden ocağı sahnesi
+- [ ] Gayzer sahnesi
+- [ ] Mağara sahnesi
+- [ ] Performans, dokümanlar, 0.11.0 sürümü
+
 ---
 
 ## Manuel test checklist

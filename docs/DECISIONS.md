@@ -218,3 +218,18 @@ Burada yalnızca gerçekten önemli teknik kararlar tutulur. Her kayıt dört ba
   - **Alternatif:** çoğaltıcıyı her zaman "materyalin hareket yönünde" üretir yapmak. Reddedildi: volkan yarığının tabanındaki çoğaltıcılar lavı yukarı doğru dolduruyor, kullanıcının boyadığı "üstüne döküleni çoğaltan" kaynağın davranışı da değişirdi.
   - **Alternatif:** sahneye çevirme kancası. Reddedildi: çevirme genel bir dünya işlemi.
   - Seçiciden boyanan kaynaklar yönsüz kalır.
+
+## ADR-017 — Patlamalar: olay kuyruğu, birleştirme ızgarası, dayanıklılık
+
+- **Bağlam:** 0.11.0 patlayıcılar, basınç ve buhar patlaması getiriyor. Çok sayıda barut hücresi aynı anda tetiklenebilir; her hücrenin kendi patlamasını uygulaması hem maliyeti patlatır hem sonucu hücre sırasına bağımlı yapar.
+- **Karar:**
+  - **Olay kuyruğu:** patlamalar (araç, basınç, buhar) `requestExplosion` ile kuyruğa girer. Geçiş 5 tick başına en fazla 16 patlama ve 4000 etkilenen hücre işler; kalanlar sonraki tick'e kalır. Kuyruk doluysa güç birleştirme ızgarasına düşer, kaybolmaz.
+  - **Birleştirme ızgarası:** patlayıcılar gücünü hücrenin 8×8 bloğuna yazar (`addBlastPower`). Blok başına güç toplanır, merkez güç ağırlıklı ortalamadır; `MERGE_MIN` altı söner. 500 barut hücresi birkaç blok olayına iner.
+  - **Zincir:** patlama sırasında tetiklenen patlayıcılar ızgaraya yazılır ve bir sonraki tick patlar. Tek tick'te sınırsız zincir oluşmaz, barut hattı dalga gibi ilerler.
+  - **Formül:** yarıçap `r = min(20, 1 + 1,5·√G)`, şiddet `s = 2·√G·(1 − d/r)`. Yalnızca `Math.sqrt` kullanılır; sin/cos/exp/pow yoktur.
+  - **Dayanıklılık:** statik materyalin `strength` değeri zorunludur (`Infinity` = kırılmaz). `s ≥ strength` olan katı `debris` materyaline döner ve savrulur. Toz ve sıvı her zaman savrulur, gaz yalnız ısınır.
+  - **Savurma havuzu:** havuz yoksa (`null`) savrulacak hücre yerinde kalır, kırılan katı yerinde enkazına döner.
+- **Alternatifler:**
+  - Tam hız alanı (basınç ve hız ızgarası). Reddedildi: bellek ve tick maliyeti yüksek, sonuç tek seferlik patlama için gereğinden karmaşık.
+  - Anlık itme (patlamada hücreleri doğrudan taşımak). Reddedildi: sıra bağımlı, katı çarpışmayı ve duvardan sızmayı denetlemek zor.
+- **Sonuç:** patlama maliyeti tick başına sınırlı ve deterministik. Patlayıcı malzemeler yalnızca tablolara (`EXPLOSIVE_POWER`, `EXPLODE_AT`, `EXPLOSIVE_IGNITE`) alan ekler. Savrulan parçacık havuzu sonraki görevde bu ADR'ye eklenir.

@@ -61,6 +61,7 @@ Bu belge, simülasyondaki tüm materyalleri ve aralarındaki etkileşimleri tek 
 | Lav | `LAVA` | `8` | sıvı | 30 | Dağılım 1, yayılma 0,2 (ağır akar), sürtünme 0,9. Havada normal hızla düşer. |
 | Bitki | `PLANT` | `9` | statik | — | Büyüme bütçesi 8. Yanıcılık 0,5. |
 | Cam | `GLASS` | `G` | statik | — | — |
+| Moloz | `RUBBLE` | `O` | toz | 26 | Kumdan ağır, lavdan hafif: lavın üstünde yüzer. 1500 °C'de lava döner (0.11.0). |
 | Silgi | — | `0` | — | — | Materyal değil; hücreyi boşaltır. Sağ tık her zaman geçici silgidir. |
 
 ### Seçicide olmayan (reaksiyonla oluşan) durumlar
@@ -204,11 +205,50 @@ Eşiklerde histerezis vardır (ör. donma −1 °C, erime +1 °C), böylece hüc
 
 ---
 
-## 5. Materyal ekleme kontrol listesi
+## 5. Basınç ve patlama (0.11.0)
+
+### 5.1 Patlama
+
+Bir patlama (merkez, güç G) şöyle uygulanır (ADR-017):
+
+- **Yarıçap:** `r = min(20, 1 + 1,5·√G)`.
+- **Şiddet:** merkeze uzaklığı d olan hücrede `s = 2·√G·(1 − d/r)`, yalnız d < r için.
+- **Kenar ve magma:** dokunulmaz.
+- **Katı:** `s ≥ dayanıklılık` ise enkazına döner (aşağıdaki tablo). Kırılmayan yanıcı katı `s ≥ 1` ise tutuşur.
+- **Toz ve sıvı:** savrulur; yanıcıysa önce tutuşur. Savrulan parçacık havuzu yokken yerinde kalır.
+- **Gaz:** yerinde kalır, yalnız ısınır.
+- **Isı:** her hücre `600·(1 − d/r)` °C ısınır (en fazla 1500 °C).
+- **Ateş:** `d < r/2` olan boş hücreler %50 olasılıkla ateş olur.
+- **Sınırlar:** tick başına en fazla 16 patlama ve 4000 etkilenen hücre; kalanlar sonraki tick'e kalır. Kuyruk 64 olay alır, taşan güç 8×8 birleştirme ızgarasında bekler.
+- **Araç patlaması:** duraklatılmışken de hemen uygulanır, bir stroke olarak geri alınır, kullanıcı girdisi olduğu için `inputRng` kullanır.
+
+### 5.2 Dayanıklılık ve enkaz
+
+| Materyal | Dayanıklılık | Kırılınca |
+|---|---|---|
+| toz, sıvı, gaz | 0 (kırılmaz, savrulur) | — |
+| Bitki (`PLANT`), yanan bitki | 1 | kül |
+| Cam (`GLASS`) | 2 | kum |
+| Buz (`ICE`) | 2 | kar |
+| Odun (`WOOD`), yanan odun | 4 | kül |
+| Taş (`STONE`) | 8 | moloz |
+| Çoğaltıcı (`CLONER`), yutucu (`SINK`) | 12 | moloz |
+| Metal (`METAL`) | 20 | metal |
+| Kenar (`WALL`), magma (`MAGMA`) | kırılmaz | — |
+
+### 5.3 Moloz (`RUBBLE`)
+
+- Kırılan taş ve kırılan çoğaltıcı ya da yutucunun tozu; seçicide `O` kısayolu ile boyanabilir.
+- Yoğunluk 26: kumdan (20) ağır, lavdan (30) hafif. Lavın üstünde yüzer.
+- Isıl özellikleri taş gibidir (iletkenlik 0,06, kapasite 4); 1500 °C'de lava döner.
+
+---
+
+## 6. Materyal ekleme kontrol listesi
 
 Yeni bir materyal ya da etkileşim eklerken:
 
-1. `materials.js` içinde `MAT` kimliğini ve `MATERIAL_DEFS` kaydını ekle. Tür, yoğunluk, renk ve gerekiyorsa termal alanlar buraya girer.
+1. `materials.js` içinde `MAT` kimliğini ve `MATERIAL_DEFS` kaydını ekle. Tür, yoğunluk, renk ve gerekiyorsa termal alanlar buraya girer. Statik materyalde `strength` (ve gerekirse `debris`) zorunludur.
 2. Etkileşim varsa `reactions.js` içinde sahip tarafı belirle. Tek sahip kuralını izle.
 3. Seçicide görünecekse `js/app/catalog.js` içine etiket, kısayol ve kategori ekle.
 4. `tests/` altına davranış testlerini yaz.

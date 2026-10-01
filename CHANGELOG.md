@@ -7,6 +7,12 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) yaklaşımını 
 
 Hedef sürüm 0.11.0.
 
+### Added
+
+- **Patlama çekirdeği:** olay kuyruğu (tick başına en fazla 16 patlama, 4000 hücre), 8×8 birleştirme ızgarası ve patlamanın uygulanması. Yarıçap `min(20, 1 + 1,5·√G)`, şiddet `2·√G·(1 − d/r)`; her hücre merkeze uzaklıkla orantılı ısınır, merkezdeki boş hücrelerin bir kısmı ateş olur. Patlama durumu geri almaya ve çevirmeye dahildir.
+- **Dayanıklılık ve enkaz:** her statik materyalin patlamaya dayanıklılığı ve kırılınca dönüştüğü enkaz var (taş 8 → moloz, cam 2 → kum, buz 2 → kar, odun 4 → kül, metal 20; kenar ve magma kırılmaz).
+- **Moloz (`O`):** kırılan taşın tozu; kumdan ağır, lavın üstünde yüzer, 1500 °C'de lava döner.
+
 ### Changed
 
 - **Kum saati:** yutucular kapak dibinden kaldırıldı. Artık alt haznenin üst kısmında, boğazdan inen akışın iki yanında duvara yaslı cam raflar var; her rafta 3 aşağı yönlü, sınırsız yutucu bulunuyor. Raflar boğazdan hazne yüksekliğinin ~%30'u kadar aşağıda; küçük haznede sığana kadar aşağı iner.

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { MAT, KIND, MATERIALS, compileMaterials } from '../js/engine/materials.js';
+import { MAT, KIND, MATERIALS, MATERIAL_DEFS, compileMaterials } from '../js/engine/materials.js';
 
 const displace = (mover, target) => MATERIALS.DISPLACE[mover * 256 + target];
 
@@ -109,7 +109,7 @@ test('Her materyalin bir key ile bulunabilir tanımı vardır', () => {
 
 test('faz tanımı doğrulanır: gizli ısı aralığı, eşik sırası, hedef materyal, tutuşmada burnsInto', () => {
   const E = { id: 0, key: 'EMPTY', name: 'E', kind: KIND.NONE, density: 5 };
-  const S = (phase, extra = {}) => ({ id: 1, key: 'X', name: 'X', kind: KIND.STATIC, density: 255, phase, ...extra });
+  const S = (phase, extra = {}) => ({ id: 1, key: 'X', name: 'X', kind: KIND.STATIC, density: 255, strength: 1, phase, ...extra });
   assert.throws(() => compileMaterials([E, S({ up: { at: 10, into: 0, latent: 70000 } })]), /Gizli ısı/);
   assert.throws(() => compileMaterials([E, S({ up: { at: 10, into: 0, latent: 5 }, down: { at: 20, into: 0, latent: 5 } })]), /eşik/);
   assert.throws(() => compileMaterials([E, S({ up: { at: 10, into: 99, latent: 5 } })]), /hedef/);
@@ -141,4 +141,45 @@ test('termal tablolar: lav ve ateş sıcak doğar, ateş ve yanan odun kaynaktı
   assert.equal(MATERIALS.SOURCE_TEMP[MAT.BURNING_WOOD], 700);
   assert.equal(MATERIALS.SOURCE_TEMP[MAT.STONE], -Infinity);
   for (const def of MATERIALS.list) assert.ok(MATERIALS.CONDUCT[def.id] / MATERIALS.CAP[def.id] <= 0.25, def.key);
+});
+
+test('dayanıklılık ve enkaz tabloları: statiklerin hepsinde açık değer; kenar ve magma kırılmaz', () => {
+  const { STRENGTH, DEBRIS_OF, KIND: KIND_OF } = MATERIALS;
+  assert.equal(STRENGTH[MAT.WALL], Infinity);
+  assert.equal(STRENGTH[MAT.MAGMA], Infinity);
+  assert.equal(STRENGTH[MAT.STONE], 8);
+  assert.equal(STRENGTH[MAT.GLASS], 2);
+  assert.equal(STRENGTH[MAT.ICE], 2);
+  assert.equal(STRENGTH[MAT.WOOD], 4);
+  assert.equal(STRENGTH[MAT.PLANT], 1);
+  assert.equal(STRENGTH[MAT.METAL], 20);
+  assert.equal(STRENGTH[MAT.CLONER], 12);
+  assert.equal(STRENGTH[MAT.SINK], 12);
+  assert.equal(DEBRIS_OF[MAT.STONE], MAT.RUBBLE);
+  assert.equal(DEBRIS_OF[MAT.GLASS], MAT.SAND);
+  assert.equal(DEBRIS_OF[MAT.ICE], MAT.SNOW);
+  assert.equal(DEBRIS_OF[MAT.WOOD], MAT.ASH);
+  assert.equal(DEBRIS_OF[MAT.METAL], MAT.METAL);
+  assert.equal(DEBRIS_OF[MAT.SAND], MAT.SAND, 'varsayılan: kendisi');
+  for (const def of MATERIALS.list) {
+    if (def.kind === KIND.STATIC) assert.ok(def.strength !== undefined, `${def.key}: statik materyalin dayanıklılığı açıkça verilmeli`);
+    else assert.equal(STRENGTH[def.id], 0, `${def.key}: hareketli materyal kırılmaz, savrulur`);
+  }
+  assert.equal(KIND_OF[MAT.RUBBLE], KIND.POWDER);
+});
+
+test('Moloz: kumdan ağır toz, lavın üstünde yüzer, taş gibi ısınır ve 1500 °C\'de lava döner', () => {
+  const r = MATERIALS.byKey.RUBBLE;
+  assert.equal(r.id, MAT.RUBBLE);
+  assert.ok(r.density > MATERIALS.byKey.SAND.density && r.density < MATERIALS.byKey.LAVA.density);
+  assert.equal(MATERIALS.UP_AT[MAT.RUBBLE], 1500);
+  assert.equal(MATERIALS.UP_INTO[MAT.RUBBLE], MAT.LAVA);
+  assert.equal(MATERIALS.CONDUCT[MAT.RUBBLE], MATERIALS.CONDUCT[MAT.STONE]);
+});
+
+test('derleyici: dayanıklılığı olmayan statik ve tanımsız enkaz hedefi reddedilir', () => {
+  const base = MATERIAL_DEFS.filter((d) => d.id <= 1);
+  assert.throws(() => compileMaterials([...base, { id: 40, key: 'X', name: 'X', kind: KIND.STATIC, density: 255, color: '#000' }]), /dayanıklılık/);
+  assert.throws(() => compileMaterials([...base, { id: 40, key: 'X', name: 'X', kind: KIND.STATIC, density: 255, color: '#000', strength: 1, debris: 99 }]), /enkaz/);
+  assert.throws(() => compileMaterials([...base, { id: 40, key: 'X', name: 'X', kind: KIND.POWDER, density: 9, color: '#000', explosive: { power: -1, at: 100 } }]), /patlayıcı/);
 });

@@ -5,7 +5,8 @@ import { Rng, hashSeed } from './rng.js';
 import { MAT, KIND, MATERIALS, spawnTemp } from './materials.js';
 import { stepPowder, stepLiquid, stepGas } from './kernels.js';
 import { react, createReactionState, beginReactionTick, initialLife, isMover, SOURCE_INFINITE, CLONER_LEARNED, SOURCE_DOWNWARD } from './reactions.js';
-import { footprint, lineCells, SPRAY_DENSITY } from './brush.js';
+import { footprint, lineCells, SPRAY_DENSITY, clampBrushSize } from './brush.js';
+import { createBlastState, resetBlastState, copyBlastState, flipBlastState, stepExplosions, applyExplosion, BLAST_KIND } from './explosions.js';
 import { stepHeat, createHeatState } from './heat.js';
 import { DEFAULT_AMBIENT, clampAmbient, TEMP_MIN, TEMP_MAX, ambientAt, dayPhase } from './climate.js';
 
@@ -41,6 +42,9 @@ function spawnHash(i, salt) {
   return (h ^ (h >>> 16)) >>> 0;
 }
 
+// Patlat aracı: G = min(BLAST_TOOL_MAX, boyut²).
+export const BLAST_TOOL_MAX = 400;
+
 export class Simulation {
   constructor({ width, height, seed = 'strata', debug = false, now = defaultNow } = {}) {
     this.world = new World(width, height); // engine-içi; uygulama katmanı kullanmaz
@@ -59,6 +63,9 @@ export class Simulation {
     this._reactions = createReactionState();
     this._gasRows = new Uint8Array(height); // geçiş 2'de taranacak satırlar
     this._heat = createHeatState(height); // geçiş 3 (ısı) durumu
+    this._blast = createBlastState(width, height); // geçiş 5 (patlamalar)
+    this._debris = null; // savrulan parçacık havuzu (Görev 2)
+    this.world.blast = this._blast; // reaksiyonlar ve ısı geçişi patlayıcıları buraya yazar
     this.ambientBase = DEFAULT_AMBIENT; // kullanıcı ayarı (undo ile geri alınmaz)
     this.dayCycle = false; // gün/gece döngüsü (kullanıcı tercihi)
 
@@ -91,6 +98,15 @@ export class Simulation {
         return sim.ambient;
       },
       counts: w.counts, // materyal başına hücre sayısı (salt-okunur; ör. renderer animasyon kararı)
+      blasts: Object.freeze({
+        x: this._blast.ringX,
+        y: this._blast.ringY,
+        power: this._blast.ringP,
+        serial: this._blast.ringSerial,
+        get latest() {
+          return sim._blast.serial;
+        },
+      }),
       get tick() {
         return sim.tick;
       },
@@ -238,6 +254,9 @@ export class Simulation {
     // Geçiş 3 — ısı (heat.js): difüzyon, hava, kaynaklar.
     stepHeat(w, rng, this._heat);
 
+    // Geçiş 5 — patlamalar (explosions.js): birleştirme ızgarası ve kuyruk.
+    stepExplosions(w, rng, this._blast, this._debris);
+
     // Basılı tutma tick sonunda uygulanır: kaynak hücre bu tick boşaldıysa hemen yeniden dolar
     // (kesintisiz akış); yeni hücreler bir sonraki tick hareket eder.
     this._nextToolGen();
@@ -303,6 +322,18 @@ export class Simulation {
     return true;
   }
 
+  // Patlat aracı: tıklanan hücrede G = min(BLAST_TOOL_MAX, boyut²) patlama. Duraklatılmışken de hemen
+  // uygulanır; inputRng kullanır (fizik dizisini değiştirmez). Stroke içindeyse geri alınabilir.
+  blastAt(x, y, size) {
+    const w = this.world;
+    if (!w.inBounds(x, y)) return false;
+    const s = clampBrushSize(size);
+    applyExplosion(w, this.inputRng, this._blast, this._debris, x, y, Math.min(BLAST_TOOL_MAX, s * s), BLAST_KIND.TOOL);
+    this._strokeDirty = true;
+    this.version++;
+    return true;
+  }
+
   getCell(x, y) {
     const w = this.world;
     if (!w.inBounds(x, y)) return null;
@@ -317,6 +348,7 @@ export class Simulation {
     this._undo = snap;
     this.world.ambient = this.ambient;
     this.world.clear();
+    resetBlastState(this._blast);
     this.version++;
   }
 
@@ -326,6 +358,7 @@ export class Simulation {
     this._capture(snap);
     this._undo = snap;
     this.world.flipVertical();
+    flipBlastState(this._blast);
     this.version++;
   }
 
@@ -343,6 +376,7 @@ export class Simulation {
     this.tick = 0;
     this.world.ambient = this.ambient;
     this.world.clear();
+    resetBlastState(this._blast);
     this._acc = 0;
     this._hold = null;
     this._undo = null;
@@ -474,6 +508,7 @@ export class Simulation {
     w.flags.set(snap.flags);
     w.temp.set(snap.temp);
     w.counts.set(snap.counts);
+    copyBlastState(this._blast, snap.blast);
     this.rng.setState(snap.rng);
     this.tick = snap.tick;
     this.world.ambient = this.ambient; // gün/gece fazı geri alınan tick'e göre
@@ -494,6 +529,7 @@ export class Simulation {
       flags: new Uint8Array(size),
       temp: new Float32Array(size),
       counts: new Uint32Array(256),
+      blast: createBlastState(this.world.width, this.world.height),
       rng: new Uint32Array(4),
       tick: 0,
     };
@@ -509,6 +545,7 @@ export class Simulation {
     snap.flags.set(w.flags);
     snap.temp.set(w.temp);
     snap.counts.set(w.counts);
+    copyBlastState(snap.blast, this._blast);
     snap.rng.set(this.rng.getState());
     snap.tick = this.tick;
   }
@@ -528,6 +565,8 @@ export class Simulation {
       ambient: this.ambient,
       dayCycle: this.dayCycle,
       dayPhase: this.dayPhase,
+      blastsThisTick: this._blast.blastsThisTick,
+      blastTotals: Uint32Array.from(this._blast.totals),
     };
   }
 }

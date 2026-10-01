@@ -14,6 +14,7 @@ export const PICKER = Object.freeze([
   { key: 'PLANT', mat: MAT.PLANT, label: 'Bitki', shortcut: '9', category: 'solid' },
   { key: 'GLASS', mat: MAT.GLASS, label: 'Cam', shortcut: 'g', category: 'solid' },
   { key: 'SNOW', mat: MAT.SNOW, label: 'Kar', shortcut: 'k', category: 'powder' },
+  { key: 'RUBBLE', mat: MAT.RUBBLE, label: 'Moloz', shortcut: 'o', category: 'powder' },
   { key: 'MOLTEN_METAL', mat: MAT.MOLTEN_METAL, label: 'Erimiş metal', shortcut: 'e', category: 'liquid' },
   { key: 'ICE', mat: MAT.ICE, label: 'Buz', shortcut: 'b', category: 'solid' },
   { key: 'METAL', mat: MAT.METAL, label: 'Metal', shortcut: 'm', category: 'solid' },
