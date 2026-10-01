@@ -26,18 +26,31 @@ test('fitil ateşi saniyede ~10 hücre taşır ve sonundaki dinamiti patlatır',
   assert.equal(countMaterial(sim, MAT.FUSE), 0);
 });
 
-test('yanan fitil ateşle ve ısıyla tutuşur, yanarken kıvılcım çıkarır, sonunda küle döner', () => {
+test('fitil ısıyla tutuşur, yanarken fitilin üstüne kıvılcım çıkarır, sonunda küle döner', () => {
   const sim = new Simulation({ width: 30, height: 10, seed: 'fuse2' });
   line(sim, 0, 29, 8, MAT.STONE);
   line(sim, 5, 20, 7, MAT.FUSE);
-  sim.setCell(4, 7, MAT.FIRE);
+  sim.setTemp(5, 7, 300); // tohum ateş yok: yalnızca ısı
   let sparks = 0;
   for (let t = 0; t < 200; t++) {
     sim.step();
-    if (countMaterial(sim, MAT.BURNING_FUSE) > 0 && countMaterial(sim, MAT.FIRE) > 0) sparks++;
+    // Yanan fitilin üstündeki sıradaki (y=6) ateş yalnızca fitil kıvılcımından gelebilir.
+    if (t > 5 && countMaterial(sim, MAT.BURNING_FUSE) > 0) {
+      for (let x = 4; x <= 21; x++) if (cellType(sim, x, 6) === MAT.FIRE) sparks++;
+    }
   }
   assert.equal(countMaterial(sim, MAT.FUSE), 0);
   assert.ok(sparks > 0, 'kıvılcım');
+  assert.ok(countMaterial(sim, MAT.ASH) > 0);
+});
+
+test('fitil ateşle de tutuşur', () => {
+  const sim = new Simulation({ width: 30, height: 10, seed: 'fuse-fire' });
+  line(sim, 0, 29, 8, MAT.STONE);
+  line(sim, 5, 20, 7, MAT.FUSE);
+  sim.setCell(4, 7, MAT.FIRE);
+  runTicks(sim, 200);
+  assert.equal(countMaterial(sim, MAT.FUSE), 0);
   assert.ok(countMaterial(sim, MAT.ASH) > 0);
 });
 

@@ -105,6 +105,25 @@ function reactLava(world, rng, i) {
   return false;
 }
 
+// Alev: üstteki üç hücreden birine (boşsa) ateş üret; tick başına dünya geneli sınır var.
+function emitFlame(world, rng, i, t, state) {
+  if (state.fireBudget > 0 && roll(rng, EMIT[t])) {
+    const j = i - world.stride + ((rng.nextU32() % 3) - 1);
+    if (world.type[j] === EMPTY) {
+      world.set(j, FIRE, rng.nextU32() & 255, initialLife(FIRE, rng.nextU32()), 0, spawnTemp(FIRE, world.ambient));
+      state.fireBudget--;
+    }
+  }
+}
+
+// Su yanan hücreyi söndürür: su buhara döner, hücre eski materyaline iner.
+// Isı buhara geçer: sönen hücre kaynak sıcaklığında kalsaydı ısı geçişi onu yeniden tutuştururdu.
+function douseBurning(world, i, j, t) {
+  emitSteam(world, j);
+  world.transform(i, EXTINGUISH_TO[t], 0);
+  if (world.temp[i] > STEAM_TEMP) world.temp[i] = STEAM_TEMP;
+}
+
 function reactBurning(world, rng, i, t, state) {
   const life = world.life;
   if (life[i] <= 1) {
@@ -115,22 +134,13 @@ function reactBurning(world, rng, i, t, state) {
   life[i]--;
 
   // Alev: üstteki üç hücreden birine (boşsa) ateş üret; tick başına dünya geneli sınır var.
-  if (state.fireBudget > 0 && roll(rng, EMIT[t])) {
-    const j = i - world.stride + ((rng.nextU32() % 3) - 1);
-    if (world.type[j] === EMPTY) {
-      world.set(j, FIRE, rng.nextU32() & 255, initialLife(FIRE, rng.nextU32()), 0, spawnTemp(FIRE, world.ambient));
-      state.fireBudget--;
-    }
-  }
+  emitFlame(world, rng, i, t, state);
 
   const j = sampleNeighbor(world, rng, i);
   const nt = world.type[j];
   if (nt === WATER) {
     if (DOUSE[t] === 0 || !roll(rng, DOUSE[t])) return false;
-    emitSteam(world, j);
-    world.transform(i, EXTINGUISH_TO[t], 0);
-    // Isı buhara geçer: sönen hücre kaynak sıcaklığında kalsaydı ısı geçişi onu yeniden tutuştururdu.
-    if (world.temp[i] > STEAM_TEMP) world.temp[i] = STEAM_TEMP;
+    douseBurning(world, i, j, t);
     return true;
   }
   ignite(world, rng, j, nt);
@@ -153,18 +163,10 @@ function reactBurningFuse(world, rng, i, state) {
     return true;
   }
   life[i]--;
-  if (state.fireBudget > 0 && roll(rng, EMIT[MAT.BURNING_FUSE])) {
-    const j = i - world.stride + ((rng.nextU32() % 3) - 1);
-    if (world.type[j] === EMPTY) {
-      world.set(j, FIRE, rng.nextU32() & 255, initialLife(FIRE, rng.nextU32()), 0, spawnTemp(FIRE, world.ambient));
-      state.fireBudget--;
-    }
-  }
+  emitFlame(world, rng, i, MAT.BURNING_FUSE, state);
   const j = sampleNeighbor(world, rng, i);
   if (world.type[j] === WATER && roll(rng, DOUSE[MAT.BURNING_FUSE])) {
-    emitSteam(world, j);
-    world.transform(i, MAT.FUSE, 0);
-    if (world.temp[i] > STEAM_TEMP) world.temp[i] = STEAM_TEMP;
+    douseBurning(world, i, j, MAT.BURNING_FUSE);
     return true;
   }
   return false;
