@@ -12,7 +12,7 @@
 import { MAT, MATERIALS, PROGRESS_SCALE } from './materials.js';
 import { emitSteam, initialLife } from './reactions.js';
 import { detonate } from './explosions.js';
-import { flashWeight } from './pressure.js';
+import { flashWeight, PRESSURE } from './pressure.js';
 
 export const HEAT = Object.freeze({
   AIR_RELAX: 0.02, // havanın tick başına ortama yaklaşma oranı
@@ -100,7 +100,15 @@ function transition(world, rng, i, into, vanish, over = 0) {
     world.set(i, EMPTY, 0, 0, 0, world.temp[i]);
     return;
   }
-  if (into === STEAM) emitSteam(world, i, flashWeight(over));
+  if (into === STEAM) {
+    // Ani buharlaşma: yalnız çok sıcak bir kaynağa (lav, erimiş metal, magma ısıtmış taş) değen su sayılır.
+    const T = world.temp, st = world.stride;
+    let hot = T[i - 1];
+    if (T[i + 1] > hot) hot = T[i + 1];
+    if (T[i - st] > hot) hot = T[i - st];
+    if (T[i + st] > hot) hot = T[i + st];
+    emitSteam(world, i, hot >= PRESSURE.FLASH_SOURCE_MIN ? flashWeight(over) : 0);
+  }
   else world.transform(i, into, 0); // sıcaklık eşikte kalır
 }
 

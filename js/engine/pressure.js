@@ -25,6 +25,7 @@ export const PRESSURE = Object.freeze({
   FLASH_MIN: 6, // patlama eşiği (yarılanan sayaç)
   FLASH_POWER: 1, // ağırlık başına güç
   FLASH_SUPERHEAT: 6, // dönüşüm ağırlığı = aşırı ısınma (°C) / bu değer
+  FLASH_SOURCE_MIN: 720, // en sıcak 4-komşu bu değerin altındaysa dönüşüm sayılmaz (yanan madde 700 °C)
   FLASH_WEIGHT_MAX: 3, // tek dönüşümün en çok ağırlığı
 });
 

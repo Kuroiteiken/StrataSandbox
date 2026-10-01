@@ -73,10 +73,10 @@ const STEAM_TEMP = spawnTemp(STEAM, 0); // 105 °C
 
 // Tüm buhar üretimi buradan geçer (kaynama, ateş, söndürme). Buhar doğuş sıcaklığıyla başlar;
 // aksi halde suyun sıcaklığını alıp hemen yoğuşurdu. Ani buharlaşma sayacı (pressure.js) buradan beslenir.
-export function emitSteam(world, i, w = 1) {
+export function emitSteam(world, i, w = 0) {
   world.transform(i, STEAM, 0);
   world.temp[i] = STEAM_TEMP;
-  if (world.flash) {
+  if (world.flash && w > 0) {
     const stride = world.stride;
     noteSteam(world.flash, (i % stride) - 1, Math.floor(i / stride) - 1, w); // ani buharlaşma (pressure.js)
   }

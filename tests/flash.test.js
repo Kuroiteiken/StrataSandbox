@@ -34,24 +34,26 @@ test('erimiş metale dökülen su da patlar (3 seed)', () => {
   }
 });
 
-// Gerçekten kaynayan tencere: taban 200 °C'de tutulur, buhar çıkar ama dönüşümler zayıf aşırı ısınmayla yayılır.
-test('tabanı 200 °C tutulan tencere kaynar ama 2000 tick boyunca buhar patlaması yapmaz', () => {
-  const sim = new Simulation({ width: 40, height: 30, seed: 'pot' });
-  fill(sim, 12, 26, 27, 26, MAT.STONE); // taban
-  fill(sim, 12, 18, 12, 25, MAT.STONE);
-  fill(sim, 27, 18, 27, 25, MAT.STONE);
-  fill(sim, 13, 20, 26, 25, MAT.WATER);
-  const water0 = countMaterial(sim, MAT.WATER);
-  let steamSeen = 0;
-  for (let t = 0; t < 2000; t++) {
-    for (let x = 12; x <= 27; x++) sim.setTemp(x, 26, 200);
-    sim.step();
-    steamSeen = Math.max(steamSeen, countMaterial(sim, MAT.STEAM));
-  }
-  assert.ok(steamSeen > 0, 'tencere kaynamalı (buhar görülmeli)');
-  assert.ok(countMaterial(sim, MAT.WATER) < water0, 'su buharlaşmış olmalı');
-  assert.equal(steamBlasts(sim), 0);
-});
+// Gerçekten kaynayan tencere: taban sabit sıcaklıkta tutulur, buhar çıkar ama kaynak eşiğinin altında kalır.
+for (const floorT of [200, 400]) {
+  test(`tabanı ${floorT} °C tutulan tencere kaynar ama 2000 tick boyunca buhar patlaması yapmaz`, () => {
+    const sim = new Simulation({ width: 40, height: 30, seed: 'pot' });
+    fill(sim, 12, 26, 27, 26, MAT.STONE); // taban
+    fill(sim, 12, 18, 12, 25, MAT.STONE);
+    fill(sim, 27, 18, 27, 25, MAT.STONE);
+    fill(sim, 13, 20, 26, 25, MAT.WATER);
+    const water0 = countMaterial(sim, MAT.WATER);
+    let steamSeen = 0;
+    for (let t = 0; t < 2000; t++) {
+      for (let x = 12; x <= 27; x++) sim.setTemp(x, 26, floorT);
+      sim.step();
+      steamSeen = Math.max(steamSeen, countMaterial(sim, MAT.STEAM));
+    }
+    assert.ok(steamSeen > 0, 'tencere kaynamalı (buhar görülmeli)');
+    assert.ok(countMaterial(sim, MAT.WATER) < water0, 'su buharlaşmış olmalı');
+    assert.equal(steamBlasts(sim), 0);
+  });
+}
 
 test('lava + su kapalı kutusu 10k tick patlamalarla da sağlam kalır (ani buharlaşma açık)', () => {
   const sim = new Simulation({ width: 30, height: 20, seed: 'stable', debug: true });

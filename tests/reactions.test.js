@@ -75,7 +75,6 @@ test('Su altındaki yanan kalas söner ve sönük kalır (sönen hücre yeniden 
   for (const [seed, burning, fuel] of [['a', 'B', MAT.WOOD], ['b', 'B', MAT.WOOD], ['c', 'b', MAT.PLANT], ['d', 'B', MAT.WOOD]]) {
     const row = `~~${burning.repeat(16)}~~`;
     const sim = makeSim(['~'.repeat(20), '~'.repeat(20), row, '~'.repeat(20), '~'.repeat(20), '#'.repeat(20)].join('\n'), { seed });
-    sim.world.flash = null; // konu yeniden tutuşma; 16 hücrelik buhar patlaması kalası dağıtırdı
     runTicks(sim, 300);
     const lit = count(sim, MAT.BURNING_WOOD, MAT.BURNING_PLANT);
     assert.equal(lit, 0, `seed ${seed}: 300 tick sonra hâlâ ${lit} yanan hücre\n${toAscii(sim)}`);

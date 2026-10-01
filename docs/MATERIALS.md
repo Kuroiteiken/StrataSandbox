@@ -287,9 +287,9 @@ Patlamanın ızgaradan aldığı hücreler `debris.js` içindeki önceden ayrıl
 
 ### 5.8 Ani buharlaşma
 
-- **Sayaç:** `emitSteam` (kaynama, ateşle kaynama, söndürme) her su→buhar dönüşümünü 8×8 bloğa yazar. Her dönüşümün ağırlığı kaynama eşiği üstündeki ısıya (aşırı ısınma) bağlıdır: w = clamp((T − 100) / 6, 0, 3); ateşle kaynama ve söndürme ağırlık 1 alır. Blok sayacı (ağırlıklı toplam) her tick 0,85 ile çarpılır (kısa pencere).
+- **Sayaç:** `emitSteam` (kaynama, ateşle kaynama, söndürme) her su→buhar dönüşümünü 8×8 bloğa yazar. Her dönüşümün ağırlığı kaynama eşiği üstündeki ısıya (aşırı ısınma) bağlıdır: w = clamp((T − 100) / 6, 0, 3); yalnız ısı geçişindeki kaynama sayılır ve en sıcak 4-komşu ≥ 720 °C olmalıdır (lav, erimiş metal, magma ısıtmış taş); ateşle kaynama, söndürme ve yanan madde (700 °C) hiç sayılmaz. Blok sayacı (ağırlıklı toplam) her tick 0,85 ile çarpılır (kısa pencere).
 - **Patlama:** sayaç ≥ 6 olunca (ağırlıklı) dönüşüm merkezinde G = sayaç (güç 1/ağırlık) olan `STEAM` türünde patlama istenir ve sayaç sıfırlanır.
-- **Sonuç:** lava ya da erimiş metale dökülen su aynı anda buhara dönüp patlar; yavaş ısınan suda dönüşümler zamana yayılır, eşiğe ulaşmaz. Ölçüm (sayaç tepesi): lav + su 3 seedde 4–30 (hepsi patlar), erimiş metal + su ≈ 20–30, magma üstü taş + su ≈ 18; tabanı 150/200/400 °C'de tutulan tencere 0,3/1,4/5,2 (patlamaz); sahnelerde (Buzul, Mağara, Vaha, Kum saati, Dökümhane, Volkan) en çok 0,5. Zayıf ısıtıcı az aşırı ısınma verdiği için tencere ağır sayılmaz.
+- **Sonuç:** lava ya da erimiş metale dökülen su aynı anda buhara dönüp patlar; yavaş ısınan suda dönüşümler zamana yayılır, eşiğe ulaşmaz. Ölçüm (sayaç tepesi): lav + su 3 seedde 7–12 (4–25 patlama), erimiş metal + su 13–19 (29–31 patlama); magma üstü 1 taş sırası + su ≈ 6,6 (eşiğe yakın: 2000 tickte 1 patlama, Geyser için ince marj); tabanı 200/400/600 °C'de tutulan tencere 0 (kaynar, patlamaz); sahnelerde 0. Kapı 800 °C'de lav çok zayıf kalıyordu (tepe ≈ 3,8), bu yüzden 720 °C; lav temas hücresi ~750 °C'ye soğuduğu için marj dardır (lav seed c: 7,2 ile 6 arasında).
 
 ---
 
