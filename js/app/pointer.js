@@ -52,8 +52,12 @@ export function attachPointer(canvas, { renderer, sim, getBrush, onCursor = () =
         // bazı tarayıcılar sentetik olaylarda capture'a izin vermez
       }
       sim.beginStroke();
-      sim.paintAt(cell.x, cell.y, brush);
-      sim.setHold(cell.x, cell.y, brush);
+      if (brush.tool === 'blast') {
+        sim.blastAt(cell.x, cell.y, brush.size); // tek tık tek patlama; basılı tutma yok
+      } else {
+        sim.paintAt(cell.x, cell.y, brush);
+        sim.setHold(cell.x, cell.y, brush);
+      }
       onCursor(cell, e.pointerType);
     },
 
@@ -65,6 +69,10 @@ export function attachPointer(canvas, { renderer, sim, getBrush, onCursor = () =
       // pointerup kaçtıysa (ör. capture alınamadı) buton bırakılmış hareket stroke'u bitirir.
       if (e.buttons === 0) {
         finish(e);
+        return;
+      }
+      if (active.brush.tool === 'blast') {
+        onCursor(toCell(e, true), e.pointerType);
         return;
       }
       const samples = typeof e.getCoalescedEvents === 'function' ? e.getCoalescedEvents() : null;

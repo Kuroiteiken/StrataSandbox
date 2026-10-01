@@ -28,6 +28,7 @@ export const PICKER = Object.freeze([
   { key: 'ERASER', mat: MAT.EMPTY, label: 'Silgi', shortcut: '0', category: 'tool' },
   { key: 'HEAT', mat: null, tool: 'heat', label: 'Isıt', shortcut: 'h', category: 'tool' },
   { key: 'COOL', mat: null, tool: 'cool', label: 'Soğut', shortcut: 'c', category: 'tool' },
+  { key: 'BLAST', mat: null, tool: 'blast', label: 'Patlat', shortcut: 'p', category: 'tool' },
 ]);
 
 // Seçici sekmeleri (sıra ve Türkçe etiket).

@@ -11,7 +11,8 @@ Tarayıcıda çalışan, grid tabanlı bir **materyal ve fizik sandbox'ı**. Kum
   - Sand, Water, Stone, Wood, Fire, Steam, Oil, Lava, Plant, Glass
   - Ice, Snow, Metal, Molten Metal
   - Cloner (üstüne dökülen materyali 1000 kez çoğaltır), Sink (değen materyali 1000 kez yutar)
-  - Araçlar: Eraser, Isıt, Soğut
+  - Araçlar: Eraser, Isıt, Soğut, Patlat
+- **Patlama ve basınç:** barut, dinamit ve fitil; metan ve duman; patlamalar maddeyi savurur, taşı moloza, camı kuma çevirir. Patlat aracı (`P`) tıklanan yerde patlama yapar.
 - **Ortam ve sıcaklık:**
   - Her hücrenin bir sıcaklığı var ve ısı komşulara iletilir: su kaynar ve donar, lav dış yüzeyinden kabuk bağlar, metal ısıyı hızla iletip kızarır.
   - Ortam sıcaklığı kaydırıcısı (−40…60 °C) ve isteğe bağlı gün/gece döngüsü.
@@ -51,6 +52,9 @@ Tarayıcıda çalışan, grid tabanlı bir **materyal ve fizik sandbox'ı**. Kum
 | `B` `K` `M` `E` | Ice, Snow, Metal, Molten Metal |
 | `X` `Y` | Cloner, Sink |
 | `H` `C` | Isıt / Soğut fırçası |
+| `R` `O` `N` `U` | Barut / Moloz / Metan / Duman |
+| `D` `I` | Dinamit / Fitil |
+| `P` | Patlat (tıklanan yerde fırça boyutuna göre patlama; geri alınabilir) |
 | `T` | Termal görünüm |
 | `F` | Dünyayı ters çevir |
 | `Space` | Pause / Play |

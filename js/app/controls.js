@@ -19,7 +19,12 @@ function paintSwatch(canvas, pick, palette) {
   for (let k = 0; k < px.length; k++) {
     const x = k % SWATCH;
     const y = (k / SWATCH) | 0;
-    if (pick.tool) {
+    if (pick.tool === 'blast') {
+      const dx = x - (SWATCH - 1) / 2; // araç: merkezden dışa beyaz-sarı-kırmızı patlama
+      const dy = y - (SWATCH - 1) / 2;
+      const u = Math.min(1, Math.sqrt(dx * dx + dy * dy) / (SWATCH / 2));
+      px[k] = packRGBA(255, Math.round(240 - 170 * u), Math.round(200 - 190 * u), 255);
+    } else if (pick.tool) {
       const u = y / (SWATCH - 1); // araç: dikey sıcak/soğuk gradyan
       px[k] = pick.tool === 'heat'
         ? packRGBA(255, Math.round(200 - 150 * u), Math.round(90 - 80 * u), 255)

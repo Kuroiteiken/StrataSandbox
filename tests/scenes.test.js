@@ -457,3 +457,16 @@ test('Volkan: yarık yamaca açılır, lav sağ yamaçtan aşağı akar', () => 
   // Soğuk yamaçta kabuk bağlayarak ilerleyen bir lav dili: yarığın en az 12 satır altına iner.
   assert.ok(lowestRightLava >= riftY + 12, `yarık ${riftY}, sağ yamaçtaki en alçak lav ${lowestRightLava}`);
 });
+
+test('kum saatinde Patlat değişmezleri bozmaz; kaynaklar dayanıklılığa göre kırılır, kırılan cam kuma döner', () => {
+  const sim = load('hourglass', 'hg', 200, 220);
+  const H = 220;
+  const cx = 99;
+  const sources0 = countMaterial(sim, MAT.CLONER) + countMaterial(sim, MAT.SINK);
+  sim.blastAt(cx, Math.floor(H / 2), 8); // boğazın yanı: cam kırılır
+  sim.blastAt(cx, hgGlassTop(H), 16); // üst kapak: çoğaltıcılar
+  runTicks(sim, 400);
+  assert.deepEqual(sim.world.checkInvariants(), []);
+  assert.ok(countMaterial(sim, MAT.CLONER) + countMaterial(sim, MAT.SINK) < sources0, 'bazı kaynaklar kırılmalı');
+  assert.equal(sim.getStats().debrisLost, 0);
+});

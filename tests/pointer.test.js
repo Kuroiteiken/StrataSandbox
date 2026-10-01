@@ -217,3 +217,18 @@ test('ısı aracıyla da sağ tık geçici silgidir', () => {
   fire('pointerup', ev(3, 3, { button: 2 }));
   assert.equal(cellType(sim, 3, 3), MAT.EMPTY);
 });
+
+test('Patlat: tek tık tek patlama; sürükleme ve basılı tutma tekrarlamaz; stroke geri alınır', () => {
+  const sim = new Simulation({ width: W, height: H });
+  for (let x = 0; x < W; x++) sim.setCell(x, H - 1, MAT.STONE);
+  const canvas = fakeCanvas();
+  attachPointer(canvas, { renderer: fakeRenderer, sim, getBrush: () => ({ material: 0, tool: 'blast', size: 4, shape: 'circle', replace: false }) });
+  canvas.handlers.pointerdown(ev(20, H - 3));
+  const total = () => sim.getStats().blastTotals[1];
+  assert.equal(total(), 1);
+  canvas.handlers.pointermove(ev(25, H - 3, { buttons: 1 }));
+  runTicks(sim, 5);
+  assert.equal(total(), 1, 'sürükleme ve tick yeni patlama yapmaz');
+  canvas.handlers.pointerup(ev(25, H - 3));
+  assert.equal(sim.canUndo, true);
+});

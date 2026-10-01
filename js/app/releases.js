@@ -12,6 +12,7 @@ export const UNRELEASED = Object.freeze({
     'Volkan: yamacın altındaki magma damarı lav yolunu sıcak tutuyor; lav eteğe inip sağdaki ağaçları tutuşturuyor.',
     'Dökümhane: potanın yarığından kalıplara ısıtılmış eğimli bir oluk iniyor; metal oluktan akıp kalıplara doluyor.',
     'Patlamalar maddeyi savurur: parçalar yay çizip uçar, çarptığı yere düşer.',
+    'Patlat aracı (P): tıklanan yerde fırça boyutuna göre patlama; tek tık tek patlama, geri alınabilir.',
     'Moloz (O): patlamada kırılan taşın tozu; kumdan ağır, lavın üstünde yüzer.',
     'Barut (R): ateş, lav ya da 200 °C ile patlar; yığın büyüdükçe patlama büyür.',
     'Dinamit (D): barutun güçlü, katı hâli; ısıyla ya da yakındaki patlamayla tetiklenir.',
