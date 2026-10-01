@@ -12,6 +12,7 @@
 import { MAT, MATERIALS, PROGRESS_SCALE } from './materials.js';
 import { emitSteam, initialLife } from './reactions.js';
 import { detonate } from './explosions.js';
+import { flashWeight } from './pressure.js';
 
 export const HEAT = Object.freeze({
   AIR_RELAX: 0.02, // havanın tick başına ortama yaklaşma oranı
@@ -94,12 +95,12 @@ function addProgress(life, rng, i, energy, latent) {
   return false;
 }
 
-function transition(world, rng, i, into, vanish) {
+function transition(world, rng, i, into, vanish, over = 0) {
   if (vanish !== 0 && (rng.nextU32() & 255) < vanish) {
     world.set(i, EMPTY, 0, 0, 0, world.temp[i]);
     return;
   }
-  if (into === STEAM) emitSteam(world, i);
+  if (into === STEAM) emitSteam(world, i, flashWeight(over));
   else world.transform(i, into, 0); // sıcaklık eşikte kalır
 }
 
@@ -121,7 +122,7 @@ function applyThermalRules(world, rng, state) {
             flags[i] &= ~PROGRESS_DOWN;
             life[i] = 0;
           }
-          if (addProgress(life, rng, i, (T - UP_AT[t]) * CAP[t], UP_LATENT[t])) transition(world, rng, i, UP_INTO[t], UP_VANISH[t]);
+          if (addProgress(life, rng, i, (T - UP_AT[t]) * CAP[t], UP_LATENT[t])) transition(world, rng, i, UP_INTO[t], UP_VANISH[t], T - UP_AT[t]);
           continue;
         }
         if (T < DOWN_AT[t]) {

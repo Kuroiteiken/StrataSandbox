@@ -22,8 +22,10 @@ export const PRESSURE = Object.freeze({
   W_STEAM: 8, // buharın basınç ağırlığı (suyun genleşmesi)
   FLASH_BLOCK: 8, // ani buharlaşma blok kenarı (hücre)
   FLASH_DECAY: 0.85, // blok sayacının tick başına çarpanı (kısa pencere)
-  FLASH_MIN: 4, // patlama eşiği (yarılanan sayaç)
-  FLASH_POWER: 1, // dönüşüm başına güç
+  FLASH_MIN: 6, // patlama eşiği (yarılanan sayaç)
+  FLASH_POWER: 1, // ağırlık başına güç
+  FLASH_SUPERHEAT: 6, // dönüşüm ağırlığı = aşırı ısınma (°C) / bu değer
+  FLASH_WEIGHT_MAX: 3, // tek dönüşümün en çok ağırlığı
 });
 
 const WEIGHT = new Float32Array(256);
@@ -216,17 +218,23 @@ export function copyFlashState(dst, src) {
   dst.activeCount = src.activeCount;
 }
 
-// emitSteam her dönüşümü buraya yazar.
-export function noteSteam(f, x, y) {
+// Kaynama eşiğinin üstündeki ısı (°C) → dönüşüm ağırlığı: lav/erimiş metal gibi güçlü kaynak ağır, hafif ısıtıcı hafif sayılır.
+export function flashWeight(over) {
+  const w = over / PRESSURE.FLASH_SUPERHEAT;
+  return w <= 0 ? 0 : w > PRESSURE.FLASH_WEIGHT_MAX ? PRESSURE.FLASH_WEIGHT_MAX : w;
+}
+
+// emitSteam her dönüşümü buraya yazar (w: ağırlık).
+export function noteSteam(f, x, y, w) {
   const B = PRESSURE.FLASH_BLOCK;
   const b = Math.floor(y / B) * f.bw + Math.floor(x / B);
   if (f.isActive[b] === 0) {
     f.isActive[b] = 1;
     f.active[f.activeCount++] = b;
   }
-  f.count[b] += 1;
-  f.sx[b] += x;
-  f.sy[b] += y;
+  f.count[b] += w;
+  f.sx[b] += w * x;
+  f.sy[b] += w * y;
 }
 
 // Her tick: eşiği aşan blok buhar patlaması ister ve sıfırlanır; diğerleri sönümlenir.
