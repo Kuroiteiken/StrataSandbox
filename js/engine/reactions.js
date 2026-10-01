@@ -137,6 +137,39 @@ function reactBurning(world, rng, i, t, state) {
   return false;
 }
 
+// Yanan fitil: ömrü bitince küle döner, 8 komşusundaki fitili tutuşturur ve patlayıcıyı tetikler (ateş
+// ~6 tick'te bir hücre ilerler: 1× hızda ~10 hücre/s). Yanarken ara sıra üstüne kıvılcım çıkarır; suyla söner.
+function reactBurningFuse(world, rng, i, state) {
+  const life = world.life;
+  if (life[i] <= 1) {
+    const off = world.neighborOffsets;
+    for (let k = 0; k < 8; k++) {
+      const j = i + off[k];
+      const nt = world.type[j];
+      if (nt === MAT.FUSE) become(world, rng, j, MAT.BURNING_FUSE);
+      else if (EXPLOSIVE_POWER[nt] !== 0) detonate(world, j);
+    }
+    world.transform(i, ASH, 0);
+    return true;
+  }
+  life[i]--;
+  if (state.fireBudget > 0 && roll(rng, EMIT[MAT.BURNING_FUSE])) {
+    const j = i - world.stride + ((rng.nextU32() % 3) - 1);
+    if (world.type[j] === EMPTY) {
+      world.set(j, FIRE, rng.nextU32() & 255, initialLife(FIRE, rng.nextU32()), 0, spawnTemp(FIRE, world.ambient));
+      state.fireBudget--;
+    }
+  }
+  const j = sampleNeighbor(world, rng, i);
+  if (world.type[j] === WATER && roll(rng, DOUSE[MAT.BURNING_FUSE])) {
+    emitSteam(world, j);
+    world.transform(i, MAT.FUSE, 0);
+    if (world.temp[i] > STEAM_TEMP) world.temp[i] = STEAM_TEMP;
+    return true;
+  }
+  return false;
+}
+
 function reactPlant(world, rng, i, state) {
   if (state.growthBudget <= 0 || world.temp[i] < RATES.plantMinTemp || !roll(rng, RATES.plantGrow)) return false;
   const budget = world.life[i];
@@ -215,6 +248,8 @@ export function react(world, rng, i, t, state) {
     case MAT.BURNING_PLANT:
     case MAT.BURNING_OIL:
       return reactBurning(world, rng, i, t, state);
+    case MAT.BURNING_FUSE:
+      return reactBurningFuse(world, rng, i, state);
     case MAT.CLONER:
       return reactCloner(world, rng, i, state);
     case MAT.SINK:

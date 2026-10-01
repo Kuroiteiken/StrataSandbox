@@ -64,6 +64,7 @@ Bu belge, simülasyondaki tüm materyalleri ve aralarındaki etkileşimleri tek 
 | Moloz | `RUBBLE` | `O` | toz | 26 | Kumdan ağır, lavdan hafif: lavın üstünde yüzer. 1500 °C'de lava döner (0.11.0). |
 | Barut | `GUNPOWDER` | `R` | toz | 14 | Suya batar. Ateş, yanan madde ya da lav teması veya ≥ 200 °C ile patlar; hücre başına güç 4 (0.11.0 ayarı: taşı kırabilmek için). |
 | Dinamit | `DYNAMITE` | `D` | statik | — | Dayanıklılık 3. ≥ 150 °C ya da yakındaki patlamayla tetiklenir; hücre başına güç 30 (0.11.0 ayarı: taşı kırabilmek için). |
+| Fitil | `FUSE` | `I` | statik | — | Dayanıklılık 4; 200 °C ya da ateşle tutuşur (yanıcılık 1). Yanan fitil ateşi taşır. |
 | Silgi | — | `0` | — | — | Materyal değil; hücreyi boşaltır. Sağ tık her zaman geçici silgidir. |
 
 ### Seçicide olmayan (reaksiyonla oluşan) durumlar
@@ -72,6 +73,7 @@ Bu belge, simülasyondaki tüm materyalleri ve aralarındaki etkileşimleri tek 
 |---|---|---|---|---|---|---|---|
 | Yanan odun | `BURNING_WOOD` | statik | 300–600 | %12 | %50 | %30 | Odun |
 | Yanan bitki | `BURNING_PLANT` | statik | 30–60 | %30 | %70 | %5 | Bitki |
+| Yanan fitil | `BURNING_FUSE` | statik | 5–7 | %10 | %80 | %100 | Fitil |
 | Yanan yağ | `BURNING_OIL` | sıvı (yoğunluk 8) | 120–240 | %35 | sönmez | yok | (Yağ) |
 | Kül | `ASH` | toz (yoğunluk 12) | — | — | — | — | — |
 
@@ -261,6 +263,7 @@ Patlamanın ızgaradan aldığı hücreler `debris.js` içindeki önceden ayrıl
 - **Eşik:** barut 200 °C, dinamit 150 °C. Eşiği aşan hücre hemen tetiklenir; tetiklenen hücre boşalır ve en az 800 °C olur.
 - **Tutuşma:** ateş, yanan madde ve lav komşu patlayıcıyı tetikler (barut her temasta, dinamit 0,5 olasılıkla).
 - **Kıvılcım:** birleştirme eşiğinin (2) altında kalan blok (güç 2 altı; barut tanesi 4 olduğundan tek tane küçük bir patlama üretir, eşik altı kalan kısmî bloklar kıvılcım olur) patlama olayı üretmez; blok merkezinin 3×3 çevresindeki patlayıcıları tetikler. Bunlar sonraki tick patlar. Tek tanenin zinciri böyle başlar. Tick başına en fazla 64 kıvılcım.
+- **Fitil:** yanan fitil 5–7 tick yanar, sonra küle döner; bu sırada 8 komşusundaki fitili tutuşturur ve patlayıcıyı tetikler. Ateş yaklaşık 6 tick'te bir hücre ilerler (1× hızda ~10 hücre/s). Yanarken %10 olasılıkla üstüne kıvılcım (ateş) çıkarır; su %80 olasılıkla söndürür (hücre fitile döner). Dayanıklılık 4: şiddeti 1–4 arası patlama fitili tutuşturur, daha güçlüsü kırar.
 - **Zincir:** patlamanın şiddeti bir patlayıcıda 0,5 ve üstündeyse hücre tetiklenir. Tetiklenenler ızgaraya yazılır ve sonraki tick patlar; zincir tick tick ilerler, bir tick'te sonsuz döngü olmaz.
 
 ---

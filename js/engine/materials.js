@@ -40,6 +40,8 @@ export const MAT = Object.freeze({
   RUBBLE: 24, // kırılan taş
   GUNPOWDER: 23, // barut
   DYNAMITE: 28, // dinamit
+  FUSE: 29, // fitil
+  BURNING_FUSE: 30, // yanan fitil
 });
 
 // Ortak alanlar:
@@ -147,6 +149,15 @@ export const MATERIAL_DEFS = [
   {
     id: MAT.DYNAMITE, key: 'DYNAMITE', name: 'Dynamite', kind: KIND.STATIC, density: 255, color: '#b8322a',
     conduct: 0.03, capacity: 3, strength: 3, explosive: { power: 30, at: 150, ignite: 0.5 },
+  },
+  {
+    id: MAT.FUSE, key: 'FUSE', name: 'Fuse', kind: KIND.STATIC, density: 255, color: '#c9b58a',
+    flammable: 1, burnsInto: MAT.BURNING_FUSE, ignitesAt: 200, conduct: 0.02, capacity: 2, strength: 4, debris: MAT.ASH,
+  },
+  {
+    id: MAT.BURNING_FUSE, key: 'BURNING_FUSE', name: 'Burning Fuse', kind: KIND.STATIC, density: 255, color: '#ff9a3a',
+    hidden: true, reactive: true, life: [5, 7], temp: 600, source: 600, conduct: 0.04, capacity: 2, strength: 4, debris: MAT.ASH,
+    burn: { emit: 0.1, douse: 0.8, ash: 1, extinguishTo: MAT.FUSE },
   },
 ];
 

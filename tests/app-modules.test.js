@@ -15,7 +15,7 @@ test('materyal seçici plandaki kısayol sırasını izler ve silgi EMPTY olarak
   assert.deepEqual(byShortcut, {
     1: MAT.SAND, 2: MAT.WATER, 3: MAT.STONE, 4: MAT.FIRE, 5: MAT.WOOD,
     6: MAT.STEAM, 7: MAT.OIL, 8: MAT.LAVA, 9: MAT.PLANT, g: MAT.GLASS, 0: MAT.EMPTY,
-    x: MAT.CLONER, y: MAT.SINK, b: MAT.ICE, k: MAT.SNOW, m: MAT.METAL, e: MAT.MOLTEN_METAL, o: MAT.RUBBLE, r: MAT.GUNPOWDER, d: MAT.DYNAMITE, h: 'heat', c: 'cool',
+    x: MAT.CLONER, y: MAT.SINK, b: MAT.ICE, k: MAT.SNOW, m: MAT.METAL, e: MAT.MOLTEN_METAL, o: MAT.RUBBLE, r: MAT.GUNPOWDER, d: MAT.DYNAMITE, i: MAT.FUSE, h: 'heat', c: 'cool',
   });
   assert.equal(pickerByKey('ERASER').mat, MAT.EMPTY);
   assert.equal(pickerByShortcut('G').key, 'GLASS');

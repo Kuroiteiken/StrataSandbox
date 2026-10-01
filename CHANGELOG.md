@@ -13,6 +13,7 @@ Hedef sürüm 0.11.0.
 - **Dayanıklılık ve enkaz:** her statik materyalin patlamaya dayanıklılığı ve kırılınca dönüştüğü enkaz var (taş 8 → moloz, cam 2 → kum, buz 2 → kar, odun 4 → kül, metal 20; kenar ve magma kırılmaz).
 - **Savrulan parçacıklar:** patlamada kırılan ve toz ya da sıvı olan hücreler 2000 parçacıklık bir havuzda yay çizerek uçar; hücre hücre izlenen yol duvardan sızmaz, parçacık çarptığı yere (ya da yakın boş hücreye) iner. Kütle korunur; havuz geri almaya ve çevirmeye dahildir.
 - **Barut (`R`) ve Dinamit (`D`):** barut (güç 4) ateş, lav ya da 200 °C ile; dinamit (güç 30, dayanıklılık 3) 150 °C ya da yakındaki patlamayla tetiklenir. Güçler 8×8 blokta toplanır, yığın büyüdükçe patlama büyür. Eşik altı bloklar kıvılcım olur ve komşu patlayıcıyı tetikler; zincir tick tick ilerler.
+- **Fitil (`I`):** ateşi saniyede ~10 hücre (6 tick'te bir hücre) taşır; yanan fitil ömrü bitince küle döner, komşu fitili tutuşturur ve patlayıcıyı tetikler. Yanarken kıvılcım çıkarır, suyla söner. Dayanıklılık 4: zayıf patlama fitili tutuşturur, güçlüsü kırar.
 - **Moloz (`O`):** kırılan taşın tozu; kumdan ağır, lavın üstünde yüzer, 1500 °C'de lava döner.
 
 ### Changed
