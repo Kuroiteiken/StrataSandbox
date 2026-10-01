@@ -3,7 +3,9 @@
 // → brush preview. Kalite: high (iki katman glow), medium (tek katman), low (glow yok).
 import { MATERIALS } from '../engine/materials.js';
 import { buildPalette, buildRamps, ANIMATED_IDS } from './palette.js';
-import { fillPixels, fillThermal } from './pixels.js';
+import { fillPixels, fillThermal, drawDebris, drawDebrisThermal } from './pixels.js';
+import { EFFECTS, forEachNewBlast, shakeAmplitude, flashAlpha, shakeOffset } from './effects.js';
+import { radiusOf } from '../engine/explosions.js';
 import { paintBackground } from './background.js';
 import { daylight } from '../engine/climate.js';
 import { computeLayout, pointToCell } from './layout.js';
@@ -56,6 +58,15 @@ export class Renderer {
     this._glowReady = false;
     this.viewMode = 'normal'; // 'normal' | 'thermal'
     this._hotCells = 0; // son doldurmadaki akkor hücre sayısı (glow kararı)
+    this._lastBlast = 0; // view.blasts'ta görülen son patlama sırası
+    this._flashX = new Float32Array(8);
+    this._flashY = new Float32Array(8);
+    this._flashR = new Float32Array(8);
+    this._flashStart = new Int32Array(8).fill(-1000);
+    this._flashHead = 0;
+    this._shakeAmp = 0;
+    this._shakeLeft = 0;
+    this._shake = { x: 0, y: 0 };
   }
 
   // Görsel kalite yalnızca dekoratif efektleri etkiler (fizik değişmez).
@@ -180,6 +191,7 @@ export class Renderer {
   _refresh(view) {
     if (this.viewMode === 'thermal') {
       fillThermal(view, this.pixels, this.ramps);
+      drawDebrisThermal(view, this.pixels, this.ramps);
       this.bufferCtx.putImageData(this.image, 0, 0);
       this._glowReady = false;
       this.lastView = view;
@@ -190,6 +202,7 @@ export class Renderer {
     const wantGlow = this.quality !== 'low' && (this._hasEmitters(view) || this._hotCells > 0);
     if (wantGlow) this._ensureGlow(view.width, view.height);
     this._hotCells = fillPixels(view, this.pixels, this.palette, this.ramps, this.frame, this.reducedMotion, wantGlow ? this.glowPixels : null);
+    this._hotCells += drawDebris(view, this.pixels, this.palette, this.ramps, wantGlow ? this.glowPixels : null);
     this.bufferCtx.putImageData(this.image, 0, 0);
     if (wantGlow) {
       // Kademeli küçültme = ucuz, taşınabilir bulanıklık (ctx.filter gerekmez).
@@ -204,6 +217,45 @@ export class Renderer {
     this._glowReady = wantGlow;
     this.lastView = view;
     this.lastVersion = view.version;
+  }
+
+  // Yeni patlamalar: parlama kaydı ve (azaltılmış hareket kapalıysa) sarsıntı.
+  _collectBlasts(view) {
+    if (!view.blasts) return;
+    this._lastBlast = forEachNewBlast(view.blasts, this._lastBlast, (x, y, G) => {
+      const h = this._flashHead++ % 8;
+      this._flashX[h] = x;
+      this._flashY[h] = y;
+      this._flashR[h] = radiusOf(G);
+      this._flashStart[h] = this.frame;
+      const amp = this.reducedMotion ? 0 : shakeAmplitude(G);
+      if (amp > 0) {
+        this._shakeAmp = Math.max(this._shakeLeft > 0 ? this._shakeAmp : 0, amp);
+        this._shakeLeft = EFFECTS.SHAKE_FRAMES;
+      }
+    });
+  }
+
+  _drawFlashes(ctx, ox, oy, cw, ch) {
+    if (this.quality === 'low' || this.viewMode === 'thermal' || typeof ctx.createRadialGradient !== 'function') return;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (let h = 0; h < 8; h++) {
+      const a = flashAlpha(this.frame - this._flashStart[h], this.reducedMotion);
+      if (a <= 0) continue;
+      const cx = ox + (this._flashX[h] + 0.5) * cw;
+      const cy = oy + (this._flashY[h] + 0.5) * ch;
+      const rad = Math.max(cw, this._flashR[h] * cw * 1.4);
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad);
+      g.addColorStop(0, `rgba(255, 250, 225, ${a})`);
+      g.addColorStop(0.4, `rgba(255, 190, 80, ${a * 0.5})`);
+      g.addColorStop(1, 'rgba(255, 120, 20, 0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(cx, cy, rad, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+    ctx.restore();
   }
 
   _drawGlow(ctx, x, y, w, h) {
@@ -274,6 +326,7 @@ export class Renderer {
     this.frame++;
     this._ensureBuffer(view.width, view.height);
     this._ensureLayout();
+    this._collectBlasts(view);
 
     if (view !== this.lastView || view.version !== this.lastVersion || this._isAnimated(view)) this._refresh(view);
 
@@ -282,12 +335,17 @@ export class Renderer {
     ctx.fillStyle = this.frameColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     if (l.drawW > 0 && l.drawH > 0) {
+      const s = shakeOffset(this.frame, this._shakeAmp * this.dpr, this.reducedMotion ? 0 : this._shakeLeft, this._shake);
+      if (this._shakeLeft > 0) this._shakeLeft--;
+      const ox = Math.round(l.offsetX + s.x);
+      const oy = Math.round(l.offsetY + s.y);
       this._ensureBackground(view);
       ctx.imageSmoothingEnabled = true;
-      ctx.drawImage(this.background, l.offsetX, l.offsetY, l.drawW, l.drawH);
+      ctx.drawImage(this.background, ox, oy, l.drawW, l.drawH);
       ctx.imageSmoothingEnabled = false; // canvas resize bu ayarı sıfırlar; her karede set edilir
-      ctx.drawImage(this.buffer, l.offsetX, l.offsetY, l.drawW, l.drawH);
-      if (this._glowReady) this._drawGlow(ctx, l.offsetX, l.offsetY, l.drawW, l.drawH);
+      ctx.drawImage(this.buffer, ox, oy, l.drawW, l.drawH);
+      if (this._glowReady) this._drawGlow(ctx, ox, oy, l.drawW, l.drawH);
+      this._drawFlashes(ctx, ox, oy, l.drawW / this.gridW, l.drawH / this.gridH);
       if (this.preview.visible) this._drawPreview();
     }
     this.lastRenderMs = performance.now() - start;

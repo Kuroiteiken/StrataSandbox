@@ -153,21 +153,25 @@ Renderer.render(view, frameInfo)                                 ← state'i asl
 | --- | --- | --- |
 | `render/layout.js` | `computeLayout` (tam sayı ölçek tercihi), `pointToCell`, `chooseGridSize` | yok |
 | `render/palette.js` | statik ton LUT'u (`256 × 32`), dinamik rampalar, `DYNAMIC`/`ANIMATED_IDS` | yok |
-| `render/pixels.js` | `fillPixels(view, out, pal, ramps, frame, reducedMotion)` | yok |
+| `render/pixels.js` | `fillPixels(view, out, pal, ramps, frame, reducedMotion)`, `drawDebris`, `drawDebrisThermal` | yok |
+| `render/effects.js` | `forEachNewBlast`, `shakeAmplitude`, `flashAlpha`, `shakeOffset` (patlama parlaması ve sarsıntı hesapları) | yok |
 | `render/background.js` | `ridgeProfile` (saf) + `paintBackground` (canvas) | kısmen |
 | `render/renderer.js` | canvas, tamponlar, katman birleştirme, `clientToCell` | var |
 
 - **Sim tamponu:** grid boyutunda `ImageData` ve üzerinde `Uint32Array` view.
   - Statik renk: `PALETTE[type * 32 + (variant & 31)]`.
   - Dinamik materyallerin rengi `life` (ömür, yanma, ısı) ve kozmetik titremeden hesaplanır. Titreme fizik RNG'sine dokunmaz.
-  - EMPTY şeffaftır.
+  - EMPTY şeffaftır. Duman yarı saydam (ömürle soluklaşır), metan çok saydamdır.
+  - Savrulan parçacıklar (`view.debris`) ızgaradan sonra aynı tampona çizilir (`drawDebris`); ≥ 450 °C akkor ve ışır.
+  - Büyük patlamada (G ≥ 64) tuval 12 kare sarsılır (`render/effects.js`, saf hesap); azaltılmış harekette sarsıntı yok, parlama yarı yoğunluk. `capture()` sarsıntısız ve parlamasızdır.
 - **Yeniden doldurma:** yalnızca `view` kimliği ya da `version` değişince, veya canlanan materyal (ateş, lava, yanma) varken yapılır (reduced motion'da değil).
 - **Katman sırası:**
   1. letterbox dolgusu
   2. cache'li arka plan (yarım çözünürlük, smoothing açık)
   3. sim tamponu (`imageSmoothingEnabled = false`)
   4. glow (`lighter`)
-  5. brush preview
+  5. patlama parlaması (`lighter`, radyal gradyan; yeni `view.blasts` kayıtlarından, 6 karede söner)
+  6. brush preview
 - **Grid boyutu:** açılışta bir kez seçilir. Resize yalnızca sunumu değiştirir.
 - **Glow:**
   - `fillPixels`, isteğe bağlı bir ışık tamponunu aynı döngüde doldurur (ateş, lav, yanma; alfa = yoğunluk).

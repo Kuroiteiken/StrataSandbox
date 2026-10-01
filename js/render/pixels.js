@@ -86,6 +86,15 @@ export function fillPixels(view, out, pal, ramps, frame, reducedMotion, glow = n
           if (glow) g = withAlpha(out[o], (30 + burnLevel * 150) | 0, littleEndian);
           break;
         }
+        case DYN.SMOKE: {
+          // Duman yarı saydam; ömrü azaldıkça soluklaşır (alfa 70..190).
+          const f = life[i] / MAX_LIFE[t];
+          out[o] = withAlpha(pal[t * SHADES + (variant[i] & SHADE_MASK)], (70 + 120 * (f > 1 ? 1 : f)) | 0, littleEndian);
+          break;
+        }
+        case DYN.HAZE:
+          out[o] = withAlpha(pal[t * SHADES + (variant[i] & SHADE_MASK)], 80, littleEndian); // metan: çok saydam
+          break;
         default: {
           let c;
           if (DYNAMIC[t] === DYN.CLONER) {
@@ -132,5 +141,46 @@ export function fillThermal(view, out, ramps) {
       const k = T <= -40 ? 0 : T >= 1200 ? 1240 : Math.round(T) + 40;
       out[o] = (type[i] === 0 ? thermalAir : thermal)[THERMAL_LUT[k]];
     }
+  }
+}
+
+// Savrulan parçacıklar (ızgaradan sonra çizilir): malzeme rengi; ≥ INC_START °C akkor ve ışıma. Dönüş: akkor sayısı.
+export function drawDebris(view, out, pal, ramps, glow = null) {
+  const d = view.debris;
+  if (!d || d.count === 0) return 0;
+  const { width, height } = view;
+  const { incandescent, littleEndian } = ramps;
+  let hot = 0;
+  for (let k = 0; k < d.count; k++) {
+    const x = Math.floor(d.x[k]);
+    const y = Math.floor(d.y[k]);
+    if (x < 0 || y < 0 || x >= width || y >= height) continue;
+    const o = y * width + x;
+    let c = pal[d.type[k] * SHADES + (d.variant[k] & SHADE_MASK)];
+    const T = d.temp[k];
+    if (T >= INC_START) {
+      hot++;
+      const f = T >= INC_FULL ? 1 : (T - INC_START) / (INC_FULL - INC_START);
+      const h = incandescent[clampRamp((((T > INC_MAX ? INC_MAX : T) - INC_START) * RAMP_MAX) / (INC_MAX - INC_START))];
+      c = mixPacked(c, h, f);
+      if (glow) glow[o] = withAlpha(h, (f * 150) | 0, littleEndian);
+    }
+    out[o] = c;
+  }
+  return hot;
+}
+
+// Termal görünümde parçacıklar sıcaklık rampasıyla.
+export function drawDebrisThermal(view, out, ramps) {
+  const d = view.debris;
+  if (!d || d.count === 0) return;
+  const { width, height } = view;
+  for (let k = 0; k < d.count; k++) {
+    const x = Math.floor(d.x[k]);
+    const y = Math.floor(d.y[k]);
+    if (x < 0 || y < 0 || x >= width || y >= height) continue;
+    const T = d.temp[k];
+    const idx = T <= -40 ? 0 : T >= 1200 ? 1240 : Math.round(T) + 40;
+    out[y * width + x] = ramps.thermal[THERMAL_LUT[idx]];
   }
 }

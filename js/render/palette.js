@@ -9,7 +9,7 @@ export const RAMP_SIZE = 64;
 export const IS_LITTLE_ENDIAN = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1;
 
 // Dinamik renk türleri (pixels.js kullanır).
-export const DYN = Object.freeze({ NONE: 0, FIRE: 1, LAVA: 2, BURN: 3, CLONER: 5, SINK: 6 });
+export const DYN = Object.freeze({ NONE: 0, FIRE: 1, LAVA: 2, BURN: 3, CLONER: 5, SINK: 6, SMOKE: 7, HAZE: 8 });
 export const DYNAMIC = new Uint8Array(256);
 DYNAMIC[MAT.FIRE] = DYN.FIRE;
 DYNAMIC[MAT.LAVA] = DYN.LAVA;
@@ -18,6 +18,8 @@ DYNAMIC[MAT.BURNING_PLANT] = DYN.BURN;
 DYNAMIC[MAT.BURNING_OIL] = DYN.BURN;
 DYNAMIC[MAT.CLONER] = DYN.CLONER;
 DYNAMIC[MAT.SINK] = DYN.SINK;
+DYNAMIC[MAT.SMOKE] = DYN.SMOKE;
+DYNAMIC[MAT.METHANE] = DYN.HAZE;
 
 // Kareler arası canlanan materyaller (bunlar varken tampon her karede yeniden doldurulur).
 export const ANIMATED_IDS = Object.freeze([MAT.FIRE, MAT.LAVA, MAT.BURNING_WOOD, MAT.BURNING_PLANT, MAT.BURNING_OIL]);

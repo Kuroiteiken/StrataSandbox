@@ -48,6 +48,11 @@ function fakeContext() {
       dashes.push(d.length);
     },
     createLinearGradient: () => ({ addColorStop() {} }),
+    createRadialGradient() {
+      return { addColorStop() {} };
+    },
+    arc() {},
+    translate() {},
     createImageData: (w, h) => ({ width: w, height: h, data: new Uint8ClampedArray(w * h * 4) }),
     putImageData() {
       puts++;
@@ -234,4 +239,16 @@ test('yalnızca akkor (sıcak) taş varken de glow çizilir', () => {
   sim.setTemp(5, 5, 1001);
   renderer.render(sim.view);
   assert.ok(lighterDraws > 0);
+});
+
+test('büyük patlama sarsıntı başlatır; azaltılmış harekette sarsıntı yok', () => {
+  const sim = new Simulation({ width: 40, height: 30 });
+  sim.blastAt(20, 15, 10); // G 100 ≥ SHAKE_MIN
+  const { renderer } = setup({ quality: 'high' });
+  renderer.render(sim.view);
+  assert.ok(renderer._shakeLeft > 0);
+  const { renderer: calm } = setup({ quality: 'high' });
+  calm.setReducedMotion(true);
+  calm.render(sim.view);
+  assert.equal(calm._shakeLeft, 0);
 });

@@ -188,3 +188,31 @@ test('sönmekte olan ateş taze ateşten daha az ışık yayar', () => {
   fillPixels(sim.view, out, pal, ramps, 0, true, glow);
   assert.ok(glow[0] >>> 24 > glow[1] >>> 24, 'alfa (yoğunluk) ömürle azalmalı');
 });
+
+test('savrulan parçacıklar ızgaranın üstüne çizilir; sıcak parçacık akkor ve ışır', async () => {
+  const { drawDebris } = await import('../js/render/pixels.js');
+  const sim = new Simulation({ width: 10, height: 10 });
+  const w = sim.world;
+  const i = w.index(4, 4);
+  w.set(i, MAT.SAND, 0, 0, 0, 900);
+  sim._debris.launch(w, i, MAT.SAND, 0, 0);
+  const out = new Uint32Array(100);
+  const glow = new Uint32Array(100);
+  const hot = drawDebris(sim.view, out, pal, ramps, glow);
+  assert.equal(hot, 1);
+  assert.notEqual(out[4 * 10 + 4], 0);
+  assert.ok(glow[4 * 10 + 4] >>> 24 > 0);
+});
+
+test('duman yarı saydamdır ve ömrü azaldıkça soluklaşır; metan çok saydamdır', () => {
+  const sim = new Simulation({ width: 4, height: 3 });
+  sim.setCell(0, 0, MAT.SMOKE);
+  sim.setCell(1, 0, MAT.SMOKE);
+  sim.setCell(2, 0, MAT.METHANE);
+  sim.world.life[sim.world.index(0, 0)] = 500;
+  sim.world.life[sim.world.index(1, 0)] = 20;
+  const out = render(sim);
+  const alpha = (v) => v >>> 24;
+  assert.ok(alpha(out[0]) < 255 && alpha(out[0]) > alpha(out[1]), 'taze duman yaşlıdan opak');
+  assert.ok(alpha(out[2]) <= 100);
+});

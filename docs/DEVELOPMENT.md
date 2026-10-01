@@ -756,7 +756,7 @@ Spec: `docs/superpowers/specs/2026-10-01-basinc-patlama-design.md` · Plan: `doc
 - [x] Metan ve duman
 - [x] Kapalı bölge basıncı
 - [x] Ani buharlaşma
-- [ ] Görseller (parlama, sarsıntı, parçacıklar)
+- [x] Görseller (parlama, sarsıntı, parçacıklar)
 - [ ] Patlat aracı
 - [ ] Volkan sahnesi
 - [ ] Maden ocağı sahnesi
